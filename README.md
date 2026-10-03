@@ -21,6 +21,7 @@ node tests/prototype-regression.cjs
 - [Визуальные материалы и промпты](docs/art/lienso-redesign-prompts.md).
 - [Карта кампании](assets/campaign_ring_map.png).
 - [Отчёты проверок](reports/) — исследования баланса и Координатора.
+- [Эксперимент без Координатора](reports/background-evolution-v0.2.md) — фоновая эволюция, отдельные игровые страницы; не канон.
 - `prototype/` — играбельный прототип; `tests/` — автоматические проверки; `tools/` — воспроизводимые исследовательские прогоны.
 
 ## Версионирование
@@ -57,6 +58,7 @@ node tools/check-coordinator.cjs
 node tools/check-balance.cjs
 node tools/check-mutation.cjs
 node tools/sweep-sprinter.cjs
+node tools/check-background-evolution.cjs
 ```
 
 Результаты сохраняются в `reports/generated/` и не включаются в Git. Контроль Координатора сравнивает новую Турель с обычными улучшениями; перебор Sprinter сохраняет отклонённый эксперимент как исследовательский инструмент.

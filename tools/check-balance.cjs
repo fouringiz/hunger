@@ -8,7 +8,7 @@ const canvas = {getContext: () => ({}), style: {}, addEventListener() {}};
 const context = vm.createContext({document: {getElementById: () => canvas}, window: {devicePixelRatio: 1}, innerWidth: 960, innerHeight: 540, addEventListener() {}, requestAnimationFrame() {}, performance: {now: () => 0}});
 vm.runInContext(source, context);
 const experiment = `
-function runTrial(strategy, mode, layout, dt) {
+function runTrial(strategy, mode, layout, dt, stopBeforeWave = Infinity) {
   reset(); S.phase = 'build';
   const waves = [], decisions = [];
   const preferred = strategy === 'cannon' ? 'cannon' : 'turret';
@@ -50,6 +50,7 @@ function runTrial(strategy, mode, layout, dt) {
     action.go();return true;
   }
   for(let wave=1;wave<=WAVES && S.phase!=='over';wave++) {
+    if(wave === stopBeforeWave) break;
     if(mode==='none')S.mutations=[];
     if(mode==='forced' || mode==='adapt')S.mutations=wave>=9?['keratin','sprinter']:wave>=5?[preferred==='cannon'?'sprinter':'keratin']:[];
     for(let j=0;j<100 && shop();j++);
@@ -63,6 +64,8 @@ function runTrial(strategy, mode, layout, dt) {
 }
 `;
 vm.runInContext(experiment, context);
+module.exports = {source, experiment};
+if (require.main === module) {
 const results=[];
 for(const dt of [0.05, 1/60]) for(const strategy of ['turret','cannon','mixed']) for(let layout=0;layout<6;layout++) for(const mode of ['none','natural','forced','adapt']) {
   results.push(vm.runInContext(`runTrial(${JSON.stringify(strategy)},${JSON.stringify(mode)},${layout},${dt})`,context));
@@ -72,4 +75,5 @@ fs.writeFileSync(path.join(__dirname,'../reports/generated/balance-results.json'
 for(const dt of [0.05,1/60]) for(const strategy of ['turret','cannon','mixed']) for(const mode of ['none','natural','forced','adapt']) {
   const rows=results.filter(r=>r.dt===dt&&r.strategy===strategy&&r.mode===mode);
   console.log(JSON.stringify({dt,strategy,mode,wins:rows.filter(r=>r.win).length,meanGate:rows.reduce((n,r)=>n+r.gate,0)/rows.length,meanLastWave:rows.reduce((n,r)=>n+r.lastWave,0)/rows.length,mutatedRuns:rows.filter(r=>r.waves.some(w=>w.mutations.length)).length}));
+}
 }
