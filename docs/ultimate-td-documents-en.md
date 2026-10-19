@@ -1,5 +1,6 @@
-# Ultimate TD — Interface Documents (EN, v1.3)
+# Ultimate TD — Interface Documents (EN, v1.4)
 
+> **Изменения v1.3 → v1.4 (паспорт v2.13):** ролик Know Your Consumer #11 сокращён до формата 20 секунд и учит читать рапорт о мутации вместо универсального «смени оружие»; P.S. меморандума 0558-M переписан — выбор мутации зависит от игрока, срок — нет (убрано противоречие с правилом выбора по урону и преждевременная уверенность в авторе расписания).
 > **Изменения v1.2 → v1.3 (паспорт v2.12):** написаны четыре текста на замену, маркеры «к замене» сняты. Меморандум 0412-M: Marsh просит не живого Координатора, а бурение над Венами — перехватывать больше некого. Меморандум узла 0558-M переписан целиком: прогноз из расписания эволюции с оговоркой «forecast, not verdict» и пересчётом при смене доминирующего источника урона. Ролик Know Your Consumer #11 — **Specimen N (Category: pending)** вместо Coordinator (единственное исключение формата: ролик посвящён аномалии, а не касте, и выходит при её первом возвращении). Агитка «THE COORDINATOR IS WATCHING» заменена на «THE HUNGER KEEPS A SCHEDULE. KEEP AHEAD OF IT.». Счёт текстов не изменился: 12 роликов, 14 агиток, 21 документ ассигнований.
 >
 > **Изменения v1.1 → v1.2 (паспорт v2.11):** каста Coordinator удалена из игры, категория A закреплена за Matriarch. Механические правки применены: Form 7-B/bis (строка категории A), Dispatch 3-114 (состав волны), Notice of Appropriation 12-046 (перечень категорий A и B), заголовок узла Marked Observer → Evolution Forecast. **Четыре текста помечены к замене** и до неё оставлены без изменений: ролик Know Your Consumer #11, меморандум 0412-M (строка «bring me a live Coordinator»), меморандум узла 0558-M и агитка «THE COORDINATOR IS WATCHING». Счёт текстов сохраняется: 12 роликов, 14 агиток, 21 документ ассигнований.
@@ -279,8 +280,8 @@ You cannot intercept them, Commander. You can only be early.
 Yours, with the appropriate reservations,
 G. Marsh
 
-P.S. Consider what the forecast proves. They are not reacting to
-us. They are scheduled. Something wrote the schedule.
+P.S. What they grow depends on us. When they grow it does not.
+I find the distinction unsettling.
 ```
 
 ### Field Xenology (12)
@@ -554,7 +555,7 @@ Visual: камео Patch — варит руину; к нему идёт Лит�
 Fine print: Patch is not covered. Patch has been told.
 
 **#11 Specimen N (Category: pending)**
-VO: "Specimen N. One unit, uncatalogued and — the Fund wishes to be transparent — unpriced. It survived your perimeter once, and it has been growing ever since, in the direction of whatever let it live: it will not die the way it nearly died. Use the other weapon. Settle early, Commander. The Fund carries Specimen N as an outstanding receivable, and collection includes an appropriation. Your crews have given it a name. The Fund has not adopted it."
+VO: "Specimen N. It survived you once. It returns changed. Read the mutation report before choosing your response. Settle early, Commander: another escape means further growth. Collection earns an appropriation. The Fund would prefer to close this account."
 Visual: карточка Marsh «SPECIMEN N» — один и тот же силуэт в трёх кадрах, каждый крупнее предыдущего; в бухгалтерской строке «Category: ——» мигает курсор; печать Фонда опускается на прозвище гарнизона и вымарывает его.
 Fine print: Category: pending. Uncatalogued assets accrue interest. So does the specimen.
 
