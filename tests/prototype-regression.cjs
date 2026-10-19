@@ -130,6 +130,22 @@ const cases = {
     assert.ok(upgraded.leaked < unchanged.leaked, 'an ordinary upgrade also prevents leaks');
     assert.ok(upgraded.gate > unchanged.gate, 'an ordinary upgrade also preserves Gate HP');
   `,
+  'the evolution memorandum names the real cause of a primary mutation': `
+    reset(); S.wave = EVOLUTION_WAVES[0] - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave();
+    assert.deepEqual(S.mutations, ['keratin']);
+    assert.ok(S.report.includes('kinetic fire dominance'), 'kinetic dominance is named as the cause');
+    assert.ok(!S.report.includes('artillery'), 'artillery is not mentioned when it never fired');
+    reset(); S.wave = EVOLUTION_WAVES[0] - 1; startWave(); S.dmg = {flat:0, arc:100}; endWave();
+    assert.deepEqual(S.mutations, ['sprinter']);
+    assert.ok(S.report.includes('artillery dominance'), 'artillery dominance is named as the cause');
+  `,
+  'a replacement mutation is explained as a replacement, never as absent artillery dominance': `
+    reset(); S.mutations = ['keratin']; S.wave = EVOLUTION_WAVES[1] - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave();
+    assert.deepEqual(S.mutations, ['keratin', 'sprinter'], 'the repeat is replaced by the other counter');
+    assert.ok(!S.report.includes('artillery dominance'), 'zero arc damage must never be reported as artillery dominance');
+    assert.ok(S.report.includes('already present'), 'the report explains the replacement');
+    assert.ok(S.report.includes('accelerate at shell-whistle'), 'the effect describes the observed reflex, not a promised miss');
+  `,
   'the swarm evolves only on the scheduled waves, and the schedule stays inside the campaign': `
     assert.ok(EVOLUTION_WAVES.length > 0);
     assert.ok(EVOLUTION_WAVES.every(w => w < WAVES), 'a scheduled wave after the last one could never fire');

@@ -89,10 +89,16 @@ const MUT_STACK_CAP = 2;                          // prototype stack limit
 const SPRINTER_DASH_MULT = 1.7;                   // approved campaign value
 const MUT = {
   keratin:  {name:'Keratinization', vs:'flat',
-             memo:'MEMORANDUM (Marsh): New specimens present keratinized plating. Kinetic damage −30%. Cause: your kinetic fire dominance. — G.M.'},
+             effect:'New specimens present keratinized plating. Kinetic damage −30%.', cause:'your kinetic fire dominance'},
   sprinter: {name:'Sprinter Reflex', vs:'arc',
-             memo:'MEMORANDUM (Marsh): New specimens dash at shell-whistle. Arcing fire lands behind them. Cause: your artillery dominance. — G.M.'}
+             effect:'New specimens accelerate at shell-whistle.', cause:'your artillery dominance'}
 };
+// The report separates what changed (effect) from why (cause). A replacement is explained as such:
+// the ledger never blames a weapon the player did not fire.
+const REPLACEMENT_CAUSE = 'the counter to your dominant weapon is already present; the incubators have produced another adaptation';
+function evolutionMemo(kind, replacement) {
+  return 'MEMORANDUM (Marsh): ' + MUT[kind].effect + ' Cause: ' + (replacement ? REPLACEMENT_CAUSE : MUT[kind].cause) + '. — G.M.';
+}
 
 // ---------------------------------------------------------------- state
 let S;
@@ -167,10 +173,15 @@ function endWave() {
   // Background evolution: the incubators read the damage ledger on schedule, with no organism on the lane.
   if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP) {
     let kind = S.dmg.flat >= S.dmg.arc ? 'keratin' : 'sprinter';   // a tie answers kinetic fire
-    if (S.mutations.includes(kind)) kind = kind === 'keratin' ? 'sprinter' : 'keratin';  // never the same counter twice
+    let replacement = false;
+    if (S.mutations.includes(kind)) {                               // never the same counter twice
+      // TEMPORARY stopgap: with one counter per weapon line the second slot has nothing honest to pick.
+      // Remove once a second mutation per line exists (Smoke Molt / Dispersal) — then this branch rarely fires.
+      kind = kind === 'keratin' ? 'sprinter' : 'keratin'; replacement = true;
+    }
     if (!S.mutations.includes(kind)) {
       S.mutations.push(kind); S.dmg = {flat:0, arc:0};             // the ledger window restarts at every mutation
-      memo = MUT[kind].memo;
+      memo = evolutionMemo(kind, replacement);
       toast('EVOLUTION: ' + MUT[kind].name + ' next wave. Prepare your defense.');
     }
   }
