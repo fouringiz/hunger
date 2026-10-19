@@ -83,6 +83,7 @@ const RANK_KILLS = [0, 12, 35];
 const SELL_RATE = 0.6, SELL_TIME = 1.8;          // 60% refund, 1.8 s demolition
 const GATE_MAX = 20;
 const SIM_STEP = 1 / 60;                         // combat advances in identical ticks at every display refresh rate
+const ESCORT_WAVES = [4, 8];                      // wave composition: a shielded push, independent of evolution
 const EVOLUTION_WAVES = [4, 8];                   // the swarm evolves after these waves; the next wave carries it
 const MUT_STACK_CAP = 2;                          // prototype stack limit
 const SPRINTER_DASH_MULT = 1.7;                   // approved campaign value
@@ -115,7 +116,7 @@ function waveDef(n) {
   while (f > 0) { list.push({type:'forager', delay:0.55}); f--; }
   const leeches = n >= 5 ? 1 + Math.floor((n - 5) / 2) : 0;   // Leeches from wave 5
   for (let i = 0; i < leeches; i++) list.splice(3 + i*5, 0, {type:'leech', delay:1.0});
-  if (EVOLUTION_WAVES.includes(n)) {                          // heavier escort on the waves the incubators read
+  if (ESCORT_WAVES.includes(n)) {                             // shielded push; kept separate so a silenced schedule still plays the same waves
     const convoy = [{type:'carapacid', delay:1.6},
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4},
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4}];

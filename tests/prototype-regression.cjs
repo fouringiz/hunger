@@ -142,6 +142,17 @@ const cases = {
     assert.equal(S.mutations.length, 1);
     assert.ok(S.report.startsWith('MEMORANDUM'), 'a scheduled wave reports a Marsh memorandum');
   `,
+  'wave composition does not depend on the evolution schedule': `
+    const before = EVOLUTION_WAVES.map(w => previewText(w));
+    const composition = ESCORT_WAVES.map(w => JSON.stringify(waveDef(w).map(e => e.type)));
+    const saved = [...EVOLUTION_WAVES];
+    try {
+      EVOLUTION_WAVES.length = 0;
+      assert.deepEqual(ESCORT_WAVES.map(w => JSON.stringify(waveDef(w).map(e => e.type))), composition,
+        'a silenced schedule must still play the same waves, or paired controls are not paired');
+    } finally { EVOLUTION_WAVES.splice(0, EVOLUTION_WAVES.length, ...saved); }
+    assert.deepEqual(EVOLUTION_WAVES.map(w => previewText(w)), before);
+  `,
   'the schedule honours the stack cap and never grants the same counter twice': `
     reset();
     for (const wave of EVOLUTION_WAVES) { S.wave = wave - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave(); }

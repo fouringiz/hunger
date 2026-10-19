@@ -53,7 +53,7 @@ function controlWave(dashMultiplier, turretSlot = null) {
 }
 
 const multipliers = [1.7, 2.0, 2.2, 2.4, 2.5, 2.6, 2.8, 3.0];
-const impacts = multipliers.flatMap(multiplier => ['forager', 'carapacid', 'coordinator'].map(type => ({
+const impacts = multipliers.flatMap(multiplier => ['forager', 'carapacid', 'leech'].map(type => ({
   multiplier, type, ...evaluateShot(multiplier, type),
 })));
 const controls = multipliers.map(multiplier => ({

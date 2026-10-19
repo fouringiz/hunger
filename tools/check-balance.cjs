@@ -1,5 +1,7 @@
 // Deterministic, headless experiments against the actual prototype simulation.
 // dt is the elapsed time delivered per call; update always uses SIM_STEP ticks.
+// Modes: 'none' = schedule off, 'natural' = the core schedule, 'adapt' = the core
+// schedule while later purchases switch to the other weapon from the first evolution.
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
@@ -8,8 +10,16 @@ const canvas = {getContext: () => ({}), style: {}, addEventListener() {}};
 const context = vm.createContext({document: {getElementById: () => canvas}, window: {devicePixelRatio: 1}, innerWidth: 960, innerHeight: 540, addEventListener() {}, requestAnimationFrame() {}, performance: {now: () => 0}});
 vm.runInContext(source, context);
 const experiment = `
+// The core schedule is the baseline; 'none' silences it by emptying the schedule itself.
+const BASE_EVOLUTION_WAVES = [...EVOLUTION_WAVES];
+let HP_MULT = 1;
+const baseMakeEnemy = makeEnemy;
+makeEnemy = function(type, n) {                       // research-only pressure knob; the core carries no multiplier
+  const e = baseMakeEnemy(type, n); e.hp *= HP_MULT; e.maxHp *= HP_MULT; return e;
+};
 function runTrial(strategy, mode, layout, dt, stopBeforeWave = Infinity) {
   reset(); S.phase = 'build';
+  EVOLUTION_WAVES.splice(0, EVOLUTION_WAVES.length, ...(mode === 'none' ? [] : BASE_EVOLUTION_WAVES));
   const waves = [], decisions = [];
   const preferred = strategy === 'cannon' ? 'cannon' : 'turret';
   function coverage(slot, type, level=1) {
@@ -29,7 +39,7 @@ function runTrial(strategy, mode, layout, dt, stopBeforeWave = Infinity) {
       const arc=S.towers.filter(t=>t.type==='cannon').reduce((n,t)=>n+t.invested,0);
       type=flat<=arc?'turret':'cannon';
     }
-    if(mode==='adapt' && S.wave>=4 && strategy!=='mixed') type=preferred==='turret'?'cannon':'turret';
+    if(mode==='adapt' && S.wave>=BASE_EVOLUTION_WAVES[0] && strategy!=='mixed') type=preferred==='turret'?'cannon':'turret';
     const T=TOWER[type], candidates=[];
     for(const slot of SLOTS) if(!slot.tower) candidates.push({cost:T.cost, extra:T.power, value:coverage(slot,type)*T.dmg/T.interval/T.cost, go:()=>build(slot,type)});
     for(const t of S.towers) if(t.type===type && t.level<3) {
@@ -51,28 +61,26 @@ function runTrial(strategy, mode, layout, dt, stopBeforeWave = Infinity) {
   }
   for(let wave=1;wave<=WAVES && S.phase!=='over';wave++) {
     if(wave === stopBeforeWave) break;
-    if(mode==='none')S.mutations=[];
-    if(mode==='forced' || mode==='adapt')S.mutations=wave>=9?['keratin','sprinter']:wave>=5?[preferred==='cannon'?'sprinter':'keratin']:[];
     for(let j=0;j<100 && shop();j++);
     decisions.push({wave,credits:S.credits,towers:S.towers.map(t=>({type:t.type,level:t.level,slot:SLOTS.indexOf(t.slot)}))});
     startWave(); let steps=0, brown=0;
     while(S.phase==='wave' && steps<20000){if(power().brown)brown+=dt;update(dt);steps++;}
     if(steps>=20000)throw Error('Simulation timeout');
-    waves.push({wave,gate:S.gate,leaked:S.waveLeaked,coordinatorEscaped:S.coordEscaped,mutations:[...S.mutations],brownSeconds:Math.round(brown),seconds:Math.round(steps*dt)});
+    waves.push({wave,gate:S.gate,leaked:S.waveLeaked,mutations:[...S.mutations],brownSeconds:Math.round(brown),seconds:Math.round(steps*dt)});
   }
-  return {strategy,mode,layout,dt,win:S.win,gate:S.gate,lastWave:S.wave,kills:S.kills,credits:S.credits,waves,decisions};
+  return {strategy,mode,layout,dt,hpMultiplier:HP_MULT,win:S.win,gate:S.gate,lastWave:S.wave,kills:S.kills,credits:S.credits,waves,decisions};
 }
 `;
 vm.runInContext(experiment, context);
 module.exports = {source, experiment};
 if (require.main === module) {
 const results=[];
-for(const dt of [0.05, 1/60]) for(const strategy of ['turret','cannon','mixed']) for(let layout=0;layout<6;layout++) for(const mode of ['none','natural','forced','adapt']) {
+for(const dt of [0.05, 1/60]) for(const strategy of ['turret','cannon','mixed']) for(let layout=0;layout<6;layout++) for(const mode of ['none','natural','adapt']) {
   results.push(vm.runInContext(`runTrial(${JSON.stringify(strategy)},${JSON.stringify(mode)},${layout},${dt})`,context));
 }
 fs.mkdirSync(path.join(__dirname, '../reports/generated'), {recursive: true});
 fs.writeFileSync(path.join(__dirname,'../reports/generated/balance-results.json'),JSON.stringify(results,null,2)+'\n');
-for(const dt of [0.05,1/60]) for(const strategy of ['turret','cannon','mixed']) for(const mode of ['none','natural','forced','adapt']) {
+for(const dt of [0.05,1/60]) for(const strategy of ['turret','cannon','mixed']) for(const mode of ['none','natural','adapt']) {
   const rows=results.filter(r=>r.dt===dt&&r.strategy===strategy&&r.mode===mode);
   console.log(JSON.stringify({dt,strategy,mode,wins:rows.filter(r=>r.win).length,meanGate:rows.reduce((n,r)=>n+r.gate,0)/rows.length,meanLastWave:rows.reduce((n,r)=>n+r.lastWave,0)/rows.length,mutatedRuns:rows.filter(r=>r.waves.some(w=>w.mutations.length)).length}));
 }
