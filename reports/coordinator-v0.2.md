@@ -56,6 +56,16 @@ and power, then verify useful cases in the full mission. The regression suite
 also compares real frame updates at 20–144 fps, uneven frame intervals and
 both speed settings, so this evidence no longer depends on a 60 fps display.
 
+## Verdict (2026-10-19, final)
+
+**Verdict: Coordinator removed, background evolution adopted (passport v2.11).**
+The escape loop proved self-extinguishing — across 36 ordinary runs in the
+[full mission study](adaptation-v0.2.md) every Coordinator died and no mutation
+ever appeared. Evolution now runs on a schedule with no organism on the lane.
+This study is kept as history; its control case survives as
+`tools/check-evolution-response.cjs`, which reproduces the same wave-4/5
+numbers with the scheduled mutation in place of the escape.
+
 ## Verdict (2026-09-16, clarified after audit)
 
 The approved campaign `SPRINTER_DASH_MULT = 1.7` remains; the `2.6×` candidate

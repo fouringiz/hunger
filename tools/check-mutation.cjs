@@ -5,7 +5,7 @@ const canvas = {getContext: () => ({}), style: {}, addEventListener() {}};
 const context = vm.createContext({document: {getElementById: () => canvas}, window: {devicePixelRatio: 1}, innerWidth: 960, innerHeight: 540, addEventListener() {}, requestAnimationFrame() {}, performance: {now: () => 0}});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../prototype/index.html'), 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1], context);
 const rows = vm.runInContext(`
-  ['forager','carapacid','coordinator'].flatMap(type => [false,true].map(mut => {
+  ['forager','carapacid','leech'].flatMap(type => [false,true].map(mut => {
     reset(); build(SLOTS[2], 'cannon'); const t = S.towers[0];
     if(mut) S.mutations = ['sprinter'];
     const e = makeEnemy(type,5); e.d=480; Object.assign(e,posAt(e.d));
