@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.2</title>
+<title>Ultimate TD — core loop prototype v0.3</title>
 <style>
   html, body { margin: 0; height: 100%; background: #151820; overflow: hidden;
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -15,11 +15,13 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
-// v0.2 changes: RA-style power gauge (fill + green/yellow/red + threshold notch + brownout flicker),
+// v0.3 changes: the Coordinator caste is removed; swarm evolution is a background schedule
+// (EVOLUTION_WAVES) resolved by the dominant damage source and announced by Marsh between waves.
+// v0.2: RA-style power gauge (fill + green/yellow/red + threshold notch + brownout flicker),
 // fully automatic targeting (anti-overkill, cannon cluster shots, Leech auto-escalation),
 // tower selling (60%, stripes burn, 1.5-2 s demolition, available mid-wave),
 // star rating by Gate HP, Leech caste (generator drain, FEAST, Sated Waves),
-// Coordinator caste, first swarm mutations with Marsh memoranda.
+// first swarm mutations with Marsh memoranda.
 // ---------------------------------------------------------------- canvas
 const W = 960, H = 540, HUD = 40, BOT = 34;
 const canvas = document.getElementById('c');
@@ -65,8 +67,7 @@ const SLOTS = [[110,160],[250,160],[350,200],[350,340],[250,340],[490,190],[490,
 const ENEMY = {
   forager:     {name:'Forager',     hp:30,  speed:52, r:7,  bounty:5,  gateDmg:1, color:'#ff6b6b'},
   carapacid:   {name:'Carapacid',   hp:340, speed:34, r:18, bounty:40, gateDmg:5, color:'#a83232'},
-  leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'},
-  coordinator: {name:'Coordinator', hp:560, speed:30, r:14, bounty:90, gateDmg:0, color:'#5ee0d8'}
+  leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'}
 };
 const TOWER = {
   turret:    {name:'Turret',    cost:60,  power:10,  range:130, dmg:7,  interval:0.28, kind:'flat', color:'#8fd3ff',
@@ -82,7 +83,8 @@ const RANK_KILLS = [0, 12, 35];
 const SELL_RATE = 0.6, SELL_TIME = 1.8;          // 60% refund, 1.8 s demolition
 const GATE_MAX = 20;
 const SIM_STEP = 1 / 60;                         // combat advances in identical ticks at every display refresh rate
-const COORD_WAVES = [4, 8];                       // Coordinator appears on these waves
+const EVOLUTION_WAVES = [4, 8];                   // the swarm evolves after these waves; the next wave carries it
+const MUT_STACK_CAP = 2;                          // prototype stack limit
 const SPRINTER_DASH_MULT = 1.7;                   // approved campaign value
 const MUT = {
   keratin:  {name:'Keratinization', vs:'flat',
@@ -98,7 +100,7 @@ function reset() {
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
        spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0}, mutations:[], feast:0, stolen:0,
-       coordInWave:false, coordEscaped:false, toast:'', toastT:0, accumulator:0};
+       toast:'', toastT:0, accumulator:0};
 }
 reset();
 
@@ -113,9 +115,8 @@ function waveDef(n) {
   while (f > 0) { list.push({type:'forager', delay:0.55}); f--; }
   const leeches = n >= 5 ? 1 + Math.floor((n - 5) / 2) : 0;   // Leeches from wave 5
   for (let i = 0; i < leeches; i++) list.splice(3 + i*5, 0, {type:'leech', delay:1.0});
-  if (COORD_WAVES.includes(n)) {                              // Coordinator convoy: shielded, never alone, hidden mid-wave
-    const convoy = [{type:'carapacid', delay:1.6},            // shieldbearer ahead — its shadow covers the observer
-                    {type:'coordinator', delay:0.6},
+  if (EVOLUTION_WAVES.includes(n)) {                          // heavier escort on the waves the incubators read
+    const convoy = [{type:'carapacid', delay:1.6},
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4},
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4}];
     list.splice(Math.floor(list.length * 0.4), 0, ...convoy); // mid-wave: the stream ahead soaks the targeting
@@ -159,20 +160,17 @@ function power() {
 function startWave() {
   S.wave++; S.phase = 'wave'; S.spawnQueue = waveDef(S.wave); S.spawnTimer = 0.6;
   S.waveKills = 0; S.waveLeaked = 0; S.selected = null;
-  S.coordInWave = COORD_WAVES.includes(S.wave); S.coordEscaped = false;
 }
 function endWave() {
   let memo = '';
-  if (S.coordInWave) {                                          // evolution is Coordinator-driven
-    if (S.coordEscaped && S.mutations.length < 2) {
-      let kind = S.dmg.flat >= S.dmg.arc ? 'keratin' : 'sprinter';
-      if (S.mutations.includes(kind)) kind = kind === 'keratin' ? 'sprinter' : 'keratin';
-      if (!S.mutations.includes(kind)) {
-        S.mutations.push(kind); S.dmg = {flat:0, arc:0};
-        memo = MUT[kind].memo;
-      }
-    } else if (!S.coordEscaped) {
-      memo = 'MEMORANDUM (Marsh): Observer specimen destroyed before withdrawal. The swarm evolution is blind this cycle. — G.M.';
+  // Background evolution: the incubators read the damage ledger on schedule, with no organism on the lane.
+  if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP) {
+    let kind = S.dmg.flat >= S.dmg.arc ? 'keratin' : 'sprinter';   // a tie answers kinetic fire
+    if (S.mutations.includes(kind)) kind = kind === 'keratin' ? 'sprinter' : 'keratin';  // never the same counter twice
+    if (!S.mutations.includes(kind)) {
+      S.mutations.push(kind); S.dmg = {flat:0, arc:0};             // the ledger window restarts at every mutation
+      memo = MUT[kind].memo;
+      toast('EVOLUTION: ' + MUT[kind].name + ' next wave. Prepare your defense.');
     }
   }
   S.report = memo || ('DISPATCH ' + S.wave + ': Wave held. Kills ' + S.waveKills + '. Leaked ' + S.waveLeaked + '.' +
@@ -223,9 +221,11 @@ function finishSell(t) {
 }
 function damage(e, amt, tower) {
   if (e.dead) return;
+  const raw = amt;                                                                  // the ledger reads fire before resistances
   if (tower && tower.T.kind === 'flat' && e.muts.includes('keratin')) amt *= 0.7;   // Keratinization: −30% kinetic
+  const dealt = Math.min(amt, Math.max(0, e.hp));                                   // overkill is not evolution pressure
   e.hp -= amt;
-  if (tower) S.dmg[tower.T.kind] += Math.min(amt, Math.max(0, e.hp + amt));         // damage ledger drives evolution
+  if (tower && amt > 0) S.dmg[tower.T.kind] += raw * (dealt / amt);                 // damage ledger drives evolution
   if (e.hp <= 0) {
     e.dead = true; S.credits += e.T.bounty; S.kills++; S.waveKills++;
     if (tower) tower.kills++;
@@ -253,13 +253,10 @@ function pickTarget(t, st) {
   // Reserved lethal damage excludes every target, including emergency priorities.
   const pool = cands.filter(e => e.hp - e.incoming > 0);
   if (!pool.length) return null;
-  // rule 1 — a withdrawing Coordinator outranks everything: it leaves forever, the leech can be dealt with after
-  const bolter = pool.find(e => e.type === 'coordinator' && e.dir === -1);
-  if (bolter) return bolter;
-  // rule 1b — Leech auto-escalation: a leech feeding on a generator outranks the stream
+  // rule 1 — Leech auto-escalation: a leech feeding on a generator outranks the stream
   const feeder = pool.find(e => e.type === 'leech' && e.state === 'attached');
   if (feeder) return feeder;
-  // rule 3 — cluster targeting: the cannon aims where the bodies are
+  // rule 2 — cluster targeting: the cannon aims where the bodies are
   if (t.T.kind === 'arc') {
     let best = null, bestN = -1;
     for (const e of pool) {
@@ -288,7 +285,7 @@ function fireArc(t, st, target) {
   const flight = 0.65;
   let p;
   if (target.state === 'lane') {
-    const pd = Math.max(0, Math.min(GATE_D, target.d + target.effSpeed * flight * (target.dir === -1 ? -1 : 1)));
+    const pd = Math.max(0, Math.min(GATE_D, target.d + target.effSpeed * flight));
     p = posAt(pd);
   } else p = {x: target.x, y: target.y};                       // off-lane leech sits still
   t.angle = Math.atan2(p.y - t.y, p.x - t.x);
@@ -359,21 +356,10 @@ function stepSimulation(dt) {
       continue;
     }
     let sp = e.speed;
-    if ((e.type === 'forager' || e.type === 'coordinator') && e.dir !== -1) for (const c of S.enemies)   // herd: tuck in behind a Carapacid (the Coordinator hides in its shadow)
+    if (e.type === 'forager') for (const c of S.enemies)        // herd: tuck in behind a Carapacid and ride its shadow
       if (!c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
     if (e.dash > 0) { sp *= SPRINTER_DASH_MULT; e.dash -= dt; } // Sprinter Reflex dash
     sp *= feastMul;
-    if (e.type === 'coordinator') {                             // observer: watches to mid-lane, then withdraws the way it came
-      if (e.dir !== -1 && e.d >= TOTAL * 0.42) { e.dir = -1; e.speed *= 1.15; toast('COORDINATOR IS WITHDRAWING. Kill it before it reports.'); }
-      e.effSpeed = sp; e.d += sp * dt * (e.dir === -1 ? -1 : 1);
-      const p = posAt(e.d); e.x = p.x; e.y = p.y;
-      if (e.dir === -1 && e.d <= 0) {                           // slipped back out: the swarm has seen your guns
-        e.dead = true; S.coordEscaped = true;
-        S.fx.push({kind:'leak', x:PATH[0][0]+30, y:PATH[0][1], r:36, life:0.5, max:0.5, color:'#5ee0d8'});
-        toast('COORDINATOR WITHDREW. The swarm has seen your guns.');
-      }
-      continue;
-    }
     e.effSpeed = sp; e.d += sp * dt;
     const p = posAt(e.d); e.x = p.x; e.y = p.y;
     if (e.d >= GATE_D) {
@@ -507,14 +493,7 @@ function draw() {
   }
   // enemies
   for (const e of S.enemies) {
-    if (e.type === 'coordinator') {                              // diamond observer
-      ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(Math.PI/4);
-      ctx.fillStyle = e.T.color; ctx.fillRect(-e.r*0.8, -e.r*0.8, e.r*1.6, e.r*1.6); ctx.restore();
-      ctx.strokeStyle = 'rgba(94,224,216,0.55)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 6 + 2*Math.sin(S.time*5), 0, Math.PI*2); ctx.stroke();
-    } else {
-      ctx.fillStyle = e.T.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
-    }
+    ctx.fillStyle = e.T.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
     if (e.type === 'carapacid') { ctx.strokeStyle = '#ffb3b3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.x, e.y, e.r-4, 0, Math.PI*2); ctx.stroke(); }
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
@@ -613,12 +592,12 @@ function draw() {
   // overlays
   if (S.phase === 'menu') {
     ctx.fillStyle = 'rgba(21,24,32,0.92)'; ctx.fillRect(0, 0, W, H);
-    text('Ultimate TD — core loop prototype v0.2', W/2, 120, 24, '#e8ecf2', 'center', '700');
+    text('Ultimate TD — core loop prototype v0.3', W/2, 120, 24, '#e8ecf2', 'center', '700');
     const lines = ['Tap an empty slot to build a Turret, a Cannon or a Generator. Credits come from kills only.',
       'Power is shared (Red Alert rules): keep the fill left of the notch or you brown out.',
       'Towers aim themselves: no overkill, cannons pick clusters, and anything feeding on a generator gets priority.',
-      'Leeches (wave 5+) drain generators and feed the swarm. The Coordinator (waves 4, 8) only watches:',
-      'it rides mid-wave behind a Carapacid shield, turns at mid-lane and slips back out. Kill it before it reports, or the swarm mutates.',
+      'Leeches (wave 5+) drain generators and feed the swarm. The incubators read your fire through the Veins:',
+      'after waves 4 and 8 the swarm grows a counter to whatever damage dominated. Marsh names it before the next wave.',
       'Selling returns 60%; stripes burn; demolition takes ~2 s. Finish with the Gate untouched for ★★★.'];
     lines.forEach((l, i) => text(l, W/2, 180 + i*24, 14, '#c9d0dc', 'center'));
     btn(W/2 - 70, 360, 140, 36, 'Begin campaign', () => { S.phase = 'build'; S.buildTimer = 25; S.report = ''; }, true, true);

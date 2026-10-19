@@ -60,12 +60,12 @@ const cases = {
       assert.ok(attached, 'Leech missed generator in slot ' + slotIndex + ' at ' + SLOTS[slotIndex].x + ',' + SLOTS[slotIndex].y);
     }
   `,
-  'artillery leads a retreating coordinator backwards': `
+  'artillery leads its target forward along the lane': `
     reset(); build(SLOTS[0], 'cannon');
-    const e = makeEnemy('coordinator', 1); e.d = 400; e.dir = -1;
+    const e = makeEnemy('carapacid', 1); e.d = 400;
     Object.assign(e, posAt(e.d));
     fireArc(S.towers[0], tstats(S.towers[0]), e);
-    const expected = posAt(e.d - e.effSpeed * 0.65);
+    const expected = posAt(e.d + e.effSpeed * 0.65);
     assert.equal(S.shells[0].tx, expected.x); assert.equal(S.shells[0].ty, expected.y);
   `,
   'generator stays powered during approach and recovers after feeding': `
@@ -79,16 +79,15 @@ const cases = {
   `,
   'reserved damage excludes priority targets and resumes after a miss': `
     reset(); build(SLOTS[0], 'cannon'); const t = S.towers[0], st = tstats(t);
-    const e = makeEnemy('coordinator', 1); e.dir = -1; e.x = t.x + 100; e.y = t.y; e.hp = 20; e.incoming = 45;
+    const e = makeEnemy('leech', 1); e.state = 'attached'; e.x = t.x + 100; e.y = t.y; e.hp = 20; e.incoming = 45;
     const other = makeEnemy('forager', 1); other.x = t.x + 120; other.y = t.y;
     S.enemies = [e, other]; assert.equal(pickTarget(t, st), other);
-    e.type = 'leech'; e.state = 'attached'; assert.equal(pickTarget(t, st), other);
     S.enemies = [e]; assert.equal(pickTarget(t, st), null);
     e.incoming = 0; assert.equal(pickTarget(t, st), e);
   `,
-  'retreating coordinator actually takes shell damage': `
+  'a shell actually damages the target it was aimed at': `
     reset(); build(SLOTS[0], 'cannon'); const t = S.towers[0];
-    const e = makeEnemy('coordinator', 1); e.d = 400; e.dir = -1;
+    const e = makeEnemy('carapacid', 1); e.d = 400;
     Object.assign(e, posAt(e.d)); S.enemies = [e]; S.phase = 'wave'; S.wave = 1;
     fireArc(t, tstats(t), e); t.paused = true;
     const initial = e.hp;
@@ -97,7 +96,7 @@ const cases = {
   `,
   'a missed shell releases its reservation so firing can resume': `
     reset(); build(SLOTS[0], 'cannon'); const t = S.towers[0], st = tstats(t);
-    const e = makeEnemy('coordinator', 1); e.d = 350; e.dir = -1; e.hp = 20;
+    const e = makeEnemy('carapacid', 1); e.d = 350; e.hp = 20;
     Object.assign(e, posAt(e.d)); S.enemies = [e]; S.phase = 'wave'; S.wave = 1;
     fireArc(t, st, e); t.paused = true;
     S.shells[0].tx = -1000; S.shells[0].ty = -1000;
@@ -105,14 +104,14 @@ const cases = {
     for (let i = 0; i < 14; i++) update(0.05);
     assert.equal(e.hp, 20); assert.equal(e.incoming, 0); assert.equal(pickTarget(t, st), e);
   `,
-  'a Coordinator mutation causes a leak that either a purchase or an upgrade can prevent': `
+  'a scheduled mutation causes a leak that either a purchase or an upgrade can prevent': `
     function playWave(keepMutation, counter) {
       reset();
       build(SLOTS[8], 'turret'); build(SLOTS[9], 'cannon');
       S.wave = 3; startWave();
       for (let i = 0; i < 30000 && S.phase === 'wave'; i++) update(1/60);
       assert.equal(S.phase, 'build', 'wave 4 must finish without losing the Gate');
-      assert.equal(S.coordEscaped, true); assert.ok(S.mutations.includes('sprinter'));
+      assert.equal(S.mutations.length, 1, 'the schedule must grant exactly one mutation after wave 4');
       if (!keepMutation) S.mutations = [];
       if (counter === 'turret') { build(SLOTS[0], 'turret'); assert.ok(SLOTS[0].tower); }
       if (counter === 'upgrade') { upgrade(SLOTS[9].tower); assert.equal(SLOTS[9].tower.level, 2); }
@@ -130,6 +129,62 @@ const cases = {
     assert.ok(rebuilt.gate > unchanged.gate, 'the countermeasure should preserve more Gate HP');
     assert.ok(upgraded.leaked < unchanged.leaked, 'an ordinary upgrade also prevents leaks');
     assert.ok(upgraded.gate > unchanged.gate, 'an ordinary upgrade also preserves Gate HP');
+  `,
+  'the swarm evolves only on the scheduled waves, and the schedule stays inside the campaign': `
+    assert.ok(EVOLUTION_WAVES.length > 0);
+    assert.ok(EVOLUTION_WAVES.every(w => w < WAVES), 'a scheduled wave after the last one could never fire');
+    for (let wave = 1; wave < EVOLUTION_WAVES[0]; wave++) {
+      reset(); S.wave = wave - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave();
+      assert.equal(S.mutations.length, 0, 'wave ' + wave + ' is not a scheduled wave');
+      assert.ok(S.report.startsWith('DISPATCH'), 'an ordinary wave reports a dispatch');
+    }
+    reset(); S.wave = EVOLUTION_WAVES[0] - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave();
+    assert.equal(S.mutations.length, 1);
+    assert.ok(S.report.startsWith('MEMORANDUM'), 'a scheduled wave reports a Marsh memorandum');
+  `,
+  'the schedule honours the stack cap and never grants the same counter twice': `
+    reset();
+    for (const wave of EVOLUTION_WAVES) { S.wave = wave - 1; startWave(); S.dmg = {flat:100, arc:0}; endWave(); }
+    assert.equal(S.mutations.length, Math.min(EVOLUTION_WAVES.length, MUT_STACK_CAP));
+    assert.equal(new Set(S.mutations).size, S.mutations.length, 'a repeated counter must be replaced');
+  `,
+  'the damage ledger picks the counter and restarts at every mutation': `
+    const scheduled = EVOLUTION_WAVES[0] - 1;
+    reset(); S.wave = scheduled; startWave(); S.dmg = {flat:100, arc:1}; endWave();
+    assert.deepEqual(S.mutations, ['keratin']); assert.deepEqual(S.dmg, {flat:0, arc:0});
+    reset(); S.wave = scheduled; startWave(); S.dmg = {flat:1, arc:100}; endWave();
+    assert.deepEqual(S.mutations, ['sprinter']);
+    reset(); S.wave = scheduled; startWave(); S.dmg = {flat:0, arc:0}; endWave();
+    assert.deepEqual(S.mutations, ['keratin'], 'a tie answers kinetic fire');
+  `,
+  'the ledger reads fire before resistances and ignores overkill': `
+    reset(); build(SLOTS[0], 'turret'); const t = S.towers[0];
+    const bare = makeEnemy('carapacid', 1), plated = makeEnemy('carapacid', 1);
+    plated.muts = ['keratin']; S.enemies = [bare, plated];
+    damage(bare, 100, t); const ledger = S.dmg.flat, bareHp = bare.hp;
+    S.dmg = {flat:0, arc:0};
+    damage(plated, 100, t);
+    assert.ok(plated.hp > bareHp, 'keratinized plating must reduce the damage taken');
+    assert.equal(S.dmg.flat, ledger, 'plating must not hide kinetic fire from the ledger');
+    S.dmg = {flat:0, arc:0};
+    const dying = makeEnemy('forager', 1); dying.hp = 5; S.enemies.push(dying);
+    damage(dying, 100, t);
+    assert.equal(S.dmg.flat, 5, 'overkill is not evolution pressure');
+  `,
+  'a mutation reaches the next wave, not the one that earned it': `
+    reset(); S.wave = EVOLUTION_WAVES[0] - 1; startWave();
+    assert.deepEqual(makeEnemy('forager', S.wave).muts, []);
+    S.dmg = {flat:100, arc:0}; endWave();
+    assert.equal(S.mutations.length, 1);
+    startWave(); assert.deepEqual(makeEnemy('forager', S.wave).muts, S.mutations);
+  `,
+  'a lost Gate ends the run before the swarm can evolve': `
+    reset(); S.wave = EVOLUTION_WAVES[0] - 1; startWave();
+    S.dmg = {flat:100, arc:0}; S.gate = 1; S.spawnQueue = [];
+    const e = makeEnemy('forager', S.wave); e.d = GATE_D; S.enemies = [e];
+    update(SIM_STEP);
+    assert.equal(S.phase, 'over'); assert.equal(S.win, false);
+    assert.equal(S.mutations.length, 0, 'a lost run grants the swarm nothing');
   `,
   'an occupied or demolishing slot cannot host a second tower': `
     reset(); build(SLOTS[2], 'cannon');
