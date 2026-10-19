@@ -1,5 +1,7 @@
-# Ultimate TD — Interface Documents (EN, v1.2)
+# Ultimate TD — Interface Documents (EN, v1.3)
 
+> **Изменения v1.2 → v1.3 (паспорт v2.12):** написаны четыре текста на замену, маркеры «к замене» сняты. Меморандум 0412-M: Marsh просит не живого Координатора, а бурение над Венами — перехватывать больше некого. Меморандум узла 0558-M переписан целиком: прогноз из расписания эволюции с оговоркой «forecast, not verdict» и пересчётом при смене доминирующего источника урона. Ролик Know Your Consumer #11 — **Specimen N (Category: pending)** вместо Coordinator (единственное исключение формата: ролик посвящён аномалии, а не касте, и выходит при её первом возвращении). Агитка «THE COORDINATOR IS WATCHING» заменена на «THE HUNGER KEEPS A SCHEDULE. KEEP AHEAD OF IT.». Счёт текстов не изменился: 12 роликов, 14 агиток, 21 документ ассигнований.
+>
 > **Изменения v1.1 → v1.2 (паспорт v2.11):** каста Coordinator удалена из игры, категория A закреплена за Matriarch. Механические правки применены: Form 7-B/bis (строка категории A), Dispatch 3-114 (состав волны), Notice of Appropriation 12-046 (перечень категорий A и B), заголовок узла Marked Observer → Evolution Forecast. **Четыре текста помечены к замене** и до неё оставлены без изменений: ролик Know Your Consumer #11, меморандум 0412-M (строка «bring me a live Coordinator»), меморандум узла 0558-M и агитка «THE COORDINATOR IS WATCHING». Счёт текстов сохраняется: 12 роликов, 14 агиток, 21 документ ассигнований.
 >
 > Companion-файл к паспорту v2.4. Язык игры — английский; здесь лежат **зафиксированные тексты**: 3 шаблона бланков, 21 документ ассигнований (разделы 1–4) и тексты второй очереди — 12 роликов «Know Your Consumer», 3 квартальных отчёта, агитки, реплики Patch, письма домой, приказы и финальный пакет Storm of the Gate (разделы 5–12). Термины — строго по `ultimate-td-glossary-en.md`.
@@ -58,8 +60,6 @@ Hayes.
 
 ### 1.3 Marsh — Memorandum (рапорт о мутации после волны)
 
-> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется. Заменить нужно только строку «bring me a live Coordinator» и постскриптум-отсылку к ней.
-
 ```
 THE EXPEDITION — SCIENCE CORPS, XENOLOGY DIVISION
 Memorandum No. 0412-M (supplementing No. 0411-M, No. 0410-M,
@@ -75,7 +75,10 @@ cause is obvious and, in a certain sense, flattering to your
 machine-gun crews: the swarm answers whatever kills it best.
 
 Recommendation: plasma. Or electricity. Or — I shall not tire of
-repeating it — bring me a live Coordinator.
+repeating it — a drill team and one hour over the Veins. There is
+nothing on the lane for me to capture, Commander. The dead report
+downward, through the ground, and the incubators answer them. I am
+asking to read the same page they do.
 
 Yours in science and alarm,
 G. Marsh
@@ -250,25 +253,34 @@ under morale.
 
 ### Evolution Forecast (10)
 
-> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется. Узел переименован (Marked Observer → Evolution Forecast) и построен теперь на прогнозе расписания, а не на разведчике.
-
 ```
 Memorandum No. 0558-M
 
 Commander,
 
-the Coordinator no longer hides. Tagging spores mark it from the
-first second — look for the halo in the flow. And there is more:
-dissection of a marked specimen reveals what it carried. Kill it,
-and my next report names the mutation it was ferrying home.
+I have stopped asking you to catch it. There is nothing to catch.
+The swarm changes on a schedule of its own, and the schedule is
+kept underground, where your guns are not.
 
-We are, at last, reading their mail.
+A schedule, however, can be read. We have read it. One wave before
+the Hunger changes, this office will name what it is growing and
+what taught it — the ledger of damage runs both ways, and we have
+learned to add it up as they do.
 
-Yours triumphantly,
+Note the word: forecast. Prognosis, in the old clinical sense — a
+statement of the likely, not of the promised. The swarm answers
+whatever kills it best. Change what kills it best, and it answers
+something else; the forecast is then recomputed, and the report
+will say plainly that it changed. Build against the name and you
+will have built against last week.
+
+You cannot intercept them, Commander. You can only be early.
+
+Yours, with the appropriate reservations,
 G. Marsh
 
-P.S. Ferrying "home". I use the word loosely. Home is under us.
-P.P.S. I still want one alive. Standing request.
+P.S. Consider what the forecast proves. They are not reacting to
+us. They are scheduled. Something wrote the schedule.
 ```
 
 ### Field Xenology (12)
@@ -489,7 +501,7 @@ becomes void, together with its holder.
 
 ## 5. The Expedition Network — «Know Your Consumer» ×12 (зафиксировано)
 
-Правила формата: 20-секундный 2D-ролик при первой встрече с кастой; диктор канала (корпоративная бодрость Sato); одна визуальная гэг-сцена; бегущий мелкий шрифт внизу (сноски Sato в видео). Каждый ролик закрывается идентом **«Stay informed. Stay solvent.»** (в сценариях опущен). Имена каст — только официальные. Каждый ролик учит реальной контригре — это туториалы.
+Правила формата: 20-секундный 2D-ролик при первой встрече с кастой; диктор канала (корпоративная бодрость Sato); одна визуальная гэг-сцена; бегущий мелкий шрифт внизу (сноски Sato в видео). Каждый ролик закрывается идентом **«Stay informed. Stay solvent.»** (в сценариях опущен). Имена каст — только официальные. Каждый ролик учит реальной контригре — это туториалы. Исключение одно: **#11 посвящён не касте, а аномалии** и показывается при её первом возвращении; в кампании без аномалии ролик не выходит.
 
 **#01 Forager (Category E)**
 VO: "Meet the Forager. Individually unremarkable. Collectively, a river. The Forager is the Hunger's most abundant product — and, at four credits a unit, the Fund's most reliable revenue stream. Do not aim. Cover the lane. Machine guns, tesla arcs and cluster shells turn quantity into quantity of a more profitable kind."
@@ -541,12 +553,10 @@ VO: "The Lithophage. Acid, patience, and a single interest: your unfinished rest
 Visual: камео Patch — варит руину; к нему идёт Литофаг в слюнявчике; Patch машет.
 Fine print: Patch is not covered. Patch has been told.
 
-> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется.
-
-**#11 Coordinator (Category A)**
-VO: "The Coordinator. It does not fight and it does not feed. It watches. Everything it sees, the incubators learn twice as fast. It is the most valuable unit in the lane — to them, and, at five hundred credits, to you. Find it. Kill it before the wave ends. Consider it a performance bonus."
-Visual: Координатор с планшетом конспектирует башни; красный круг; бирка «500 cr».
-Fine print: Live capture is not a payable category. Requests from Xenology remain under review.
+**#11 Specimen N (Category: pending)**
+VO: "Specimen N. One unit, uncatalogued and — the Fund wishes to be transparent — unpriced. It survived your perimeter once, and it has been growing ever since, in the direction of whatever let it live: it will not die the way it nearly died. Use the other weapon. Settle early, Commander. The Fund carries Specimen N as an outstanding receivable, and collection includes an appropriation. Your crews have given it a name. The Fund has not adopted it."
+Visual: карточка Marsh «SPECIMEN N» — один и тот же силуэт в трёх кадрах, каждый крупнее предыдущего; в бухгалтерской строке «Category: ——» мигает курсор; печать Фонда опускается на прозвище гарнизона и вымарывает его.
+Fine print: Category: pending. Uncatalogued assets accrue interest. So does the specimen.
 
 **#12 Matriarch (Boss)**
 VO: "The Matriarch. A walking incubator. It produces Foragers as it advances — the wave does not end until she does. Save your superweapon. Concentrate fire. And breathe: the Fund's analysts project a favorable outcome." — пауза — "Projections are monitored."
@@ -589,7 +599,7 @@ Third card: чёрная, пустая, две секунды. Затем мел
 - PAUSE IS NOT SURRENDER. — Idle towers draw less power. Reactivation takes 2–3 seconds. Plan accordingly.
 - FOUR CREWS STAY. THE REST IS REDEPLOYED. — Nothing is wasted. Everything is invoiced.
 - RESTORATION TAKES ONE WAVE. — Patch will be fine.* — *Patch is not covered by Restoration Insurance.
-- THE COORDINATOR IS WATCHING. WATCH BACK. — Category A. Five hundred credits. ⚠️ **К замене (паспорт v2.11)**
+- THE HUNGER KEEPS A SCHEDULE. KEEP AHEAD OF IT. — Adaptation cannot be intercepted. It can only be outpaced.
 - PRECISION IS A BUDGET LINE. — Heavy ordnance on light targets is audited.
 - THE SWARM FEASTS ON YOUR ELECTRICITY. — Protect generators. Set priority: Leeches.
 - RUINS ARE ASSETS. ASSETS ARE RESTORED. — Restoration raises Signature by five. Growth has a sound.

@@ -1,6 +1,6 @@
 # Ultimate Tower Defense
 
-Мобильный sci-fi tower defense. Актуальный паспорт — **v2.11**, прототип — **v0.3**.
+Мобильный sci-fi tower defense. Актуальный паспорт — **v2.12**, прототип — **v0.3**.
 
 ## Быстрый старт
 
@@ -14,10 +14,10 @@ node tests/prototype-regression.cjs
 
 ## Структура
 
-- [Паспорт проекта v2.11](docs/ultimate-td-passport-v2-11.md) — актуальные решения и текущая повестка.
+- [Паспорт проекта v2.12](docs/ultimate-td-passport-v2-12.md) — актуальные решения и текущая повестка.
 - [Английский глоссарий v1.3](docs/ultimate-td-glossary-en.md).
 - Лор: [RU](docs/ultimate-td-lore-ru.md), [EN](docs/ultimate-td-lore-en.md).
-- [Внутриигровые документы](docs/ultimate-td-documents-en.md) — извлечены из исходного архива без изменения текста.
+- [Внутриигровые документы v1.3](docs/ultimate-td-documents-en.md) — зафиксированные тексты бланков, ассигнований, роликов и агиток.
 - [Визуальные материалы и промпты](docs/art/lienso-redesign-prompts.md).
 - [Карта кампании](assets/campaign_ring_map.png).
 - [Отчёты проверок](reports/) — исследования баланса и эволюции роя.
@@ -27,7 +27,7 @@ node tests/prototype-regression.cjs
 
 ## Версионирование
 
-Номера паспорта и прототипа независимы: паспорт v2.11 не означает игру v2.11.
+Номера паспорта и прототипа независимы: паспорт v2.12 не означает игру v2.12.
 
 | Ветка или метка | Назначение |
 | --- | --- |
@@ -38,7 +38,7 @@ node tests/prototype-regression.cjs
 
 ### История паспортов
 
-Доступны ветки: [v1.1](https://github.com/fouringiz/hunger/tree/design/v1.1), [v1.2](https://github.com/fouringiz/hunger/tree/design/v1.2), [v1.3](https://github.com/fouringiz/hunger/tree/design/v1.3), [v1.4](https://github.com/fouringiz/hunger/tree/design/v1.4), [v1.6](https://github.com/fouringiz/hunger/tree/design/v1.6), [v1.7](https://github.com/fouringiz/hunger/tree/design/v1.7), [v1.8](https://github.com/fouringiz/hunger/tree/design/v1.8), [v1.9](https://github.com/fouringiz/hunger/tree/design/v1.9), [v2.0](https://github.com/fouringiz/hunger/tree/design/v2.0), [v2.1](https://github.com/fouringiz/hunger/tree/design/v2.1), [v2.3](https://github.com/fouringiz/hunger/tree/design/v2.3), [v2.4](https://github.com/fouringiz/hunger/tree/design/v2.4), [v2.6](https://github.com/fouringiz/hunger/tree/design/v2.6), [v2.7](https://github.com/fouringiz/hunger/tree/design/v2.7), [v2.8](https://github.com/fouringiz/hunger/tree/design/v2.8), [v2.9](https://github.com/fouringiz/hunger/tree/design/v2.9), [v2.10](https://github.com/fouringiz/hunger/tree/design/v2.10), [v2.11](https://github.com/fouringiz/hunger/tree/design/v2.11).
+Доступны ветки: [v1.1](https://github.com/fouringiz/hunger/tree/design/v1.1), [v1.2](https://github.com/fouringiz/hunger/tree/design/v1.2), [v1.3](https://github.com/fouringiz/hunger/tree/design/v1.3), [v1.4](https://github.com/fouringiz/hunger/tree/design/v1.4), [v1.6](https://github.com/fouringiz/hunger/tree/design/v1.6), [v1.7](https://github.com/fouringiz/hunger/tree/design/v1.7), [v1.8](https://github.com/fouringiz/hunger/tree/design/v1.8), [v1.9](https://github.com/fouringiz/hunger/tree/design/v1.9), [v2.0](https://github.com/fouringiz/hunger/tree/design/v2.0), [v2.1](https://github.com/fouringiz/hunger/tree/design/v2.1), [v2.3](https://github.com/fouringiz/hunger/tree/design/v2.3), [v2.4](https://github.com/fouringiz/hunger/tree/design/v2.4), [v2.6](https://github.com/fouringiz/hunger/tree/design/v2.6), [v2.7](https://github.com/fouringiz/hunger/tree/design/v2.7), [v2.8](https://github.com/fouringiz/hunger/tree/design/v2.8), [v2.9](https://github.com/fouringiz/hunger/tree/design/v2.9), [v2.10](https://github.com/fouringiz/hunger/tree/design/v2.10), [v2.11](https://github.com/fouringiz/hunger/tree/design/v2.11), [v2.12](https://github.com/fouringiz/hunger/tree/design/v2.12).
 
 Снимки импортированы из сохранившихся файлов; v2.4 взят из `files.zip`. Даты коммитов отражают импорт. Отсутствующие версии не восстанавливались предположениями. В каждой исторической ветке оригинальный паспорт находится в `docs/passport.md`; его старые ссылки сохранены как часть исходного документа.
 
