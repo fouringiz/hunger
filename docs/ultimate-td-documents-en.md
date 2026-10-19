@@ -1,5 +1,7 @@
-# Ultimate TD — Interface Documents (EN, v1.1)
+# Ultimate TD — Interface Documents (EN, v1.2)
 
+> **Изменения v1.1 → v1.2 (паспорт v2.11):** каста Coordinator удалена из игры, категория A закреплена за Matriarch. Механические правки применены: Form 7-B/bis (строка категории A), Dispatch 3-114 (состав волны), Notice of Appropriation 12-046 (перечень категорий A и B), заголовок узла Marked Observer → Evolution Forecast. **Четыре текста помечены к замене** и до неё оставлены без изменений: ролик Know Your Consumer #11, меморандум 0412-M (строка «bring me a live Coordinator»), меморандум узла 0558-M и агитка «THE COORDINATOR IS WATCHING». Счёт текстов сохраняется: 12 роликов, 14 агиток, 21 документ ассигнований.
+>
 > Companion-файл к паспорту v2.4. Язык игры — английский; здесь лежат **зафиксированные тексты**: 3 шаблона бланков, 21 документ ассигнований (разделы 1–4) и тексты второй очереди — 12 роликов «Know Your Consumer», 3 квартальных отчёта, агитки, реплики Patch, письма домой, приказы и финальный пакет Storm of the Gate (разделы 5–12). Термины — строго по `ultimate-td-glossary-en.md`.
 
 ## 0. Правила системы документов (зафиксировано)
@@ -26,7 +28,7 @@ Accepted for credit:
   Consumers cat. E (Forager) ......... 412 units × 4 cr ... 1,648 cr
   Consumers cat. C (Carapacid) ........ 18 units × 35 cr ...   630 cr
   Consumers cat. B (Nurse) ............. 3 units × 120 cr ..   360 cr
-  Consumers cat. A (Coordinator) ....... 1 unit  × 500 cr ..   500 cr¹
+  Consumers cat. A (Matriarch) ......... 1 unit  × 500 cr ..   500 cr¹
 
 Total credited: 3,138 cr
 
@@ -45,7 +47,7 @@ COMMAND. DISPATCH 3-114. PRIORITY.
 1. Signature 120. Threshold crossed.
 2. Swarm objective: node "Substation East".
 3. Projected composition: Forager — mass. Carapacid — 6.
-   Leech — 4. Coordinator — confirmed.
+   Leech — 4.
 4. Intercept: redoubt "Barrier-2". One third down.
 5. Garrison: four crews. Reactivation on signal.
 6. Next deployment: defense.
@@ -55,6 +57,8 @@ Hayes.
 ```
 
 ### 1.3 Marsh — Memorandum (рапорт о мутации после волны)
+
+> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется. Заменить нужно только строку «bring me a live Coordinator» и постскриптум-отсылку к ней.
 
 ```
 THE EXPEDITION — SCIENCE CORPS, XENOLOGY DIVISION
@@ -244,7 +248,10 @@ P.S. Do not tell Colonel Hayes I said "the dark". He files it
 under morale.
 ```
 
-### Marked Observer (10)
+### Evolution Forecast (10)
+
+> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется. Узел переименован (Marked Observer → Evolution Forecast) и построен теперь на прогнозе расписания, а не на разведчике.
+
 ```
 Memorandum No. 0558-M
 
@@ -443,7 +450,7 @@ Notice of Appropriation No. 12-046
 
 Re: "Hunting Bounties" — premium schedule published.
 
-Remuneration for Categories A and B (Coordinator, Leech, Nurse,
+Remuneration for Categories A and B (Matriarch, Leech, Nurse,
 Neurocoupler) has been increased by fifty percent.¹
 
 The Fund encourages precision. Precision is now measurably
@@ -534,6 +541,8 @@ VO: "The Lithophage. Acid, patience, and a single interest: your unfinished rest
 Visual: камео Patch — варит руину; к нему идёт Литофаг в слюнявчике; Patch машет.
 Fine print: Patch is not covered. Patch has been told.
 
+> **⚠️ К замене (паспорт v2.11):** каста Coordinator удалена из игры. Текст ниже сохраняется как есть до написания замены — это отдельная задача; счёт текстов не меняется.
+
 **#11 Coordinator (Category A)**
 VO: "The Coordinator. It does not fight and it does not feed. It watches. Everything it sees, the incubators learn twice as fast. It is the most valuable unit in the lane — to them, and, at five hundred credits, to you. Find it. Kill it before the wave ends. Consider it a performance bonus."
 Visual: Координатор с планшетом конспектирует башни; красный круг; бирка «500 cr».
@@ -580,7 +589,7 @@ Third card: чёрная, пустая, две секунды. Затем мел
 - PAUSE IS NOT SURRENDER. — Idle towers draw less power. Reactivation takes 2–3 seconds. Plan accordingly.
 - FOUR CREWS STAY. THE REST IS REDEPLOYED. — Nothing is wasted. Everything is invoiced.
 - RESTORATION TAKES ONE WAVE. — Patch will be fine.* — *Patch is not covered by Restoration Insurance.
-- THE COORDINATOR IS WATCHING. WATCH BACK. — Category A. Five hundred credits.
+- THE COORDINATOR IS WATCHING. WATCH BACK. — Category A. Five hundred credits. ⚠️ **К замене (паспорт v2.11)**
 - PRECISION IS A BUDGET LINE. — Heavy ordnance on light targets is audited.
 - THE SWARM FEASTS ON YOUR ELECTRICITY. — Protect generators. Set priority: Leeches.
 - RUINS ARE ASSETS. ASSETS ARE RESTORED. — Restoration raises Signature by five. Growth has a sound.

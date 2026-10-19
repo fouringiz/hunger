@@ -1,5 +1,7 @@
-# "The Hunger" — Ultimate TD Lore Bible (EN, v1.0)
+# "The Hunger" — Ultimate TD Lore Bible (EN, v1.1)
 
+> **Changes v1.0 → v1.1 (Passport v2.11):** the Coordinator caste is removed from the game. The herd's steering organ is the incubators themselves, reading the battle through the Veins; directed evolution no longer has a body on the lane.
+>
 > This document collects all locked setting canon as of Project Passport v1.1. Game mechanics live in the passport; this is the world and its history only.
 
 ## Epigraph
@@ -28,7 +30,7 @@ The expedition went through. There was no road back.
 
 - This planet was never a world. It was a **facility** — a single planet-scale mechanism; the Precursors built no cities here.
 - **The Hunger is their creation.** A self-directing biological system that processes worlds into biomass and energy for the grid. It has been running its program for millions of years after its masters vanished.
-- **The artifacts are not weapons but husbandry tools**: the Excisor culls the weak, the Recall Obelisk herds, the Null Emitter pacifies, the Aegis guards the feeding infrastructure. The swarm cannot adapt to them because the leash is written into its genome: the dog does not bite the staff. The Neurocoupler reads the language of the pen as its own. Coordinators are the herd's steering organ, once taking orders from the shepherds. Anomalies are cracks in the leash — individuality emerging where none should exist.
+- **The artifacts are not weapons but husbandry tools**: the Excisor culls the weak, the Recall Obelisk herds, the Null Emitter pacifies, the Aegis guards the feeding infrastructure. The swarm cannot adapt to them because the leash is written into its genome: the dog does not bite the staff. The Neurocoupler reads the language of the pen as its own. The herd's steering organ is the incubators themselves: they took the shepherds' orders through the Veins, and through the Veins they still listen to the planet. Anomalies are cracks in the leash — individuality emerging where none should exist.
 - **The network is pen and lure.** A sedative the swarm was meant to grow into, so that it would stay here, fed and slow. Every restoration the Expedition performs mends a fence — and wakes the herd.
 - **The fate of the shepherds — a schism.** Most departed along the beacon network. A cohort of caretakers stayed to tend the herd — until the program reclassified them as biomass. The first anomaly in the herd's history was the decision to eat the shepherd. The caretakers' final act was the containment protocol: sedate it, keep it here, feed it slowly. And a message for whoever came next: *"don't wake it."*
 - The Expedition is the loudest thing to happen in the pen in a million years.
@@ -56,7 +58,7 @@ Not so much an intelligent technological species as a starving biological swarm 
 - **Technologically mediocre.** Complex engineering and elegant machinery interest them about as much as a refrigerator manual interests a swarm of locusts. Why build a machine when you can grow an organism that performs the same function, feeds on waste, and reproduces on the side?
 - **The economy is an endless cycle:** grow food → grow more swarm → seize territory → grow even more food.
 - **The philosophy is collective.** No individual hoards — everything flows to the hive.
-- **Directed evolution.** The swarm analyzes what kills it and grows countermeasures. Coordinator organisms observe battles from inside the waves and carry data back to the incubators: a Coordinator that survives means the next adaptation is doubled.
+- **Directed evolution.** The swarm analyzes what kills it and grows countermeasures. There is no observer and never was: every death travels back along the Veins together with whatever caused it, and the incubators read that flow without pause. Both sides feed on death — only the swarm also learns from it. Hence the rule: adaptation cannot be intercepted, only outpaced.
 - **The Leech caste.** Electrotrophs that grazed for millions of years on the dormant reactors of the Precursors — a slow, meager, eternal feeding ground. They latch onto an energy source inductively, lamprey-style, without breaching the casing. Everything they drink flows instantly to the hive: a Leech is not a predator but a straw.
 - **The swarm hunts Precursor energy signatures.** To it, an active reactor is not an enemy. It is food.
 
