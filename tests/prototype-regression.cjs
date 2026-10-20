@@ -146,6 +146,60 @@ const cases = {
     assert.ok(S.report.includes('already present'), 'the report explains the replacement');
     assert.ok(S.report.includes('accelerate at shell-whistle'), 'the effect describes the observed reflex, not a promised miss');
   `,
+  'voltaic chain strikes up to its hop count with falloff and never the same body twice': `
+    reset(); build(SLOTS[2], 'voltaic'); const t = S.towers[0]; const st = tstats(t);
+    const bodies = [];
+    for (let i = 0; i < 6; i++) { const e = makeEnemy('forager', 1); e.d = 470 + i * 25; Object.assign(e, posAt(e.d)); bodies.push(e); }
+    S.enemies = bodies; S.phase = 'wave';
+    const struck = fireElectro(t, st, bodies[5]);
+    assert.equal(struck.length, st.hops + 1, 'primary plus hops');
+    assert.equal(new Set(struck).size, struck.length, 'a body is struck at most once');
+    assert.ok(struck[0].hp < struck[1].hp, 'the primary takes full damage, hops take less');
+    assert.ok(S.dmg.electro > 0 && S.dmg.flat === 0 && S.dmg.arc === 0, 'voltaic fire lands in its own ledger column');
+  `,
+  'a Carapacid in the bolt path intercepts the discharge and the chain continues from it': `
+    reset(); build(SLOTS[2], 'voltaic'); const t = S.towers[0]; const st = tstats(t);
+    const far = makeEnemy('forager', 1), shield = makeEnemy('carapacid', 1);
+    far.x = 350; far.y = 270; far.d = 560; shield.x = 350; shield.y = 236; shield.d = 540;   // shield sits on the line tower→target
+    S.enemies = [far, shield]; S.phase = 'wave';
+    const struck = fireElectro(t, st, far);
+    assert.equal(struck[0], shield, 'the shell body takes the primary hit');
+    assert.ok(struck.includes(far), 'the chain continues past the shield');
+    assert.ok(S.shots[0].blocked, 'the intercepted bolt is shown as blocked');
+  `,
+  'a lightning rod ends the chain; rods are every third spawn and every Carapacid of a grounded wave': `
+    reset(); S.mutations = ['grounding']; S.wave = 5; startWave(); S.enemies = []; S.spawnQueue = [];
+    const spawned = []; for (let i = 0; i < 7; i++) spawned.push(makeEnemy(i === 4 ? 'carapacid' : 'forager', 5));
+    assert.deepEqual(spawned.map(e => e.rod), [false, false, true, false, true, true, false], 'rods are deterministic: indices 2 and 5, plus the Carapacid at 4');
+    build(SLOTS[2], 'voltaic'); const t = S.towers[0]; const st = tstats(t);
+    const a = makeEnemy('forager', 5), rod = makeEnemy('forager', 5), c = makeEnemy('forager', 5); rod.rod = true; a.rod = c.rod = false;
+    [a, rod, c].forEach((e, i) => { e.d = 480 + i * 25; Object.assign(e, posAt(e.d)); });
+    S.enemies = [a, rod, c]; S.phase = 'wave';
+    const struck = fireElectro(t, st, c);              // c first, hop to rod, chain must stop there
+    assert.deepEqual(struck, [c, rod], 'the rod takes its hit and no further hop happens');
+    assert.ok(rod.hp < rod.maxHp, 'the rod is damaged, not immune');
+    assert.ok(S.fx.some(f => f.kind === 'spark'), 'the grounding is shown as a spark');
+    reset(); S.mutations = []; S.wave = 5; startWave(); S.enemies = []; S.spawnQueue = [];
+    assert.ok(!makeEnemy('carapacid', 5).rod, 'without Grounding nobody is a rod');
+  `,
+  'voltaic dominance earns Grounding and the dominant line gets its next unused counter before any replacement': `
+    const scheduled = EVOLUTION_WAVES[0] - 1;
+    reset(); S.wave = scheduled; startWave(); S.dmg = {flat:10, arc:10, electro:100}; endWave();
+    assert.deepEqual(S.mutations, ['grounding']); assert.ok(S.report.includes('voltaic dominance'));
+    reset(); S.mutations = ['sprinter']; S.wave = EVOLUTION_WAVES[1] - 1; startWave(); S.dmg = {flat:0, arc:100, electro:0}; endWave();
+    assert.deepEqual(S.mutations, ['sprinter', 'dispersal'], 'artillery dominance stacks its second counter');
+    assert.ok(!S.report.includes('already present'), 'a second counter against the same line is not a replacement');
+    reset(); S.mutations = ['keratin']; S.wave = EVOLUTION_WAVES[1] - 1; startWave(); S.dmg = {flat:100, arc:5, electro:50}; endWave();
+    assert.deepEqual(S.mutations, ['keratin', 'grounding'], 'with kinetic exhausted, the fallback follows the ledger: voltaic before artillery');
+    assert.ok(S.report.includes('already present'), 'and it is reported as a replacement');
+  `,
+  'Dispersal stretches the spawn intervals of a mutated wave and leaves speed and composition unchanged (experimental)': `
+    reset(); S.wave = 4; startWave(); const plain = S.spawnQueue.map(s => s.delay); const plainTypes = S.spawnQueue.map(s => s.type);
+    reset(); S.mutations = ['dispersal']; S.wave = 4; startWave();
+    assert.deepEqual(S.spawnQueue.map(s => s.type), plainTypes, 'composition is unchanged');
+    S.spawnQueue.forEach((s, i) => assert.ok(Math.abs(s.delay - plain[i] * DISPERSAL_SPACING) < 1e-9), 'every interval is stretched by the spacing factor');
+    const e = makeEnemy('forager', 5); assert.equal(e.speed, ENEMY.forager.speed, 'speed is untouched');
+  `,
   'the swarm evolves only on the scheduled waves, and the schedule stays inside the campaign': `
     assert.ok(EVOLUTION_WAVES.length > 0);
     assert.ok(EVOLUTION_WAVES.every(w => w < WAVES), 'a scheduled wave after the last one could never fire');
@@ -178,7 +232,7 @@ const cases = {
   'the damage ledger picks the counter and restarts at every mutation': `
     const scheduled = EVOLUTION_WAVES[0] - 1;
     reset(); S.wave = scheduled; startWave(); S.dmg = {flat:100, arc:1}; endWave();
-    assert.deepEqual(S.mutations, ['keratin']); assert.deepEqual(S.dmg, {flat:0, arc:0});
+    assert.deepEqual(S.mutations, ['keratin']); assert.deepEqual(S.dmg, {flat:0, arc:0, electro:0});
     reset(); S.wave = scheduled; startWave(); S.dmg = {flat:1, arc:100}; endWave();
     assert.deepEqual(S.mutations, ['sprinter']);
     reset(); S.wave = scheduled; startWave(); S.dmg = {flat:0, arc:0}; endWave();

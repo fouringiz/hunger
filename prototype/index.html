@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.3</title>
+<title>Ultimate TD — core loop prototype v0.4</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,9 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.4: Voltaic line (chain lightning; a Carapacid in the way intercepts the bolt; lightning rods end the chain),
+// Grounding (deterministic rods: every third spawn + every Carapacid), EXPERIMENTAL Dispersal (spawn spacing),
+// three-column damage ledger with next-unused-counter selection.
 // v0.3 changes: the Coordinator caste is removed; swarm evolution is a background schedule
 // (EVOLUTION_WAVES) resolved by the dominant damage source and announced by Marsh between waves.
 // v0.2: RA-style power gauge (fill + green/yellow/red + threshold notch + brownout flicker),
@@ -75,6 +78,8 @@ const TOWER = {
               upg:[0,50,90],  desc:'Flat fire. Blocked by Carapacid shadow.'},
   cannon:    {name:'Cannon',    cost:110, power:20,  range:190, minRange:70, dmg:45, splash:48, interval:1.7, kind:'arc', color:'#ffb454',
               upg:[0,80,140], desc:'Arcing splash. Ignores shadow. Dead zone up close.'},
+  voltaic:   {name:'Voltaic',   cost:95,  power:18,  range:120, dmg:14, hops:3, hopRange:70, hopFalloff:0.7, interval:0.6, kind:'electro', color:'#9df7ff',
+              upg:[0,70,120], desc:'Chain lightning. The bolt jumps to nearby bodies; a Carapacid in the way takes it first; lightning rods end the chain.'},
   generator: {name:'Generator', cost:90,  power:-40, kind:'gen', color:'#ffe66d',
               upg:[0,55,85],  desc:'+40/+60/+85 power. Leeches feed on it.'}
 };
@@ -92,8 +97,18 @@ const MUT = {
   keratin:  {name:'Keratinization', vs:'flat',
              effect:'New specimens present keratinized plating. Kinetic damage −30%.', cause:'your kinetic fire dominance'},
   sprinter: {name:'Sprinter Reflex', vs:'arc',
-             effect:'New specimens accelerate at shell-whistle.', cause:'your artillery dominance'}
+             effect:'New specimens accelerate at shell-whistle.', cause:'your artillery dominance'},
+  dispersal: {name:'Dispersal', vs:'arc',
+             effect:'New specimens keep their distance from each other; fewer bodies share a blast.', cause:'your artillery dominance'},
+  grounding: {name:'Grounding', vs:'electro',
+             effect:'Lightning-rod specimens with conductive skeletons intercept the discharge; the chain ends on them.', cause:'your voltaic dominance'}
 };
+// Counters per weapon line, in the order the incubators try them. The dominant line gets its next unused counter;
+// only when that line has nothing left does the swarm fall back to another line (reported as a replacement).
+const COUNTERS = {flat:['keratin'], arc:['sprinter','dispersal'], electro:['grounding']};
+const LEDGER_ORDER = ['flat', 'arc', 'electro'];      // tie-break: kinetic first, then artillery, then voltaic
+const ROD_EVERY = 3;                                   // Grounding: every third spawn of a grounded wave is a rod; every Carapacid is
+const DISPERSAL_SPACING = 1.5;                         // EXPERIMENTAL: Dispersal stretches spawn intervals; speed untouched. Measure wave duration.
 // The report separates what changed (effect) from why (cause). A replacement is explained as such:
 // the ledger never blames a weapon the player did not fire.
 const REPLACEMENT_CAUSE = 'the counter to your dominant weapon is already present; the incubators have produced another adaptation';
@@ -107,7 +122,7 @@ function reset() {
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
        spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
-       dmg:{flat:0, arc:0}, mutations:[], feast:0, stolen:0,
+       dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        toast:'', toastT:0, accumulator:0};
 }
 reset();
@@ -143,14 +158,18 @@ function previewText(n) {
 function satedBonus() { return Math.min(0.25, 0.02 * S.stolen); }   // Sated Waves: stolen power feeds future waves
 function makeEnemy(type, n) {
   const T = ENEMY[type]; const mul = (1 + 0.08*(n-1)) * (1 + satedBonus());
+  const muts = [...S.mutations];
+  const index = S.spawnedThisWave++;                             // deterministic: no randomness in the simulation
+  const rod = muts.includes('grounding') && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);
   return {type, T, hp:T.hp*mul, maxHp:T.hp*mul, d:0, speed:T.speed, effSpeed:T.speed, r:T.r,
           x:PATH[0][0], y:PATH[0][1], dead:false, incoming:0, dash:0,
-          muts:[...S.mutations], state:'lane', gen:null, feedT:0};
+          muts, rod, state:'lane', gen:null, feedT:0};
 }
 function tstats(t) {
   const T = t.T, lv = t.level;
   return {dmg: T.dmg * Math.pow(1.35, lv-1), range: T.range + 15*(lv-1),
-          interval: T.interval * (lv === 3 ? 0.85 : 1), power: T.power + 5*(lv-1)};
+          interval: T.interval * (lv === 3 ? 0.85 : 1), power: T.power + 5*(lv-1),
+          hops: (T.hops || 0) + (lv === 3 ? 1 : 0)};
 }
 function rank(t) { return t.kills >= RANK_KILLS[2] ? 2 : t.kills >= RANK_KILLS[1] ? 1 : 0; }
 function isDrained(t) { return !!(t.leeched && !t.leeched.dead && t.leeched.state === 'attached'); }
@@ -167,21 +186,24 @@ function power() {
 // ---------------------------------------------------------------- actions
 function startWave() {
   S.wave++; S.phase = 'wave'; S.spawnQueue = waveDef(S.wave); S.spawnTimer = 0.6;
-  S.waveKills = 0; S.waveLeaked = 0; S.selected = null;
+  S.waveKills = 0; S.waveLeaked = 0; S.selected = null; S.spawnedThisWave = 0;
+  // EXPERIMENTAL Dispersal: the mutated wave leaves the mouth less densely. Composition and speed are unchanged;
+  // the wave lasts longer, which may also help the defense — the paired control must measure wave duration.
+  if (S.mutations.includes('dispersal')) for (const s of S.spawnQueue) s.delay *= DISPERSAL_SPACING;
 }
 function endWave() {
   let memo = '';
   // Background evolution: the incubators read the damage ledger on schedule, with no organism on the lane.
   if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP) {
-    let kind = S.dmg.flat >= S.dmg.arc ? 'keratin' : 'sprinter';   // a tie answers kinetic fire
-    let replacement = false;
-    if (S.mutations.includes(kind)) {                               // never the same counter twice
-      // TEMPORARY stopgap: with one counter per weapon line the second slot has nothing honest to pick.
-      // Remove once a second mutation per line exists (Smoke Molt / Dispersal) — then this branch rarely fires.
-      kind = kind === 'keratin' ? 'sprinter' : 'keratin'; replacement = true;
+    const ledger = LEDGER_ORDER.map(k => [k, S.dmg[k] || 0]).sort((a, b) => b[1] - a[1] || LEDGER_ORDER.indexOf(a[0]) - LEDGER_ORDER.indexOf(b[0]));
+    const nextUnused = line => (COUNTERS[line] || []).find(m => !S.mutations.includes(m));
+    let kind = nextUnused(ledger[0][0]), replacement = false;      // the dominant line gets its next unused counter
+    if (!kind) {                                                    // nothing left against the dominant line:
+      replacement = true;                                           // fall back to the next line by ledger, reported as a replacement
+      for (const [line] of ledger.slice(1)) { kind = nextUnused(line); if (kind) break; }
     }
-    if (!S.mutations.includes(kind)) {
-      S.mutations.push(kind); S.dmg = {flat:0, arc:0};             // the ledger window restarts at every mutation
+    if (kind && !S.mutations.includes(kind)) {
+      S.mutations.push(kind); S.dmg = {flat:0, arc:0, electro:0};  // the ledger window restarts at every mutation
       memo = evolutionMemo(kind, replacement);
       toast('EVOLUTION: ' + MUT[kind].name + ' next wave. Prepare your defense.');
     }
@@ -238,7 +260,7 @@ function damage(e, amt, tower) {
   if (tower && tower.T.kind === 'flat' && e.muts.includes('keratin')) amt *= 0.7;   // Keratinization: −30% kinetic
   const dealt = Math.min(amt, Math.max(0, e.hp));                                   // overkill is not evolution pressure
   e.hp -= amt;
-  if (tower && amt > 0) S.dmg[tower.T.kind] += raw * (dealt / amt);                 // damage ledger drives evolution
+  if (tower && amt > 0) S.dmg[tower.T.kind] = (S.dmg[tower.T.kind] || 0) + raw * (dealt / amt);   // damage ledger drives evolution
   if (e.hp <= 0) {
     e.dead = true; S.credits += e.T.bounty; S.kills++; S.waveKills++;
     if (tower) tower.kills++;
@@ -306,6 +328,35 @@ function fireArc(t, st, target) {
   for (const e of S.enemies)                                    // Sprinter Reflex: dash at the shell-whistle
     if (!e.dead && e.muts.includes('sprinter') && Math.hypot(e.x-p.x, e.y-p.y) <= t.T.splash + e.r) e.dash = flight;
   S.shells.push({sx:t.x, sy:t.y, tx:p.x, ty:p.y, t:0, flight, tower:t, dmg:st.dmg, splash:t.T.splash, prime:target});
+}
+
+function fireElectro(t, st, target) {
+  // The bolt is a line: a Carapacid in the way intercepts it and takes the hit; the chain continues from the body actually struck.
+  let hit = target, bestU = 2;
+  for (const c of S.enemies) {
+    if (c.dead || c === target || c.type !== 'carapacid') continue;
+    const u = segHitsCircle(t.x, t.y, target.x, target.y, c.x, c.y, c.r + 3);
+    if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
+  }
+  t.angle = Math.atan2(hit.y - t.y, hit.x - t.x);
+  const struck = [];
+  let from = {x: t.x, y: t.y}, dmg = st.dmg, cur = hit;
+  for (let hop = 0; cur && hop <= st.hops; hop++) {
+    damage(cur, dmg, t); struck.push(cur);
+    S.shots.push({x1:from.x, y1:from.y, x2:cur.x, y2:cur.y, life:0.12, electro:true, blocked: hop === 0 && hit !== target});
+    if (cur.rod) {                                              // Grounding: the rod drinks the charge; the chain ends here
+      S.fx.push({kind:'spark', x:cur.x, y:cur.y, r:cur.r + 6, life:0.3, max:0.3, color:'#e0a060'});
+      break;
+    }
+    from = cur; dmg *= t.T.hopFalloff; let next = null, best = Infinity;
+    for (const e of S.enemies) {                                // nearest living body not yet struck
+      if (e.dead || struck.includes(e)) continue;
+      const d = Math.hypot(e.x - cur.x, e.y - cur.y);
+      if (d <= t.T.hopRange && d < best) { best = d; next = e; }
+    }
+    cur = next;
+  }
+  return struck;
 }
 
 // ---------------------------------------------------------------- update
@@ -389,7 +440,7 @@ function stepSimulation(dt) {
     t.cd -= dt * (pw.brown ? BROWNOUT_MULT : 1) * (1 + 0.1 * rank(t));
     if (t.cd <= 0) {
       const tg = pickTarget(t, st);
-      if (tg) { t.cd = st.interval; if (t.T.kind === 'flat') fireFlat(t, st, tg); else fireArc(t, st, tg); }
+      if (tg) { t.cd = st.interval; if (t.T.kind === 'flat') fireFlat(t, st, tg); else if (t.T.kind === 'electro') fireElectro(t, st, tg); else fireArc(t, st, tg); }
     }
   }
   // shells
@@ -518,9 +569,9 @@ function wrappedText(s, x, y, width, lines = 3, color = '#c0cdbf') {
   }
   text(line,x,y+row*13,11,color);
 }
-function menuPanel(x,y) {
+function menuPanel(x,y,cols=3) {
   ctx.fillStyle='#0b1918f5';ctx.strokeStyle='#607467';ctx.lineWidth=1;
-  roundRect(x-7,y-7,308,87,3);ctx.fill();ctx.stroke();
+  roundRect(x-7,y-7,cols*98+14,87,3);ctx.fill();ctx.stroke();
 }
 function stars(n, x, y, size) {
   for (let i = 0; i < 3; i++) text(i < n ? '★' : '☆', x + (i-1)*size*1.3, y, size, i < n ? '#ffe66d' : '#3a3f4b', 'center', '700');
@@ -566,7 +617,13 @@ function draw() {
     if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
     const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
-    if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
+    if (t.type === 'voltaic') {                                   // no atlas cell yet: vector in the atlas' idiom
+      ctx.fillStyle='#1b2a2c';roundRect(-20,-20,40,40,5);ctx.fill();ctx.strokeStyle='#5f7a78';ctx.lineWidth=1.5;roundRect(-20,-20,40,40,5);ctx.stroke();
+      ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+      for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
+      const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
+    } else if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
       ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
     }
     if(t.type==='generator') {
@@ -600,11 +657,26 @@ function draw() {
       ctx.beginPath(); ctx.moveTo(e.x - e.r - 8, e.y - 3); ctx.lineTo(e.x - e.r - 2, e.y - 3);
       ctx.moveTo(e.x - e.r - 8, e.y + 3); ctx.lineTo(e.x - e.r - 2, e.y + 3); ctx.stroke();
     }
+    if (e.rod) {                                                                         // Grounding: copper veins
+      ctx.strokeStyle = '#e0a060'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(e.x - e.r*0.7, e.y - e.r*0.5); ctx.lineTo(e.x + e.r*0.2, e.y + e.r*0.1); ctx.lineTo(e.x + e.r*0.7, e.y - e.r*0.4);
+      ctx.moveTo(e.x - e.r*0.4, e.y + e.r*0.6); ctx.lineTo(e.x + e.r*0.5, e.y + e.r*0.5); ctx.stroke();
+    }
+    if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
     if (e.hp < e.maxHp) { const w = e.r*2+6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w*(e.hp/e.maxHp), 4); }
   }
   // shots / shells / fx
-  for (const s of S.shots) { ctx.strokeStyle = s.blocked ? '#ff9f43' : '#ffffff'; ctx.lineWidth = s.blocked ? 2.5 : 1.5;
+  for (const s of S.shots) {
+    if (s.electro) {                                             // jagged bolt: presentation-only jitter from time and endpoints
+      ctx.strokeStyle = s.blocked ? '#ff9f43' : '#9df7ff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, s.life / 0.12);
+      const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+      ctx.beginPath(); ctx.moveTo(s.x1, s.y1);
+      for (let i = 1; i < 5; i++) { const k = i / 5, j = Math.sin(S.time * 40 + i * 2.1 + s.x1) * 5; ctx.lineTo(s.x1 + dx*k + nx*j, s.y1 + dy*k + ny*j); }
+      ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; continue;
+    }
+    ctx.strokeStyle = s.blocked ? '#ff9f43' : '#ffffff'; ctx.lineWidth = s.blocked ? 2.5 : 1.5;
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
   for (const sh of S.shells) { const k = sh.t / sh.flight; const x = sh.sx + (sh.tx-sh.sx)*k, y = sh.sy + (sh.ty-sh.sy)*k - Math.sin(k*Math.PI)*70;
     ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
@@ -658,12 +730,12 @@ function draw() {
   // selection menus
   if (S.selected && (S.phase === 'build' || S.phase === 'wave')) {
     if (S.selected.kind === 'slot') {
-      const s = S.selected.slot; const items = ['turret', 'cannon', 'generator'];
-      let x0 = Math.max(6, Math.min(W - 6 - 3*98, s.x - 147)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
-      menuPanel(x0,y0);
+      const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'generator'];
+      let x0 = Math.max(6, Math.min(W - 6 - 4*98, s.x - 196)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
+      menuPanel(x0,y0,4);
       items.forEach((k, i) => { const T = TOWER[k];
         btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => build(s, k), S.credits >= T.cost); });
-      wrappedText('Turret: rapid fire. Cannon: arcing splash. Generator: +40 power, upgradable to +85. Protect it from Leeches.',x0,y0+42,288);
+      wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.',x0,y0+42,386);
     } else {
       const t = S.selected.tower; const st = tstats(t);
       let x0 = Math.max(6, Math.min(W - 6 - 3*98, t.x - 147)); const y0 = t.y > H/2 ? t.y - 74 : t.y + 26;
@@ -701,7 +773,7 @@ function draw() {
     text('The swarm adapts to your fire. Be ready to rebuild.',52,316,15,'#afc1b2');
     text('Tap a platform to build. Tap a tower to upgrade or sell.',52,351,12,'#8b9e91');
     btn(52,392,210,44,'DEPLOY GARRISON',()=>{S.phase='build';S.buildTimer=25;S.report='';},true,true);
-    text('10 WAVES  /  AUTOMATIC FIRE  /  NO SECOND LINE',52,463,10,'#7e9586','left','600');
+    text('10 WAVES  /  AUTOMATIC FIRE  /  THREE WEAPON LINES',52,463,10,'#7e9586','left','600');
     sprite(1,745,265,300,-.3);sprite(0,645,393,118,.4);sprite(2,843,390,130,-.6);
     text('CONTACTS CONFIRMED',745,466,10,'#bbab78','center','600');
   }
