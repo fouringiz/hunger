@@ -118,16 +118,93 @@ function evolutionMemo(kind, replacement) {
 
 // ---------------------------------------------------------------- state
 let S;
+let presentationTime = 0, weaponFeedback = new WeakMap(), presentationBursts = [];
 function reset() {
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
        spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        toast:'', toastT:0, accumulator:0};
+  weaponFeedback = new WeakMap(); presentationBursts = []; presentationTime = 0;
 }
 reset();
 
 function toast(msg) { S.toast = msg; S.toastT = 5; }
+
+// Optional synthesized presentation audio. The context is created only by a user gesture.
+let soundEnabled = true, audioContext = null, activeVoices = 0, lastCueAt = Object.create(null);
+let generatorHum = null, generatorHumGain = null, humMode = '';
+const MAX_AUDIO_VOICES = 6;
+function audioGesture() {
+  if (!soundEnabled || document.hidden) return;
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return;
+  try { if (!audioContext) audioContext = new AudioCtor(); if (audioContext.state === 'suspended') audioContext.resume().catch(() => {}); syncGeneratorHum(); }
+  catch (_) { audioContext = null; generatorHum = generatorHumGain = null; humMode = ''; }
+}
+function syncGeneratorHum() {
+  if (!audioContext || audioContext.state !== 'running' || !soundEnabled || document.hidden) return;
+  const gens = S ? S.towers.filter(t => t.type === 'generator' && !t.selling) : [];
+  const powered = gens.filter(t => !isDrained(t)).length, drained = gens.length - powered;
+  const mode = powered + ':' + drained;
+  if (mode === humMode) return;
+  humMode = mode;
+  if (!gens.length) {
+    if (generatorHum) { try { generatorHum.stop(); generatorHum.disconnect(); generatorHumGain.disconnect(); } catch (_) {} }
+    generatorHum = generatorHumGain = null; return;
+  }
+  try {
+    if (!generatorHum) {
+      generatorHum = audioContext.createOscillator(); generatorHumGain = audioContext.createGain();
+      generatorHum.type = 'sine'; generatorHum.frequency.setValueAtTime(58, audioContext.currentTime);
+      generatorHumGain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      generatorHum.connect(generatorHumGain); generatorHumGain.connect(audioContext.destination); generatorHum.start();
+    }
+    const now = audioContext.currentTime, level = powered ? Math.min(0.012, 0.005 + powered * 0.002) : 0.0001;
+    generatorHumGain.gain.cancelScheduledValues(now); generatorHumGain.gain.setTargetAtTime(level, now, drained ? 0.035 : 0.12);
+  } catch (_) {
+    try { if (generatorHum) generatorHum.stop(); } catch (_) {}
+    try { if (generatorHum) generatorHum.disconnect(); } catch (_) {}
+    try { if (generatorHumGain) generatorHumGain.disconnect(); } catch (_) {}
+    generatorHum = generatorHumGain = null; humMode = '';
+  }
+}
+function playCue(kind, frequency, duration, wave = 'sine') {
+  if (!soundEnabled || document.hidden || !audioContext || audioContext.state !== 'running' || activeVoices >= MAX_AUDIO_VOICES) return;
+  const now = audioContext.currentTime;
+  if (now - (lastCueAt[kind] ?? -Infinity) < 0.045) return;
+  lastCueAt[kind] = now;
+  let reserved = false, osc = null, gain = null;
+  try {
+    osc = audioContext.createOscillator(); gain = audioContext.createGain();
+    osc.type = wave; osc.frequency.setValueAtTime(frequency, now);
+    gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.055, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain); gain.connect(audioContext.destination);
+    osc.onended = () => { activeVoices = Math.max(0, activeVoices - 1); try { osc.disconnect(); gain.disconnect(); } catch (_) {} };
+    activeVoices++; reserved = true; osc.start(now); osc.stop(now + duration + 0.01);
+  } catch (_) {
+    if (reserved) activeVoices = Math.max(0, activeVoices - 1);
+    try { if (osc) { osc.stop(); osc.disconnect(); } if (gain) gain.disconnect(); } catch (_) {}
+    /* Audio is an optional enhancement; unsupported output is silent. */
+  }
+}
+function playWeaponCue(kind) {
+  if (kind === 'turret') playCue(kind, 210, 0.045, 'square');
+  else if (kind === 'cannon') playCue(kind, 88, 0.19, 'triangle');
+  else if (kind === 'voltaic') playCue(kind, 520, 0.12, 'sawtooth');
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  if (!soundEnabled && audioContext) {
+    if (generatorHum) { try { generatorHum.stop(); generatorHum.disconnect(); generatorHumGain.disconnect(); } catch (_) {} generatorHum = generatorHumGain = null; }
+    humMode = ''; audioContext.suspend().catch(() => {});
+  } else if (soundEnabled) audioGesture();
+}
+document.addEventListener?.('visibilitychange', () => {
+  if (!audioContext) return;
+  try { if (document.hidden) audioContext.suspend(); } catch (_) {}
+});
 
 function waveDef(n) {
   let f = 8 + 4*n; const caras = n >= 2 ? Math.floor(n/2) : 0; const list = [];
@@ -219,11 +296,13 @@ function build(slot, type) {
   const t = {type, T, x:slot.x, y:slot.y, level:1, paused:false, warm:0, cd:0, kills:0, angle:-Math.PI/2, slot,
              invested:T.cost, selling:false, sellT:0, leeched:null};
   slot.tower = t; S.towers.push(t); S.selected = {kind:'tower', tower:t};
+  if (type === 'generator') playCue('generator', 310, 0.24, 'sine');
 }
 function upgrade(t) {
   if (t.level >= 3 || t.selling) return;
   const cost = t.T.upg[t.level]; if (S.credits < cost) return;
   S.credits -= cost; t.level++; t.invested += cost;
+  if (t.type === 'generator') playCue('generator', 390, 0.2, 'sine');
 }
 function togglePause(t) {
   if (t.type === 'generator' || t.selling) return;
@@ -256,6 +335,7 @@ function finishSell(t) {
 }
 function damage(e, amt, tower) {
   if (e.dead) return;
+  const wasFeeding = !!(e.gen && isDrained(e.gen));
   const raw = amt;                                                                  // the ledger reads fire before resistances
   if (tower && tower.T.kind === 'flat' && e.muts.includes('keratin')) amt *= 0.7;   // Keratinization: −30% kinetic
   const dealt = Math.min(amt, Math.max(0, e.hp));                                   // overkill is not evolution pressure
@@ -264,7 +344,11 @@ function damage(e, amt, tower) {
   if (e.hp <= 0) {
     e.dead = true; S.credits += e.T.bounty; S.kills++; S.waveKills++;
     if (tower) tower.kills++;
-    if (e.gen) { e.gen.leeched = null; }                        // freed generator
+    if (e.gen) {
+      e.gen.leeched = null;
+      if (wasFeeding) playCue('recovery', 430, 0.2, 'sine');
+      syncGeneratorHum();
+    } // freed generator
     S.fx.push({kind:'death', x:e.x, y:e.y, r:e.r, life:0.3, max:0.3, color:e.T.color});
   }
 }
@@ -313,6 +397,10 @@ function fireFlat(t, st, target) {
     if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
   }
   t.angle = Math.atan2(hit.y - t.y, hit.x - t.x);
+  weaponFeedback.set(t, {kind:'turret', at:presentationTime, angle:t.angle});
+  presentationBursts.push({kind:'casing', x:t.x, y:t.y, angle:t.angle, at:presentationTime, life:0.42});
+  if (presentationBursts.length > 18) presentationBursts.shift();
+  playWeaponCue('turret');
   damage(hit, st.dmg, t);
   S.shots.push({x1:t.x, y1:t.y, x2:hit.x, y2:hit.y, life:0.09, blocked: hit !== target});
 }
@@ -324,6 +412,10 @@ function fireArc(t, st, target) {
     p = posAt(pd);
   } else p = {x: target.x, y: target.y};                       // off-lane leech sits still
   t.angle = Math.atan2(p.y - t.y, p.x - t.x);
+  weaponFeedback.set(t, {kind:'cannon', at:presentationTime, angle:t.angle});
+  presentationBursts.push({kind:'cannonMuzzle', x:t.x, y:t.y, angle:t.angle, at:presentationTime, life:0.16});
+  if (presentationBursts.length > 18) presentationBursts.shift();
+  playWeaponCue('cannon');
   target.incoming += st.dmg;                                    // anti-overkill ledger
   for (const e of S.enemies)                                    // Sprinter Reflex: dash at the shell-whistle
     if (!e.dead && e.muts.includes('sprinter') && Math.hypot(e.x-p.x, e.y-p.y) <= t.T.splash + e.r) e.dash = flight;
@@ -339,6 +431,8 @@ function fireElectro(t, st, target) {
     if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
   }
   t.angle = Math.atan2(hit.y - t.y, hit.x - t.x);
+  weaponFeedback.set(t, {kind:'voltaic', at:presentationTime, angle:t.angle});
+  playWeaponCue('voltaic');
   const struck = [];
   let from = {x: t.x, y: t.y}, dmg = st.dmg, cur = hit;
   for (let hop = 0; cur && hop <= st.hops; hop++) {
@@ -399,11 +493,11 @@ function stepSimulation(dt) {
       if (e.state === 'lane') {
         let sp = e.speed * feastMul; e.effSpeed = sp; e.d += sp * dt;
         const p = posAt(e.d); e.x = p.x; e.y = p.y;
-        if (e.d >= GATE_D) { e.dead = true; S.gate -= e.T.gateDmg; S.waveLeaked++;
+        if (e.d >= GATE_D) { e.dead = true; S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
           S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'}); }
       } else if (e.state === 'seek') {
         const dx = e.gen.x - e.x, dy = e.gen.y - e.y, L = Math.hypot(dx, dy);
-        if (L < 20) { e.state = 'attached'; e.feedT = 0; }
+        if (L < 20) { e.state = 'attached'; e.feedT = 0; playCue('drain', 145, 0.28, 'triangle'); }
         else { const step = Math.min(L, e.speed * feastMul * dt); e.x += dx/L * step; e.y += dy/L * step; }
       } else if (e.state === 'return') {
         const p = posAt(e.returnD), dx = p.x-e.x, dy = p.y-e.y, distance = Math.hypot(dx, dy);
@@ -415,6 +509,7 @@ function stepSimulation(dt) {
         if (e.feedT >= 3) { e.feedT = 0; if (S.feast < 3) { S.feast++; toast('THE SWARM FEASTS ×' + S.feast); } }
         if (e.fedTotal >= 10) {                                 // sated: detaches and crawls on (no immortal squatters)
           returnLeechToLane(e); e.sated = true; e.speed *= 1.3;
+          playCue('recovery', 430, 0.2, 'sine');
         }
       }
       continue;
@@ -428,7 +523,7 @@ function stepSimulation(dt) {
     const p = posAt(e.d); e.x = p.x; e.y = p.y;
     if (e.d >= GATE_D) {
       e.dead = true;
-      S.gate -= e.T.gateDmg; S.waveLeaked++;
+      S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
       S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'});
     }
   }
@@ -451,6 +546,9 @@ function stepSimulation(dt) {
       if (sh.prime) sh.prime.incoming = Math.max(0, sh.prime.incoming - sh.dmg);   // ledger settles on impact
       for (const e of S.enemies) if (!e.dead && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg, sh.tower);
       S.fx.push({kind:'boom', x:sh.tx, y:sh.ty, r:sh.splash, life:0.35, max:0.35, color:'#ffae42'});
+      presentationBursts.push({kind:'impactDust', x:sh.tx, y:sh.ty, at:presentationTime, life:0.34});
+      if (presentationBursts.length > 18) presentationBursts.shift();
+      playCue('impact', 118, 0.12, 'triangle');
     }
   }
   S.shells = S.shells.filter(s => !s.done);
@@ -613,7 +711,14 @@ function draw() {
   // towers
   for (const t of S.towers) {
     const c = t.T.color;
-    ctx.save(); ctx.translate(t.x, t.y);
+    const feedback = weaponFeedback.get(t), age = feedback ? presentationTime - feedback.at : Infinity;
+    const kick = age < 0.12 ? Math.sin((1 - age / 0.12) * Math.PI) * (feedback.kind === 'cannon' ? 7 : 2.5) : 0;
+    // Keep the platform visually planted while the weapon assembly recoils.
+    if (t.type === 'turret' || t.type === 'cannon') {
+      ctx.fillStyle='#26343a';ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#60787c';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.save(); ctx.translate(t.x - Math.cos(t.angle)*kick, t.y - Math.sin(t.angle)*kick);
     if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
     const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
@@ -644,6 +749,34 @@ function draw() {
       ctx.arc(0, 0, 22, -Math.PI/2, -Math.PI/2 + Math.PI*2*(1 - t.sellT/SELL_TIME)); ctx.stroke();
       text('SELL', 0, 0, 10, '#e8ecf2', 'center', '800'); }
     ctx.restore();
+  }
+  for (const t of S.towers) if (t.type === 'turret') {
+    const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
+    if (age >= 0 && age < 0.065) {
+      const x=t.x+Math.cos(feedback.angle)*27, y=t.y+Math.sin(feedback.angle)*27;
+      ctx.globalAlpha=1-age/0.065;ctx.fillStyle='#fff0ad';ctx.beginPath();ctx.arc(x,y,2.5+3*(1-age/0.065),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    }
+  }
+  for (const b of presentationBursts) {
+    const age = presentationTime - b.at, k = 1 - age / b.life;
+    if (k <= 0 || k > 1) continue;
+    ctx.save(); ctx.globalAlpha = Math.max(0, k);
+    if (b.kind === 'casing') {
+      const d = age * 30;
+      ctx.fillStyle='#e8bb62'; ctx.beginPath(); ctx.ellipse(b.x + Math.cos(b.angle+1.9)*d, b.y + Math.sin(b.angle+1.9)*d + age*age*24, 2, 1, b.angle, 0, Math.PI*2); ctx.fill();
+    } else if (b.kind === 'cannonMuzzle') {
+      const x=b.x+Math.cos(b.angle)*24, y=b.y+Math.sin(b.angle)*24;
+      ctx.fillStyle='#ffd27f';ctx.beginPath();ctx.arc(x,y,5*k+1,0,Math.PI*2);ctx.fill();
+    } else if (b.kind === 'impactDust') {
+      ctx.strokeStyle='#d7c3a0';ctx.lineWidth=2;
+      for (let i=0;i<3;i++) { const a=i*Math.PI*2/3; ctx.beginPath();ctx.arc(b.x+Math.cos(a)*(1-k)*12,b.y+Math.sin(a)*(1-k)*7,3+(1-k)*5,0,Math.PI*2);ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+  // The vector Voltaic charges between discharges and blooms briefly on each actual chain event.
+  for (const t of S.towers) if (t.type === 'voltaic') {
+    const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
+    if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,17+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // enemies
   for (const e of S.enemies) {
@@ -718,7 +851,7 @@ function draw() {
   text('Wave ' + S.wave + '/' + WAVES, 560, HUD/2, 14, '#e8ecf2', 'center', '700');
   if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', startWave, true, true);
   if (S.phase === 'build' || S.phase === 'wave') btn(786, 7, 60, 26, '×' + S.speed, () => { S.speed = S.speed === 1 ? 2 : 1; });
-  text('Gate ' + S.gate, 930, HUD/2, 14, S.gate > 6 ? '#7cffb2' : '#ff6b6b', 'right', '700');
+  text('Gate ' + S.gate, 954, HUD/2, 14, S.gate > 6 ? '#7cffb2' : '#ff6b6b', 'right', '700');
 
   // bottom bar: a fresh toast wins over the standing line
   let bottom = '';
@@ -790,18 +923,21 @@ function draw() {
     text(S.win ? 'DISPATCH: Held. All of it. — H.' : 'DISPATCH: Gate lost. Composition noted. Next time. — H.', W/2, S.win ? 318 : 275, 14, '#8a93a6', 'center');
     btn(W/2 - 70, S.win ? 350 : 320, 140, 36, 'Play again', () => { reset(); S.phase = 'build'; S.buildTimer = 25; }, true, true);
   }
+  // Reserve a clear gap after speed and before the Gate readout; keep the control above overlays.
+  btn(850, 7, 54, 26, soundEnabled ? 'SFX on' : 'SFX off', toggleSound);
 }
 
 // ---------------------------------------------------------------- input
 canvas.addEventListener('pointerdown', ev => {
   const rect = canvas.getBoundingClientRect();
   const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
-  for (const b of buttons) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (b.enabled) b.fn(); return; }
+  for (const b of buttons) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (b.enabled) { b.fn(); if (soundEnabled) audioGesture(); } return; }
   if (S.phase !== 'build' && S.phase !== 'wave') return;
   let hit = null;
   for (const s of SLOTS) if (Math.hypot(s.x - x, s.y - y) < 26) { hit = s; break; }
   if (hit) S.selected = hit.tower ? {kind:'tower', tower:hit.tower} : {kind:'slot', slot:hit};
   else S.selected = null;
+  audioGesture();
 });
 
 // ---------------------------------------------------------------- loop
@@ -809,7 +945,10 @@ let last = performance.now();
 function frame(now) {
   // Bound catch-up after a suspended tab; speed changes the tick count, never the tick size.
   const raw = Math.max(0, Math.min(0.25, (now - last) / 1000)); last = now;
+  presentationTime += raw;
+  presentationBursts = presentationBursts.filter(b => presentationTime - b.at < b.life);
   update(raw * S.speed);
+  syncGeneratorHum();
   draw();
   requestAnimationFrame(frame);
 }
