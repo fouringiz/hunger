@@ -30,6 +30,10 @@
 const W = 960, H = 540, HUD = 40, BOT = 34;
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+// Opt-in geometry aid for presentation review; absent from normal play and the regression VM.
+const DEBUG_HIT_BOUNDS = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debugHitBounds');
+let evolutionCardDismissed = false;
+const leechDrainVisuals = new WeakMap();
 let scale = 1, dpr = 1;
 function resize() {
   scale = Math.min(innerWidth / W, innerHeight / H);
@@ -119,6 +123,7 @@ function evolutionMemo(kind, replacement) {
 // ---------------------------------------------------------------- state
 let S;
 function reset() {
+  evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
        spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
@@ -205,6 +210,7 @@ function endWave() {
     if (kind && !S.mutations.includes(kind)) {
       S.mutations.push(kind); S.dmg = {flat:0, arc:0, electro:0};  // the ledger window restarts at every mutation
       memo = evolutionMemo(kind, replacement);
+      evolutionCardDismissed = false;
       toast('EVOLUTION: ' + MUT[kind].name + ' next wave. Prepare your defense.');
     }
   }
@@ -534,6 +540,31 @@ function enemyArt(e) {
   }
   ctx.restore();
 }
+function evolutionBody(cell, x, y, mutation) {
+  if (!sprite(cell, x, y, 24)) {
+    // Keep the card legible when the atlas has not loaded or is unavailable.
+    ctx.save(); ctx.translate(x,y);
+    ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.ellipse(0,0,8,5,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffd7cf'; ctx.beginPath(); ctx.arc(3,-1,1.4,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  if (!mutation) return;
+  ctx.save();
+  if (mutation === 'grounding') {
+    ctx.strokeStyle = '#e0a060'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x-8,y-1); ctx.lineTo(x-3,y+3); ctx.lineTo(x+1,y-2); ctx.lineTo(x+6,y+2); ctx.stroke();
+  } else if (mutation === 'keratin') {
+    ctx.strokeStyle = '#c4ccd8'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x-4,y-3); ctx.lineTo(x,y-5); ctx.lineTo(x+4,y-3); ctx.stroke();
+  } else if (mutation === 'sprinter') {
+    ctx.strokeStyle = '#d8e6f2'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x-12,y-3); ctx.lineTo(x-7,y-3); ctx.moveTo(x-12,y+3); ctx.lineTo(x-7,y+3); ctx.stroke();
+  } else {
+    ctx.strokeStyle = '#ffae42'; ctx.lineWidth = 1; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
 let buttons = [];
 function btn(x, y, w, h, label, fn, enabled = true, accent = false) {
   buttons.push({x, y, w, h, fn, enabled});
@@ -551,6 +582,66 @@ function roundRect(x, y, w, h, r) {
 function text(s, x, y, size = 13, color = '#e8ecf2', align = 'left', weight = '400') {
   ctx.fillStyle = color; ctx.font = weight + ' ' + size + 'px sans-serif'; ctx.textAlign = align; ctx.textBaseline = 'middle';
   ctx.fillText(s, x, y);
+}
+function drawGeneratorDrainCue(t) {
+  const drained = isDrained(t), now = S.time;
+  let visual = leechDrainVisuals.get(t);
+  if (!visual) {
+    visual = {drained, changedAt:drained ? now : -Infinity};
+    leechDrainVisuals.set(t, visual);
+  } else if (visual.drained !== drained) {
+    visual.drained = drained;
+    visual.changedAt = now;
+  }
+  if (drained) {
+    // Leech feeding deadens the generator coils without changing tower state or output logic.
+    ctx.fillStyle = 'rgba(24,18,37,0.72)'; roundRect(-11,-10,22,20,3); ctx.fill();
+    ctx.strokeStyle = 'rgba(199,125,255,0.62)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0,0,5,0,Math.PI*2); ctx.stroke();
+  } else if (now - visual.changedAt < 0.85 && visual.drained === false) {
+    // Release pulse: the coils relight for a moment after the Leech dies or detaches.
+    const p = Math.max(0, (now - visual.changedAt) / 0.85);
+    ctx.strokeStyle = 'rgba(157,247,191,' + (1-p) + ')'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0,0,7 + 20*p,0,Math.PI*2); ctx.stroke();
+  }
+}
+function drawLeechCue(e) {
+  if (e.dead || (e.state !== 'seek' && e.state !== 'attached' && e.state !== 'return')) return;
+  let target;
+  if (e.state === 'return') target = posAt(e.returnD);
+  else if (e.gen) target = {x:e.gen.x, y:e.gen.y};
+  else return;
+  let dx = target.x-e.x, dy = target.y-e.y, distance = Math.hypot(dx,dy);
+  if (!distance) return;
+  dx /= distance; dy /= distance;
+  const px = -dy, py = dx;
+  ctx.save();
+  if (e.state === 'attached') {
+    // A short live tether carries moving charge from the generator coils into the feeding body.
+    const sx = e.gen.x, sy = e.gen.y, ex = e.x, ey = e.y;
+    ctx.strokeStyle = 'rgba(199,125,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+    for (let i=0; i<3; i++) {
+      const p = (S.time*1.7 + i/3) % 1;
+      ctx.fillStyle = `rgba(228,194,255,${0.45 + 0.45*Math.sin(S.time*8+i)})`;
+      ctx.beginPath(); ctx.arc(sx+(ex-sx)*p, sy+(ey-sy)*p, 1.3, 0, Math.PI*2); ctx.fill();
+    }
+  } else {
+    // A compact tendril points toward its destination without drawing a map-wide line.
+    const length = Math.min(distance, e.state === 'seek' ? 34 : 28);
+    const startX = e.x + dx*7, startY = e.y + dy*7;
+    const endX = e.x + dx*length, endY = e.y + dy*length;
+    const wave = Math.sin(S.time*9 + e.x*0.07) * (e.state === 'seek' ? 5 : 2);
+    ctx.strokeStyle = e.state === 'seek' ? 'rgba(219,161,255,0.86)' : 'rgba(199,125,255,0.48)';
+    ctx.lineWidth = e.state === 'seek' ? 2 : 1.3;
+    ctx.setLineDash(e.state === 'return' ? [2,3] : []);
+    ctx.beginPath(); ctx.moveTo(startX,startY);
+    ctx.quadraticCurveTo((startX+endX)/2 + px*wave, (startY+endY)/2 + py*wave, endX,endY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = e.state === 'seek' ? '#e6baff' : '#a879c8';
+    ctx.beginPath(); ctx.arc(endX,endY,1.8,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
 }
 function wrappedText(s, x, y, width, lines = 3, color = '#c0cdbf') {
   ctx.font='11px sans-serif';
@@ -631,6 +722,7 @@ function draw() {
       ctx.fillStyle=glow;ctx.fillRect(-5,-4,10,3);
       text(isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
       if(isDrained(t)){ctx.strokeStyle=glow;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,25+Math.sin(S.time*8)*2,0,Math.PI*2);ctx.stroke();}
+      drawGeneratorDrainCue(t);
     }
     if (t.type !== 'generator') {
       for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
@@ -648,6 +740,7 @@ function draw() {
   // enemies
   for (const e of S.enemies) {
     enemyArt(e);
+    if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
     if (e.muts.includes('keratin')) { ctx.strokeStyle = '#9aa3b5'; ctx.lineWidth = 2;    // matte plating marker
@@ -666,6 +759,27 @@ function draw() {
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
     if (e.hp < e.maxHp) { const w = e.r*2+6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w*(e.hp/e.maxHp), 4); }
+  }
+  if (DEBUG_HIT_BOUNDS) {
+    // These rings mirror the geometry used by targeting/interception and shell impact checks.
+    for (const e of S.enemies) {
+      if (e.dead) continue;
+      ctx.save(); ctx.lineWidth = 1.25;
+      ctx.strokeStyle = '#f4f1df'; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.stroke(); // body radius
+      if (e.type === 'carapacid') {
+        ctx.strokeStyle = '#75e1ee'; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3, 0, Math.PI*2); ctx.stroke(); // line interception
+      }
+      ctx.restore();
+    }
+    for (const sh of S.shells) {
+      ctx.save(); ctx.strokeStyle = '#ffb454'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.arc(sh.tx, sh.ty, sh.splash, 0, Math.PI*2); ctx.stroke(); // blast radius; hit test adds half each body's radius
+      ctx.restore();
+    }
+    ctx.fillStyle = '#111820e8'; roundRect(12, H - BOT - 25, 460, 18, 3); ctx.fill();
+    text('DEBUG  body r   |   Carapacid intercept r + 3   |   shell hit radius = splash + e.r*0.5', 20, H - BOT - 16, 9, '#e6e2cf');
   }
   // shots / shells / fx
   for (const s of S.shots) {
@@ -726,6 +840,36 @@ function draw() {
   else if (S.phase === 'build') bottom = 'Next wave: ' + previewText(S.wave + 1) + (S.report ? '     |     ' + S.report : '');
   else if (S.phase === 'wave') bottom = 'Wave ' + S.wave + ' in progress. Towers aim themselves. Tap one to pause, upgrade or sell it.';
   wrappedText(bottom,14,H-BOT+10,W-28,2,S.toastT>0?'#ffe66d':'#c9d0dc');
+
+  // Evolution is announced during the existing interwave build window; the card sits in unused lower-left terrain.
+  if (S.phase === 'build' && S.report.startsWith('MEMORANDUM') && !evolutionCardDismissed) {
+    const mutation = S.mutations[S.mutations.length - 1];
+    const mutationNames = {keratin:'Keratinization', sprinter:'Sprinter Reflex', dispersal:'Dispersal', grounding:'Grounding'};
+    const effect = {
+      keratin:'Kinetic damage reduced by 30%.',
+      sprinter:'New specimens accelerate at shell-whistle.',
+      dispersal:'New specimens spread out; fewer share a blast.',
+      grounding:'Rod specimens intercept lightning; the chain ends on them.'
+    }[mutation] || 'New specimens carry an adaptation.';
+    const x = 14, y = H - BOT - 63, w = 500, h = 56;
+    ctx.fillStyle = '#111a1cf2'; ctx.strokeStyle = '#8b789d'; ctx.lineWidth = 1;
+    roundRect(x, y, w, h, 4); ctx.fill(); ctx.stroke();
+    // Same Forager body on both sides; the second specimen shows its mutation marker.
+    evolutionBody(0, x + 23, y + 28, null);
+    text('→', x + 46, y + 28, 13, '#c9d0dc', 'center', '700');
+    evolutionBody(0, x + 67, y + 28, mutation);
+    text('EVOLUTION  ' + (mutationNames[mutation] || 'Adaptation'), x + 88, y + 16, 10, '#e6d8f2', 'left', '700');
+    text(effect, x + 88, y + 38, 10, '#d1d7df');
+    if (mutation === 'grounding') {
+      // A tiny animated chain ends at the copper-veined rod, matching the mutation's actual interaction.
+      const pulse = (Math.sin(S.time * 8) + 1) * 0.5;
+      ctx.strokeStyle = '#9df7ff'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.45 + pulse * 0.55;
+      ctx.beginPath(); ctx.moveTo(x+424,y+24); ctx.lineTo(x+442,y+31); ctx.stroke();
+      ctx.globalAlpha = 1; ctx.strokeStyle = '#e0a060'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x+440,y+23); ctx.lineTo(x+445,y+29); ctx.lineTo(x+442,y+35); ctx.stroke();
+    }
+    btn(x + w - 25, y + 5, 20, 18, '×', () => { evolutionCardDismissed = true; });
+  }
 
   // selection menus
   if (S.selected && (S.phase === 'build' || S.phase === 'wave')) {
