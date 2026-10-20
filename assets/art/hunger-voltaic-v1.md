@@ -13,6 +13,11 @@ Use case: stylized-concept. Create exactly ONE production game sprite: Voltaic T
 ## Checkpoint
 
 - Asset and generation prompt saved; original generated alpha preserved.
-- Next: load as a separate image, retain the existing vector fallback, check
-  rendered scale alongside Turret/Cannon and keep existing effects visible.
-- Then: regression tests, focused rendering/fallback checks, independent review.
+- Integrated as a separate image at 68px, with its discharge tip anchored to the
+  existing lightning origin. Existing charge, aim and discharge effects remain.
+- Loading, missing/failed image and headless execution retain the vector fallback.
+- Verified: 29 core regression scenarios, readability, weapon/audio and focused
+  Voltaic art tests. Simulation code before the drawing section matches main byte
+  for byte. Independent code review found no actionable issues.
+- Offscreen lineup/discharge renders checked. Live browser/mobile playtest and
+  listening to audio remain for user review. No balance/canon changes or merge.

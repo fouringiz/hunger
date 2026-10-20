@@ -568,6 +568,8 @@ function stepSimulation(dt) {
 // Presentation only: the atlas, terrain and animation never change simulation state.
 const unitArt = typeof Image === 'undefined' ? null : new Image();
 if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
+const voltaicArt = typeof Image === 'undefined' ? null : new Image();
+if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-v1.png';
 let terrainArt = null;
 function sprite(cell, x, y, size, angle = 0) {
   if (!unitArt || !unitArt.complete || !unitArt.naturalWidth) return false;
@@ -813,10 +815,16 @@ function draw() {
     if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
     const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
-    if (t.type === 'voltaic') {                                   // no atlas cell yet: vector in the atlas' idiom
-      ctx.fillStyle='#1b2a2c';roundRect(-20,-20,40,40,5);ctx.fill();ctx.strokeStyle='#5f7a78';ctx.lineWidth=1.5;roundRect(-20,-20,40,40,5);ctx.stroke();
-      ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
-      for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
+    if (t.type === 'voltaic') {
+      let drawn = false;
+      if (voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
+        try { ctx.drawImage(voltaicArt,-artSize/2,-artSize*0.375,artSize,artSize); drawn = true; } catch (_) {}
+      }
+      if (!drawn) {
+        ctx.fillStyle='#1b2a2c';roundRect(-20,-20,40,40,5);ctx.fill();ctx.strokeStyle='#5f7a78';ctx.lineWidth=1.5;roundRect(-20,-20,40,40,5);ctx.stroke();
+        ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+        for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
+      }
       const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
     } else if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
