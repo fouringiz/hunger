@@ -62,7 +62,7 @@ function makeContext(instrumentation = true) {
   const context = vm.createContext({
     document: {getElementById: () => canvas}, window: {devicePixelRatio: 1},
     innerWidth: 960, innerHeight: 540, addEventListener() {}, requestAnimationFrame() {},
-    performance: {now: () => 0}, structuredClone, assert, assert,
+    performance: {now: () => 0}, structuredClone, assert,
     __researchCapture: instrumentation,
     __researchMetrics: null,
     __researchSplashImpact(shell, state) {
@@ -90,7 +90,7 @@ function makeContext(instrumentation = true) {
         startingCash:S.credits, initialGate:S.gate, power:power()};
     }
     function __researchApply(action, candidate) {
-      const before=S.credits, sunkBefore=S.towers.reduce((n,t)=>n+t.invested,0);
+      const before=S.credits, sunkBefore=S.towers.reduce((n,t)=>n+t.invested,0), powerBefore=power();
       let sellRefund=0, bought=0;
       if (action === 'upgrade') {
         const tower=SLOTS[candidate.slot].tower;
@@ -117,12 +117,12 @@ function makeContext(instrumentation = true) {
       return {action, candidate, bought, sellRefund, netCashChange:before-S.credits,
         startingCash:before, endingCash:S.credits, sunkInvestmentBefore:sunkBefore,
         sunkInvestmentAfter:S.towers.reduce((n,t)=>n+t.invested,0),
-        powerBefore:null, powerAfter:power()};
+        powerBefore, powerAfter:power()};
     }
     function __researchRunWave(maxSeconds, herdOff, dispersalOn, wave, capture) {
       REMOVE_FORAGER_HERD=herdOff;
       __researchCapture=capture;
-      __researchMetrics={splashImpactCounts:[], cannonEnemyTicks:0, cannonEnemySeconds:0};
+      __researchMetrics={splashImpactCounts:[], cannonEnemySeconds:0};
       S.wave=wave-1; S.phase='build'; S.mutations=wave===9?['sprinter']:[];
       if (dispersalOn) S.mutations.push('dispersal');
       const expected=waveDef(wave).map(s=>s.type).join(',');
@@ -131,15 +131,6 @@ function makeContext(instrumentation = true) {
       const start=S.time, maxTicks=Math.floor(maxSeconds/SIM_STEP); let ticks=0;
       while(S.phase==='wave' && ticks<maxTicks) { update(SIM_STEP); ticks++; }
       const duration=S.time-start;
-      if (__researchCapture) {
-        for (const t of S.towers) if (t.type==='cannon') {
-          for (const e of S.enemies) if (!e.dead) {
-            const d=Math.hypot(e.x-t.x,e.y-t.y);
-            if (d<=tstats(t).range && (!t.T.minRange || d>=t.T.minRange)) __researchMetrics.cannonEnemyTicks++;
-          }
-        }
-        // Per-tick integration is computed in the external sampler below; this field is only a guard.
-      }
       const outcome=S.gate<=0?'loss':(S.phase==='wave'?'timeout':'clear');
       return {outcome, gateLoss:Math.max(0,GATE_MAX-S.gate), finalGate:S.gate,
         leaked:S.waveLeaked, kills:S.waveKills, durationSeconds:duration,
@@ -175,24 +166,6 @@ function legalCandidates(ctx, action) {
 function prepare(ctx, layout, premixed) {
   ctx.__researchLayout = layout;
   return vm.runInContext(`__researchPlace(null,${premixed})`, ctx);
-}
-
-function simulateOne(spec) {
-  const ctx=makeContext(true);
-  const premixed=spec.action==='premixed';
-  const checkpoint=prepare(ctx,spec.layout,premixed);
-  const action=vm.runInContext(`__researchApply(${JSON.stringify(spec.action)},${JSON.stringify(spec.candidate||null)})`,ctx);
-  if (spec.action==='unchanged' || premixed) action.action=spec.action;
-  action.powerBefore=checkpoint.power||null;
-  const metric=vm.runInContext(
-    `__researchRunWave(${MAX_SIM_SECONDS},false,${spec.dispersalOn},${spec.wave},true)`,ctx);
-  metric.layout=spec.layout.id; metric.wave=spec.wave; metric.action=spec.action;
-  metric.candidate=spec.candidate||null;
-  metric.historicalInvestment=checkpoint.historicalInvestment;
-  metric.cashCap=FIXED_CASH_CAP; metric.actionLedger=action;
-  metric.totalSpend = action.bought; metric.cashAfterWave=metric.endingCash; metric.unspentCash=action.endingCash;
-  metric.reactionNetSpend=action.netCashChange;
-  return metric;
 }
 
 function makeScenarios() {
@@ -265,12 +238,12 @@ function runStudy() {
   return data;
 }
 
-function mean(rows, key) { return rows.length?rows.reduce((n,r)=>n+r[key],0)/rows.length:null; }
+function mean(rows, key) { const values=rows.map(r=>r[key]).filter(Number.isFinite); return values.length?values.reduce((n,v)=>n+v,0)/values.length:null; }
 function rollup(rows) {
   return {n:rows.length,clear:rows.filter(r=>r.outcome==='clear').length,loss:rows.filter(r=>r.outcome==='loss').length,
     timeout:rows.filter(r=>r.outcome==='timeout').length,meanGateLoss:mean(rows,'gateLoss'),meanLeaks:mean(rows,'leaked'),
     meanDuration:mean(rows,'durationSeconds'),meanInRangeEnemySeconds:mean(rows,'inRangeEnemySeconds'),
-    meanSplashBodies:mean(rows,'splashImpactMean'),meanZeroSplashHits:mean(rows,'splashZeroHitImpacts')};
+    meanSplashBodies:mean(rows,'splashImpactMean'),splashMeanN:rows.filter(r=>Number.isFinite(r.splashImpactMean)).length,meanZeroSplashHits:mean(rows,'splashZeroHitImpacts')};
 }
 function renderReport(data) {
   const primary=data.primary, herd=data.herd;
@@ -287,7 +260,7 @@ function renderReport(data) {
       }
     } else baseGroups.push({wave,action,dispersalOn,layout:'all layouts',candidate:'—',...rollup(rows)});
   }
-  const table=baseGroups.map(r=>`| ${r.wave} | ${r.action} | ${r.dispersalOn?'ON':'OFF'} | ${r.layout} | ${r.candidate} | ${r.n} | ${r.clear}/${r.loss}/${r.timeout} | ${fmt(r.meanGateLoss)} | ${fmt(r.meanLeaks)} | ${fmt(r.meanDuration)} | ${fmt(r.meanInRangeEnemySeconds)} | ${fmt(r.meanSplashBodies)} / ${fmt(r.meanZeroSplashHits)} |`).join('\n');
+  const table=baseGroups.map(r=>`| ${r.wave} | ${r.action} | ${r.dispersalOn?'ON':'OFF'} | ${r.layout} | ${r.candidate} | ${r.n} | ${r.clear}/${r.loss}/${r.timeout} | ${fmt(r.meanGateLoss)} | ${fmt(r.meanLeaks)} | ${fmt(r.meanDuration)} | ${fmt(r.meanInRangeEnemySeconds)} | ${fmt(r.meanSplashBodies)} / ${r.splashMeanN} / ${fmt(r.meanZeroSplashHits)} |`).join('\n');
   const herdRows=[];
   for(const wave of WAVES) for(const herdOff of [false,true]) for(const dispersalOn of [false,true]) {
     const rows=herd.filter(r=>r.wave===wave&&r.herdRemoved===herdOff&&r.dispersalOn===dispersalOn);
@@ -301,8 +274,8 @@ function renderReport(data) {
   }
   const bestCandidates=primary.filter(r=>['upgrade','switch'].includes(r.action));
   const candidateLines=bestCandidates.map(r=>`| ${r.wave} | ${r.layout} | ${r.action} | ${r.dispersalOn?'ON':'OFF'} | ${JSON.stringify(r.candidate)} | ${r.outcome} | ${r.gateLoss} | ${r.leaked} | ${fmt(r.durationSeconds)} | ${r.totalSpend} | ${r.actionLedger.sellRefund} | ${r.unspentCash}/${r.cashAfterWave} | ${fmt(r.endingPower.cons)}/${fmt(r.endingPower.prod)} | ${fmt(r.splashImpactMean)}/${r.splashZeroHitImpacts} |`).join('\n');
-  const verdict=verdictText(cannon,dispDelta);
-  return `# Dispersal control study — prototype v0.4 (research only)\n\nGenerated: ${data.metadata.createdAt}. This is a bounded experiment; it does not change the prototype or passport.\n\n## Question and design\n\nDoes Dispersal's 1.5× spawn spacing reduce cannon splash concentration enough to change outcomes, and is the apparent effect actually due to extra response time? Three predeclared cannon-heavy two-Cannon-plus-Generator layouts were paired at waves 5 and 9. Each checkpoint has the same 20 Gate HP and a synthetic starting reaction-cash allowance of ${FIXED_CASH_CAP} credits. Historical tower investment is ${fmt(data.primary[0].historicalInvestment)} credits per baseline checkpoint; the anticipatory mixed layout carries the same total historical investment (one Cannon, one level-2 Turret, one Generator). These funded snapshots are deliberately synthetic and are not campaign-economy claims.\n\nThe primary grid has **${primary.length} trials** (minimum 48): unchanged, a legal Cannon upgrade candidate set, a legal partial switch candidate set, and an equal-investment pre-mixed baseline; each is paired with Dispersal OFF/ON. Wave 5 has no other mutation; wave 9 holds Sprinter Reflex on both sides. The reaction arms start from the same unchanged checkpoint, then receive the same 200-credit starting reaction allowance. The pre-mixed arm is an anticipatory historical investment comparator, not a postmutation response. Upgrade candidates cover both existing Cannons. Switch candidates sell either Cannon using the game's 60% refund and 1.8 s demolition, then buy a Turret or Voltaic in that slot; the 1.8 s occurs in build phase before the wave. We report all candidates and choose “best observed” only after the predeclared candidate set is complete.\n\nAll combat uses the loaded prototype's actual VM runtime at SIM_STEP = 1/60. The only runtime changes are asserted research hooks for measurements and a single asserted conditional to disable the Forager herd speed clamp in the diagnostic. No gameplay source is written. No RNG is added. Every wave is censored at ${MAX_SIM_SECONDS} simulated seconds. Dispersal ON changes spawn delays only; identical composition is asserted.\n\nMetrics: clear/loss/timeout, Gate loss, leaks, wave duration, Cannon-enemy seconds in geometric firing range (integrated once per simulation tick per active Cannon), mean living bodies inside the actual Cannon splash collision radius immediately before each impact (including impacts with zero bodies), zero-body impact count, credits spent/refunded/left, and final power demand/output.\n\n## Primary results\n\nClear/loss/timeout counts are shown in that order. Upgrade/switch rows summarize the best outcome per layout after retaining every candidate in the table below.\n\n| Wave | Arm | Dispersal | Layout | Candidate | N | Clear/loss/timeout | Mean Gate loss | Mean leaks | Mean duration (s) | Cannon-enemy s | Mean bodies / zero-hit impacts |\n|---:|---|:---:|---|---|---:|---:|---:|---:|---:|---:|---:|\n${table}\n\n## Candidate audit\n\n| Wave | Layout | Arm | Dispersal | Candidate | Outcome | Gate loss | Leaks | Duration (s) | Gross spend | Sell refund | Cash after action / end | Power cons/prod | Mean impact bodies / zero hits |\n|---:|---|---|:---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n${candidateLines}\n\n## Herd diagnostic\n\nThis is a separate unchanged-defense 2×2 diagnostic; only the Forager-vs-Carapacid speed clamp is removed. The speed base, spawn spacing, enemy HP, composition, and all other mechanics remain as loaded. It contains ${herd.length} trials (3 layouts × 2 waves × 2 herd states × 2 Dispersal states).\n\n| Wave | Herd | Dispersal | Clear/loss/timeout | Mean Gate loss | Mean leaks | Duration (s) |\n|---:|---|:---:|---:|---:|---:|---:|\n${herdRows.join('\n')}\n\n## Verdict\n\n${verdict}\n\nThis finding applies only to these three cannon-heavy synthetic snapshots and the chosen response candidates. It does not validate campaign balance or establish that Dispersal is desirable.\n\n## Reproduction\n\nRun node tools/check-dispersal.cjs to regenerate this report and the ignored JSON under reports/generated/. Run node tests/dispersal-control.cjs for the instrumentation equivalence check. The report file is committed; generated JSON is ignored.\n`;
+  const verdict=verdictText(cannon,dispDelta,herd);
+  return `# Dispersal control study — prototype v0.4 (research only)\n\nGenerated: ${data.metadata.createdAt}. This is a bounded experiment; it does not change the prototype or passport.\n\n## Question and design\n\nDoes Dispersal's 1.5× spawn spacing reduce cannon splash concentration enough to change outcomes, and is the apparent effect actually due to extra response time? Three predeclared cannon-heavy two-Cannon-plus-Generator layouts were paired at waves 5 and 9. Each checkpoint has the same 20 Gate HP and a synthetic starting reaction-cash allowance of ${FIXED_CASH_CAP} credits. Historical tower investment is ${fmt(data.primary[0].historicalInvestment)} credits per baseline checkpoint; the anticipatory mixed layout carries the same total historical investment (one Cannon, one level-2 Turret, one Generator). These funded snapshots are deliberately synthetic and are not campaign-economy claims.\n\nThe primary grid has **${primary.length} trials** (minimum 48): unchanged, a legal Cannon upgrade candidate set, a legal partial switch candidate set, and an equal-investment pre-mixed baseline; each is paired with Dispersal OFF/ON. Wave 5 has no other mutation; wave 9 holds Sprinter Reflex on both sides. The reaction arms start from the same unchanged checkpoint, then receive the same 200-credit starting reaction allowance. The pre-mixed arm is an anticipatory historical investment comparator, not a postmutation response. Upgrade candidates cover both existing Cannons. Switch candidates sell either Cannon using the game's 60% refund and 1.8 s demolition, then buy a Turret or Voltaic in that slot; the 1.8 s occurs in build phase before the wave. These are declared single-action comparisons under an equal starting allowance, not an optimization of the entire 200-credit budget; unused cash differs between arms. We report all candidates and choose “best observed” only after the predeclared candidate set is complete.\n\nAll combat uses the loaded prototype's actual VM runtime at SIM_STEP = 1/60. The only runtime changes are asserted research hooks for measurements and a single asserted conditional to disable the Forager herd speed clamp in the diagnostic. No gameplay source is written. No RNG is added. Every wave is censored at ${MAX_SIM_SECONDS} simulated seconds. Dispersal ON changes spawn delays only; identical composition is asserted.\n\nMetrics: clear/loss/timeout, Gate loss, leaks, time to a terminal outcome (clear or Gate loss, or censoring at 300 seconds), Cannon-enemy seconds in geometric firing range (integrated once per simulation tick per active Cannon), mean living bodies inside the actual Cannon splash collision radius immediately before each impact (including impacts with zero bodies), zero-body impact count, credits spent/refunded/left, and final power demand/output. At defeat, exposure and impact observations stop immediately; they do not describe the unobserved remainder of the wave. Splash rollups are unweighted averages of trial means, excluding trials with no impacts; the contributing trial count is shown alongside.\n\n## Primary results\n\nClear/loss/timeout counts are shown in that order. Upgrade/switch rows summarize the best outcome per layout after retaining every candidate in the table below.\n\n| Wave | Arm | Dispersal | Layout | Candidate | N | Clear/loss/timeout | Mean Gate loss | Mean leaks | Mean terminal time (s) | Cannon-enemy s | Mean bodies / impact-bearing trials / zero-hit impacts |\n|---:|---|:---:|---|---|---:|---:|---:|---:|---:|---:|---:|\n${table}\n\n## Candidate audit\n\n| Wave | Layout | Arm | Dispersal | Candidate | Outcome | Gate loss | Leaks | Terminal time (s) | Gross spend | Sell refund | Cash after action / end | Power cons/prod | Mean impact bodies / zero hits |\n|---:|---|---|:---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n${candidateLines}\n\n## Herd diagnostic\n\nThis is a separate unchanged-defense 2×2 diagnostic; only the Forager-vs-Carapacid speed clamp is removed. The speed base, spawn spacing, enemy HP, composition, and all other mechanics remain as loaded. It contains ${herd.length} trials (3 layouts × 2 waves × 2 herd states × 2 Dispersal states).\n\n| Wave | Herd | Dispersal | Clear/loss/timeout | Mean Gate loss | Mean leaks | Terminal time (s) |\n|---:|---|:---:|---:|---:|---:|---:|\n${herdRows.join('\n')}\n\n## Verdict\n\n${verdict}\n\nThis finding applies only to these three cannon-heavy synthetic snapshots and the chosen response candidates. It does not validate campaign balance or establish that Dispersal is desirable.\n\n## Reproduction\n\nRun node tools/check-dispersal.cjs to regenerate this report and the ignored JSON under reports/generated/. Run node tests/dispersal-control.cjs for the instrumentation equivalence check. The report file is committed; generated JSON is ignored.\n`;
 }
 function fmt(x) {return x==null?'—':Number(x).toFixed(2);}
 function assertMarkdownTableShapes(markdown) {
@@ -316,16 +289,32 @@ function assertMarkdownTableShapes(markdown) {
       assert.equal(cells(lines[j]),expected,`Markdown data cell count at line ${j+1}`);
   }
 }
-function verdictText(rows,deltas) {
+function verdictText(rows,deltas,herd) {
   const parts=[];
   for(const d of deltas) {
     const waveRows=rows.filter(r=>r.wave===d.wave), off=waveRows.filter(r=>!r.dispersalOn),on=waveRows.filter(r=>r.dispersalOn);
-    parts.push(`Wave ${d.wave}: unchanged-control mean Gate loss ${fmt(mean(off,'gateLoss'))}→${fmt(mean(on,'gateLoss'))} (Δ ${fmt(d.gate)}), leaks ${fmt(mean(off,'leaked'))}→${fmt(mean(on,'leaked'))} (Δ ${fmt(d.leaks)}), and duration ${fmt(mean(off,'durationSeconds'))}→${fmt(mean(on,'durationSeconds'))} s (Δ ${fmt(d.duration)} s).`);
+    const paired=LAYOUTS.map(layout=>{
+      const a=off.find(r=>r.layout===layout.id),b=on.find(r=>r.layout===layout.id);
+      return `${layout.id}: Gate ${a.gateLoss}→${b.gateLoss}, leaks ${a.leaked}→${b.leaked}, terminal time ${fmt(a.durationSeconds)}→${fmt(b.durationSeconds)} s`;
+    });
+    parts.push(`Wave ${d.wave} paired unchanged controls (Dispersal OFF→ON): ${paired.join('; ')}. Across-layout means: Gate loss ${fmt(mean(off,'gateLoss'))}→${fmt(mean(on,'gateLoss'))}, leaks ${fmt(mean(off,'leaked'))}→${fmt(mean(on,'leaked'))}, terminal time ${fmt(mean(off,'durationSeconds'))}→${fmt(mean(on,'durationSeconds'))} s.`);
   }
-  const noEffect=deltas.every(d=>Math.abs(d.gate)<1e-9&&Math.abs(d.leaks)<1e-9);
-  const verdict=noEffect?'In this sample, Dispersal produced no Gate-loss or leak change in the unchanged cannon-heavy controls.':
-    'In this sample, Dispersal changed Gate loss and/or leaks in the unchanged cannon-heavy controls.';
-  return `${verdict} ${parts.join(' ')} The longer duration and higher in-range exposure co-occurred here with lower occupancy per impact; these measurements are descriptive and do not isolate causal channels. At wave 9 all unchanged arms hit the 20-HP Gate-loss ceiling, so Gate loss cannot show differences beyond total destruction. The herd diagnostic tests whether the unchanged clamp-off diagnostic has more leaks: 8.33/7.00 versus 5.67/5.67 per wave in waves 5/9; removing only that speed clamp therefore does not erase the measured Dispersal pattern, and it leaves Carapacid shadow intact. Candidate results are descriptive across the declared set and are not evidence of a universal switching advantage.`;
+  const noEffect=rows.filter(r=>!r.dispersalOn).every(a=>{
+    const b=rows.find(r=>r.dispersalOn&&r.wave===a.wave&&r.layout===a.layout);
+    return a.gateLoss===b.gateLoss&&a.leaked===b.leaked;
+  });
+  const verdict=noEffect?'In this sample, Dispersal produced no Gate-loss or leak change in the unchanged cannon-heavy controls.':'In this sample, paired unchanged controls show layout-dependent changes in Gate loss and/or leaks under Dispersal.';
+  const diagnostic=[];
+  for(const wave of WAVES) for(const removed of [false,true]) {
+    const selected=herd.filter(r=>r.wave===wave&&r.herdRemoved===removed);
+    const d0=selected.filter(r=>!r.dispersalOn), d1=selected.filter(r=>r.dispersalOn);
+    const pairs=LAYOUTS.map(layout=>{
+      const a=d0.find(r=>r.layout===layout.id),b=d1.find(r=>r.layout===layout.id);
+      return `${layout.id} ${a.leaked}→${b.leaked}`;
+    });
+    diagnostic.push(`Wave ${wave}, ${removed?'clamp removed':'prototype clamp'} (Dispersal OFF→ON leaks): ${pairs.join('; ')}.`);
+  }
+  return `${verdict}\n\n${parts.join('\n\n')}\n\nReported duration is time to a terminal outcome (clear or Gate loss), or the 300 s censoring limit, rather than full wave duration. Cannon-enemy seconds and impact occupancy are descriptive measurements; their co-movement does not identify a causal channel. At wave 9 all unchanged arms reach the 20-HP Gate-loss ceiling, so Gate loss cannot distinguish outcomes beyond total destruction.\n\nHerd diagnostic paired leak results:\n\n${diagnostic.join('\n\n')}\n\nCandidate outcomes are descriptive across the declared layouts and response choices, not evidence of a universal switching advantage.`;
 }
 function printSummary(data) {
   console.log(`PASS: ${data.primary.length} primary candidate trials; ${data.herd.length} herd diagnostic trials.`);
@@ -357,7 +346,7 @@ function runSelfTest() {
   for(const key of comparable) assert.equal(instrumented[key],raw[key],`research instrumentation changed ${key}`);
   assert.ok(Math.abs(instrumented.durationSeconds-raw.durationSeconds)<1e-8,'measurement wrapper changed simulated duration');
   assert.deepEqual(JSON.parse(JSON.stringify(instrumented.endingPower)),JSON.parse(JSON.stringify(raw.power)));
-  console.log('PASS: research instrumentation preserves the unmodified core outcome; diagnostic range sampler matches primary sampler.');
+  console.log('PASS: research instrumentation preserves the unmodified core outcome and terminal timing.');
 }
 
 if (require.main===module) process.argv.includes('--self-test')?runSelfTest():runStudy();
