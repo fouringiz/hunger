@@ -1,5 +1,19 @@
 # Development checkpoint — 2026-10-20
 
+## Resumed — 2026-10-21
+
+The remaining automated checks are complete. PRs #10, #11 and #12 remain separate branches from main `ffeb1542df834c13f4c261e837b8b8059d1e72ec`; no PR has been merged. The original paused snapshot below is retained as history and is superseded by this section.
+
+- PR #12: an independent read-only review replayed all 96 primary trials and 24 herd diagnostics. Every primary trial keeps the herd clamp enabled; diagnostic exposure is measured and herd-ON unchanged rows match primary rows. The self-test compares the instrumented runtime with the actual unmodified source. Generated table shapes pass validation.
+- The final research corrections replace hardcoded herd conclusions with measured per-wave/per-layout results, distinguish terminal time from complete wave duration, explain measurement truncation at defeat, and record pre-action power. The regenerated report is a bounded research result, not a decision to change Dispersal or campaign balance. Earlier pre-fix figures remain withdrawn.
+- Integration: applied commits `aa0dc10` (#10), `7d9f7e0` (#11) and the research package to a temporary checkout of main using a three-way merge. No conflicts. All 29 core scenarios, readability tests, weapon/audio tests and the research equivalence test pass together; all 120 study trials complete on the combined prototype.
+- Offscreen renders of the combined prototype confirm the evolution card, construction menu and SFX control fit together. Actual Leech attachment/recovery states render correctly, with generator output falling from 80 to 40 and returning to 80 after release.
+- Remaining boundary: live browser/mobile playtest and listening to real audio are still unverified. The earlier browser security block was not bypassed. User review is still required before merging.
+
+Next session: inspect current GitHub heads first; these checks describe the commits above and the completed PR #12 revision, not future edits. Review the PRs, then playtest the combined presentation changes. No new caste, weapon, balance or canon changes are part of this checkpoint.
+
+## Original paused snapshot
+
 Paused at the user's request to conserve remaining usage. No PR was merged.
 
 ## Base and branches
