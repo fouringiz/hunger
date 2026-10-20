@@ -157,6 +157,18 @@ const cases = {
     assert.ok(struck[0].hp < struck[1].hp, 'the primary takes full damage, hops take less');
     assert.ok(S.dmg.electro > 0 && S.dmg.flat === 0 && S.dmg.arc === 0, 'voltaic fire lands in its own ledger column');
   `,
+  'chain hops respect reserved damage: a doomed neighbour is skipped for a free one': `
+    reset(); build(SLOTS[2], 'voltaic'); const t = S.towers[0]; const st = tstats(t);
+    const first = makeEnemy('forager', 1), doomed = makeEnemy('forager', 1), free = makeEnemy('forager', 1);
+    first.d = 520; doomed.d = 500; free.d = 480;
+    [first, doomed, free].forEach(e => Object.assign(e, posAt(e.d)));
+    doomed.hp = 5; doomed.incoming = 45;                 // a shell worth 45 is already in flight at it
+    S.enemies = [first, doomed, free]; S.phase = 'wave';
+    const struck = fireElectro(t, st, first);
+    assert.ok(!struck.includes(doomed), 'the chain does not spend a hop on a body already reserved for death');
+    assert.ok(struck.includes(free), 'the hop goes to the nearest free body instead');
+    assert.equal(doomed.hp, 5, 'the doomed body is untouched by the chain');
+  `,
   'a Carapacid in the bolt path intercepts the discharge and the chain continues from it': `
     reset(); build(SLOTS[2], 'voltaic'); const t = S.towers[0]; const st = tstats(t);
     const far = makeEnemy('forager', 1), shield = makeEnemy('carapacid', 1);

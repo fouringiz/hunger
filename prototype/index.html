@@ -349,8 +349,8 @@ function fireElectro(t, st, target) {
       break;
     }
     from = cur; dmg *= t.T.hopFalloff; let next = null, best = Infinity;
-    for (const e of S.enemies) {                                // nearest living body not yet struck
-      if (e.dead || struck.includes(e)) continue;
+    for (const e of S.enemies) {                                // nearest living body not yet struck, with no lethal charge already reserved
+      if (e.dead || struck.includes(e) || e.hp - e.incoming <= 0) continue;   // hops follow the same anti-overkill rule as every first shot
       const d = Math.hypot(e.x - cur.x, e.y - cur.y);
       if (d <= t.T.hopRange && d < best) { best = d; next = e; }
     }
