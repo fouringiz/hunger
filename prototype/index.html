@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Ultimate TD — core loop prototype v0.3</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #151820; overflow: hidden;
+  :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
+  html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-  canvas { display: block; touch-action: none; background: #151820; }
+  canvas { display: block; touch-action: none; background: #151820; box-shadow: 0 0 90px #000; }
 </style>
 </head>
 <body>
@@ -409,12 +410,85 @@ function stepSimulation(dt) {
 }
 
 // ---------------------------------------------------------------- drawing
+// Presentation only: the atlas, terrain and animation never change simulation state.
+const unitArt = typeof Image === 'undefined' ? null : new Image();
+if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
+let terrainArt = null;
+function sprite(cell, x, y, size, angle = 0) {
+  if (!unitArt || !unitArt.complete || !unitArt.naturalWidth) return false;
+  const sw = unitArt.naturalWidth / 3, sh = unitArt.naturalHeight / 2;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+  ctx.drawImage(unitArt, cell % 3 * sw, Math.floor(cell / 3) * sh, sw, sh, -size/2, -size/2, size, size);
+  ctx.restore(); return true;
+}
+function laneStroke(c) {
+  c.beginPath(); c.moveTo(PATH[0][0], PATH[0][1]);
+  for (const p of PATH) c.lineTo(p[0], p[1]);
+  c.stroke();
+}
+function terrain() {
+  if (!terrainArt) {
+    terrainArt = document.createElement('canvas'); terrainArt.width = W; terrainArt.height = H;
+    const c = terrainArt.getContext('2d');
+    const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#28312b'); g.addColorStop(1, '#121e20');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    // Seeded decoration: repeatable, cached, independent of gameplay randomness.
+    let seed = 7419; const rnd = () => ((seed = Math.imul(seed, 1664525) + 1013904223 >>> 0) / 4294967296);
+    for (let i = 0; i < 2800; i++) {
+      const x = rnd()*W, y = rnd()*H, s = 1+rnd()*3;
+      c.fillStyle = i%2 ? '#ffffff07' : '#00000016'; c.fillRect(x,y,s,s);
+    }
+    for (let i=0;i<75;i++) {
+      const x=rnd()*W, y=HUD+rnd()*(H-HUD-BOT);
+      if (SLOTS.some(s=>Math.hypot(s.x-x,s.y-y)<36) || SEG.some(s=> {
+        const u=Math.max(0,Math.min(1,((x-s.x1)*(s.x2-s.x1)+(y-s.y1)*(s.y2-s.y1))/(s.L*s.L)));
+        return Math.hypot(x-s.x1-u*(s.x2-s.x1),y-s.y1-u*(s.y2-s.y1))<40;
+      })) continue;
+      c.fillStyle='#0e1719'; c.beginPath(); c.ellipse(x+3,y+4,9+rnd()*12,4+rnd()*7,rnd()*3,0,Math.PI*2); c.fill();
+      c.fillStyle=i%3?'#39413a':'#485247'; c.beginPath(); c.moveTo(x-8,y+3); c.lineTo(x-5,y-8); c.lineTo(x+5,y-11); c.lineTo(x+11,y+1); c.closePath(); c.fill();
+      c.strokeStyle='#71816b55'; c.beginPath(); c.moveTo(x-5,y-8); c.lineTo(x+5,y-11); c.lineTo(x+11,y+1); c.stroke();
+    }
+    // Old buried conduits: faint, kept away from the playable lane by its opaque bed.
+    c.strokeStyle='#6b77632c'; c.lineWidth=2;
+    for(let i=0;i<8;i++){c.beginPath();c.moveTo(i*140, H);c.lineTo(i*140,390);c.lineTo(i*140+65,325);c.lineTo(i*140+65,45);c.stroke();}
+    c.lineJoin='round';c.lineCap='round';
+    c.strokeStyle='#080f10';c.lineWidth=58;laneStroke(c);
+    c.strokeStyle='#586052';c.lineWidth=53;laneStroke(c);
+    c.strokeStyle='#303b35';c.lineWidth=48;laneStroke(c);
+    c.strokeStyle='#41493e';c.lineWidth=36;laneStroke(c);
+    c.strokeStyle='#b2b68d24';c.lineWidth=1;c.setLineDash([3,9]);laneStroke(c);c.setLineDash([]);
+    c.font='600 10px monospace';c.fillStyle='#a6b79855';c.fillText('EXPEDITION / PERIMETER 07',24,465);c.fillText('INCUBATOR APPROACH',24,57);
+    for(const s of SLOTS){
+      c.fillStyle='#101b1c';c.fillRect(s.x-21,s.y-19,42,42);
+      c.fillStyle='#384541';c.fillRect(s.x-20,s.y-21,40,40);
+      c.strokeStyle='#6b7970';c.strokeRect(s.x-20.5,s.y-21.5,41,41);
+      c.fillStyle='#1f2e2c';c.fillRect(s.x-15,s.y-16,30,30);
+      c.fillStyle='#b6a46a';for(const dx of [-17,15])for(const dy of [-18,14])c.fillRect(s.x+dx,s.y+dy,3,3);
+    }
+  }
+  ctx.drawImage(terrainArt,0,0);
+}
+function enemyArt(e) {
+  const p=posAt(e.d+4), q=posAt(e.d);
+  let angle=Math.atan2(p.y-q.y,p.x-q.x);
+  if((e.state==='seek' || e.state==='attached') && e.gen) angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
+  if(e.state==='return') { const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x); }
+  const pulse=Math.sin(S.time*9+e.d*.06);
+  const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
+  ctx.save();ctx.translate(e.x,e.y);
+  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(2,5,e.r+4,e.r*.65,0,0,Math.PI*2);ctx.fill();
+  ctx.scale(1+pulse*.025,1-pulse*.025);
+  if(!sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
+    ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
 let buttons = [];
 function btn(x, y, w, h, label, fn, enabled = true, accent = false) {
   buttons.push({x, y, w, h, fn, enabled});
-  ctx.fillStyle = enabled ? (accent ? '#3f7d5a' : '#2b3140') : '#20242d';
-  ctx.strokeStyle = enabled ? (accent ? '#7cffb2' : '#5b6475') : '#3a3f4b';
-  ctx.lineWidth = 1.5; roundRect(x, y, w, h, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = enabled ? (accent ? '#45644b' : '#263733') : '#202a29';
+  ctx.strokeStyle = enabled ? (accent ? '#d3c68b' : '#76897b') : '#3a4945';
+  ctx.lineWidth = 1; roundRect(x, y, w, h, 2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = enabled ? '#e8ecf2' : '#6c7382';
   ctx.font = '600 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(label, x + w/2, y + h/2 + 1);
@@ -427,6 +501,27 @@ function text(s, x, y, size = 13, color = '#e8ecf2', align = 'left', weight = '4
   ctx.fillStyle = color; ctx.font = weight + ' ' + size + 'px sans-serif'; ctx.textAlign = align; ctx.textBaseline = 'middle';
   ctx.fillText(s, x, y);
 }
+function wrappedText(s, x, y, width, lines = 3, color = '#c0cdbf') {
+  ctx.font='11px sans-serif';
+  const words=s.split(' ');let line='',row=0;
+  for(let i=0;i<words.length;i++) {
+    const next=line ? line+' '+words[i] : words[i];
+    if(ctx.measureText(next).width>width && line) {
+      text(line,x,y+row*13,11,color);row++;line=words[i];
+      if(row===lines-1) {
+        line=words.slice(i).join(' ');
+        while(ctx.measureText(line).width>width-12)line=line.slice(0,-1);
+        if(i+1<words.length && line!==words.slice(i).join(' '))line+='…';
+        break;
+      }
+    } else line=next;
+  }
+  text(line,x,y+row*13,11,color);
+}
+function menuPanel(x,y) {
+  ctx.fillStyle='#0b1918f5';ctx.strokeStyle='#607467';ctx.lineWidth=1;
+  roundRect(x-7,y-7,308,87,3);ctx.fill();ctx.stroke();
+}
 function stars(n, x, y, size) {
   for (let i = 0; i < 3; i++) text(i < n ? '★' : '☆', x + (i-1)*size*1.3, y, size, i < n ? '#ffe66d' : '#3a3f4b', 'center', '700');
 }
@@ -437,19 +532,16 @@ function draw() {
   ctx.fillStyle = '#151820'; ctx.fillRect(0, 0, W, H);
   const pw = power();
 
-  // lane
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#2c3240'; ctx.lineWidth = 46;
-  ctx.beginPath(); ctx.moveTo(PATH[0][0], PATH[0][1]); for (const p of PATH) ctx.lineTo(p[0], p[1]); ctx.stroke();
-  ctx.strokeStyle = '#3d4658'; ctx.lineWidth = 2; ctx.setLineDash([10, 12]); ctx.lineDashOffset = -S.time * 30;
-  ctx.beginPath(); ctx.moveTo(PATH[0][0], PATH[0][1]); for (const p of PATH) ctx.lineTo(p[0], p[1]); ctx.stroke();
-  ctx.setLineDash([]);
-  text('IN', 20, 112, 12, '#8a93a6', 'left', '600');
-  // gate
-  ctx.fillStyle = S.gate > 6 ? '#2e6b4a' : '#7a2d2d'; ctx.strokeStyle = '#7cffb2'; ctx.lineWidth = 2;
-  roundRect(GATE.x - 22, GATE.y - 26, 44, 52, 6); ctx.fill(); ctx.stroke();
-  text('GATE', GATE.x, GATE.y - 8, 11, '#e8ecf2', 'center', '700');
-  text(S.gate, GATE.x, GATE.y + 10, 15, '#e8ecf2', 'center', '700');
+  terrain();
+  // Reinforced Gate: armored pylons and a luminous containment field.
+  ctx.fillStyle='#071312aa';ctx.fillRect(GATE.x-26,GATE.y-38,55,80);
+  ctx.fillStyle='#53645b';ctx.fillRect(GATE.x-22,GATE.y-35,14,70);ctx.fillRect(GATE.x+13,GATE.y-35,14,70);
+  ctx.fillStyle='#9eac91';ctx.fillRect(GATE.x-22,GATE.y-35,14,5);ctx.fillRect(GATE.x+13,GATE.y-35,14,5);
+  ctx.fillStyle=S.gate>6?'#79e4bd55':'#ff745566';ctx.fillRect(GATE.x-8,GATE.y-30,21,60);
+  ctx.strokeStyle=S.gate>6?'#b0ffe0':'#ff8360';ctx.lineWidth=2;
+  for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(GATE.x-8,GATE.y-25+i*16);ctx.lineTo(GATE.x+13,GATE.y-25+i*16);ctx.stroke();}
+  text('THE GATE',GATE.x-3,GATE.y-47,10,'#c5d8bf','center','700');
+  text(S.gate,GATE.x+2,GATE.y+47,12,'#b0ffe0','center','700');
 
   // slots
   for (const s of SLOTS) {
@@ -472,23 +564,16 @@ function draw() {
     const c = t.T.color;
     ctx.save(); ctx.translate(t.x, t.y);
     if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
-    if (t.type === 'generator') {
-      ctx.fillStyle = isDrained(t) ? '#8a6f2a' : c; ctx.beginPath();
-      for (let i = 0; i < 6; i++) { const a = Math.PI/3*i + Math.PI/6; ctx.lineTo(Math.cos(a)*16, Math.sin(a)*16); }
-      ctx.closePath(); ctx.fill();
-      text(isDrained(t) ? '0' : '+' + GEN_POWER[t.level-1], 0, 1, 11, '#3a3200', 'center', '700');
-      for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 18, 4, 4); }
-      if (isDrained(t)) { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.arc(0, 0, 21 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
-    } else if (t.type === 'turret') {
-      ctx.fillStyle = t.paused ? '#4a5364' : c; roundRect(-13, -13, 26, 26, 4); ctx.fill();
-      ctx.strokeStyle = '#151820'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(t.angle)*20, Math.sin(t.angle)*20); ctx.stroke();
-    } else {
-      ctx.fillStyle = t.paused ? '#4a5364' : c; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
-      ctx.fillStyle = '#151820'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
-      ctx.strokeStyle = '#151820'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(t.angle)*22, Math.sin(t.angle)*22); ctx.stroke();
+    ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
+    const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
+    if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
+      ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
+    }
+    if(t.type==='generator') {
+      const glow=isDrained(t)?'#c77dff':'#9df7bf';
+      ctx.fillStyle=glow;ctx.fillRect(-5,-4,10,3);
+      text(isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
+      if(isDrained(t)){ctx.strokeStyle=glow;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,25+Math.sin(S.time*8)*2,0,Math.PI*2);ctx.stroke();}
     }
     if (t.type !== 'generator') {
       for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
@@ -505,8 +590,7 @@ function draw() {
   }
   // enemies
   for (const e of S.enemies) {
-    ctx.fillStyle = e.T.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
-    if (e.type === 'carapacid') { ctx.strokeStyle = '#ffb3b3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.x, e.y, e.r-4, 0, Math.PI*2); ctx.stroke(); }
+    enemyArt(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
     if (e.muts.includes('keratin')) { ctx.strokeStyle = '#9aa3b5'; ctx.lineWidth = 2;    // matte plating marker
@@ -537,7 +621,8 @@ function draw() {
   if (S.feast > 0 && S.phase === 'wave') text('THE SWARM FEASTS ×' + S.feast, W/2, HUD + 40, 15, '#c77dff', 'center', '800');
 
   // HUD
-  ctx.fillStyle = '#1b1f28'; ctx.fillRect(0, 0, W, HUD); ctx.fillRect(0, H - BOT, W, BOT);
+  ctx.fillStyle = '#101e1cf5'; ctx.fillRect(0, 0, W, HUD); ctx.fillRect(0, H - BOT, W, BOT);
+  ctx.fillStyle='#6c8261';ctx.fillRect(0,HUD-1,W,1);ctx.fillRect(0,H-BOT,W,1);
   text('Credits ' + S.credits, 14, HUD/2, 15, '#ffe66d', 'left', '700');
   // power bar — Red Alert fill and color logic: green surplus, yellow near threshold, red deficit
   const bx = 170, bw = 220;
@@ -568,19 +653,21 @@ function draw() {
   if (S.toastT > 0) bottom = S.toast;
   else if (S.phase === 'build') bottom = 'Next wave: ' + previewText(S.wave + 1) + (S.report ? '     |     ' + S.report : '');
   else if (S.phase === 'wave') bottom = 'Wave ' + S.wave + ' in progress. Towers aim themselves. Tap one to pause, upgrade or sell it.';
-  text(bottom, 14, H - BOT/2, 13, S.toastT > 0 ? '#ffe66d' : '#c9d0dc', 'left');
+  wrappedText(bottom,14,H-BOT+10,W-28,2,S.toastT>0?'#ffe66d':'#c9d0dc');
 
   // selection menus
   if (S.selected && (S.phase === 'build' || S.phase === 'wave')) {
     if (S.selected.kind === 'slot') {
       const s = S.selected.slot; const items = ['turret', 'cannon', 'generator'];
       let x0 = Math.max(6, Math.min(W - 6 - 3*98, s.x - 147)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
+      menuPanel(x0,y0);
       items.forEach((k, i) => { const T = TOWER[k];
         btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => build(s, k), S.credits >= T.cost); });
-      text('Turret: flat, blocked by shadow  ·  Cannon: arcing splash, aims at clusters  ·  Generator: +40 power, upgrades to +85, Leeches feed on it', x0, y0 + 40, 11, '#8a93a6', 'left');
+      wrappedText('Turret: rapid fire. Cannon: arcing splash. Generator: +40 power, upgradable to +85. Protect it from Leeches.',x0,y0+42,288);
     } else {
       const t = S.selected.tower; const st = tstats(t);
       let x0 = Math.max(6, Math.min(W - 6 - 3*98, t.x - 147)); const y0 = t.y > H/2 ? t.y - 74 : t.y + 26;
+      menuPanel(x0,y0);
       if (t.selling) {
         text('Demolition in progress…', x0, y0 + 10, 12, '#8a93a6', 'left');
       } else if (t.type !== 'generator') {
@@ -588,31 +675,35 @@ function draw() {
         const cost = t.T.upg[t.level];
         btn(x0 + 98, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => upgrade(t), t.level < 3 && S.credits >= cost);
         btn(x0 + 196, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => sell(t));
-        text(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
-             '  kills ' + t.kills + (rank(t) ? (rank(t) === 2 ? '  Elite (stripes burn on sale)' : '  Veteran (stripes burn on sale)') : ''), x0, y0 + 40, 11, '#8a93a6', 'left');
+        wrappedText(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
+             '  kills ' + t.kills + (rank(t) ? (rank(t) === 2 ? '  Elite (stripes burn on sale)' : '  Veteran (stripes burn on sale)') : ''), x0, y0 + 42, 288);
       } else {
         const cost = t.T.upg[t.level];
         btn(x0, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => upgrade(t), t.level < 3 && S.credits >= cost);
         btn(x0 + 98, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => sell(t));
-        text(isDrained(t) ? 'Generator: LEECHED — output 0. Nearby towers are on it.'
+        wrappedText(isDrained(t) ? 'Generator: LEECHED — output 0. Nearby towers are on it.'
                        : 'Generator L' + t.level + ': +' + GEN_POWER[t.level-1] + ' power' + (t.level < 3 ? ' (next +' + GEN_POWER[t.level] + ')' : '') + '. Cannot be paused.',
-             x0, y0 + 40, 11, '#8a93a6', 'left');
+             x0, y0 + 42, 288);
       }
     }
   }
 
   // overlays
   if (S.phase === 'menu') {
-    ctx.fillStyle = 'rgba(21,24,32,0.92)'; ctx.fillRect(0, 0, W, H);
-    text('Ultimate TD — core loop prototype v0.3', W/2, 120, 24, '#e8ecf2', 'center', '700');
-    const lines = ['Tap an empty slot to build a Turret, a Cannon or a Generator. Credits come from kills only.',
-      'Power is shared (Red Alert rules): keep the fill left of the notch or you brown out.',
-      'Towers aim themselves: no overkill, cannons pick clusters, and anything feeding on a generator gets priority.',
-      'Leeches (wave 5+) drain generators and feed the swarm. The incubators read your fire through the Veins:',
-      'after waves 4 and 8 the swarm grows a counter to whatever damage dominated. Marsh names it before the next wave.',
-      'Selling returns 60%; stripes burn; demolition takes ~2 s. Finish with the Gate untouched for ★★★.'];
-    lines.forEach((l, i) => text(l, W/2, 180 + i*24, 14, '#c9d0dc', 'center'));
-    btn(W/2 - 70, 360, 140, 36, 'Begin campaign', () => { S.phase = 'build'; S.buildTimer = 25; S.report = ''; }, true, true);
+    const shade=ctx.createLinearGradient(0,0,W,0);shade.addColorStop(0,'#071411fa');shade.addColorStop(.58,'#071411e8');shade.addColorStop(1,'#07141144');
+    ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
+    text('THE EXPEDITION  /  FIELD OPERATIONS',52,80,11,'#b8bd8b','left','700');
+    text('THE HUNGER',48,139,56,'#e0e7cc','left','900');
+    text('HOLD THE LINE. LEARN WHAT COMES NEXT.',52,185,12,'#9bac91','left','600');
+    ctx.fillStyle='#b9a866';ctx.fillRect(52,218,54,3);
+    text('PERIMETER 07',52,256,22,'#d4dec4','left','700');
+    text('Build your defense. Protect the generators.',52,291,15,'#afc1b2');
+    text('The swarm adapts to your fire. Be ready to rebuild.',52,316,15,'#afc1b2');
+    text('Tap a platform to build. Tap a tower to upgrade or sell.',52,351,12,'#8b9e91');
+    btn(52,392,210,44,'DEPLOY GARRISON',()=>{S.phase='build';S.buildTimer=25;S.report='';},true,true);
+    text('10 WAVES  /  AUTOMATIC FIRE  /  NO SECOND LINE',52,463,10,'#7e9586','left','600');
+    sprite(1,745,265,300,-.3);sprite(0,645,393,118,.4);sprite(2,843,390,130,-.6);
+    text('CONTACTS CONFIRMED',745,466,10,'#bbab78','center','600');
   }
   if (S.phase === 'over') {
     ctx.fillStyle = 'rgba(21,24,32,0.9)'; ctx.fillRect(0, 0, W, H);
