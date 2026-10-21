@@ -77,6 +77,14 @@ const FACTORS={
   hp:      {label:'Enemy HP multiplier (constant)', key:'hp', values:[1,1.25,1.5]},
   growth:  {label:'Enemy HP growth per wave', key:'growth', values:[0.08,0.10,0.11]},
 };
+// Predeclared combinations of the single-factor parity shifts (run with `combos`). Not tuned values.
+const COMBOS=[
+  {label:'parity A: turret 8.5 + voltaic 17 + cannon 40', ov:{turretDmg:8.5,voltaicDmg:17,cannonDmg:40}},
+  {label:'parity B: turret 8.5 + voltaic 17 + cannon 36', ov:{turretDmg:8.5,voltaicDmg:17,cannonDmg:36}},
+  {label:'parity A @ HP x1.25',  ov:{turretDmg:8.5,voltaicDmg:17,cannonDmg:40,hp:1.25}},
+  {label:'parity B @ HP x1.25',  ov:{turretDmg:8.5,voltaicDmg:17,cannonDmg:36,hp:1.25}},
+  {label:'parity B @ growth 0.10', ov:{turretDmg:8.5,voltaicDmg:17,cannonDmg:36,growth:0.10}},
+];
 function cell(r){ const f=[r.deferred?`d${r.deferred}`:'',r.dropped?`x${r.dropped}`:'',r.unreached?`u${r.unreached}`:''].filter(Boolean).join('/'); return `${r.win?'W':'L'} g${r.gate} w${r.wave} t${r.ticks}${f?` (${f})`:''}`; }
 function sweep(fixtures, factorNames) {
   const out={}; const md=[];
@@ -93,12 +101,23 @@ function sweep(fixtures, factorNames) {
   }
   return {out,md:md.join('\n')};
 }
+function combos(fixtures){
+  const md=['\n### Predeclared combinations\n','| combination | evolution | '+fixtures.map(x=>x.name).join(' | ')+' |','|---|---|'+fixtures.map(()=>'---').join('|')+'|'];
+  const out=[];
+  for(const c of COMBOS) for(const evolution of [true,false]){
+    const row=fixtures.map(({name,data})=>{const r=runCounterfactual(data,{...c.ov,evolution}); out.push({combo:c.label,evolution,timeline:name,...r}); return cell(r);});
+    md.push(`| ${c.label} | ${evolution?'on':'off'} | ${row.join(' | ')} |`);
+  }
+  return {out,md:md.join('\n')};
+}
 function main(){
   const args=process.argv.slice(2);
-  const factorNames=args.filter(a=>FACTORS[a]); const which=factorNames.length?factorNames:Object.keys(FACTORS);
   const fixtures=loadFixtures();
   console.log('Baseline fidelity (strict verifier vs counterfactual player, no overrides):');
   for(const r of baselineCheck(fixtures)) console.log(`  ${r.name.padEnd(14)} verified=${r.strict} exact=${r.exact} ${r.win?'W':'L'} gate ${r.gate}`);
+  if(args.includes('combos')){ const {out,md}=combos(fixtures); console.log(md);
+    const gen=path.join(ROOT,'reports/generated'); fs.mkdirSync(gen,{recursive:true}); fs.writeFileSync(path.join(gen,'replay-combos.json'),JSON.stringify(out,null,2)+'\n'); return; }
+  const factorNames=args.filter(a=>FACTORS[a]); const which=factorNames.length?factorNames:Object.keys(FACTORS);
   const {out,md}=sweep(fixtures,which);
   console.log(md);
   console.log('\nCell format: W/L = win/loss, g = Gate HP at end, w = last wave, t = simulation ticks, (dN/xM/uK) = N deferred, M dropped after waiting, K unreached because the game ended first. Evolution off = EVOLUTION_WAVES emptied.');
@@ -107,4 +126,4 @@ function main(){
   fs.writeFileSync(path.join(gen,'replay-sweep.md'),md+'\n');
 }
 if(require.main===module){ try{main();}catch(e){console.error(e.message);process.exitCode=1;} }
-module.exports={runCounterfactual,baselineCheck,loadFixtures,FACTORS};
+module.exports={runCounterfactual,baselineCheck,loadFixtures,FACTORS,COMBOS};
