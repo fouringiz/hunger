@@ -2,7 +2,8 @@
 // RESEARCH MODE: fingerprints are not checked, because the rules are deliberately changed.
 // Policy (declared, not tuned): recorded actions are attempted at their recorded tick; an action that cannot
 // apply (credits, phase, generation) is deferred, in order, to the first tick where it can; an action still
-// pending after DEFER_LIMIT ticks is dropped. Deferred/dropped counts are reported as a fidelity measure.
+// pending after DEFER_LIMIT ticks is dropped; actions the game never reached (defeat first) are counted separately
+// as unreached. Deferred/dropped/unreached counts are reported as a fidelity measure.
 // With no overrides the counterfactual player must reproduce the strict verifier's terminal state exactly.
 'use strict';
 const fs=require('node:fs'), path=require('node:path'), vm=require('node:vm');
@@ -50,9 +51,9 @@ function runCounterfactual(data, overrides={}) {
       }
       stepSimulation(SIM_STEP); tick++; replay.tick=tick;
     }
-    const pending=__events.length-i;
+    const unreached=__events.length-i;         // actions the game never reached (defeat before their tick) — not drops
     return {win:!!S.win, gate:S.gate, wave:S.wave, credits:S.credits, kills:S.kills, mutations:[...S.mutations],
-      ticks:tick, deferred, dropped:dropped+pending, lateTicks, signature:replaySignature(), ledger:{...S.dmg}};
+      ticks:tick, deferred, dropped, unreached, lateTicks, signature:replaySignature(), ledger:{...S.dmg}};
   })()`,ctx,{timeout:120000});
 }
 function loadFixtures(dir=FIXTURE_DIR) {
@@ -63,7 +64,7 @@ function baselineCheck(fixtures) {
   for(const {name,data} of fixtures){
     const strict=verifyParty(data);
     const cf=runCounterfactual(data,{});
-    const same=cf.signature===data.terminal.signature && cf.deferred===0 && cf.dropped===0;
+    const same=cf.signature===data.terminal.signature && cf.deferred===0 && cf.dropped===0 && cf.unreached===0;
     rows.push({name,strict:strict.verified,gate:cf.gate,win:cf.win,exact:same,deferred:cf.deferred,dropped:cf.dropped});
     if(!same) throw new Error(`Counterfactual player diverged from the verifier on ${name} without overrides.`);
   }
@@ -76,7 +77,7 @@ const FACTORS={
   hp:      {label:'Enemy HP multiplier (constant)', key:'hp', values:[1,1.25,1.5]},
   growth:  {label:'Enemy HP growth per wave', key:'growth', values:[0.08,0.10,0.11]},
 };
-function cell(r){ return `${r.win?'W':'L'} g${r.gate} w${r.wave}${r.deferred||r.dropped?` (d${r.deferred}/x${r.dropped})`:''}`; }
+function cell(r){ const f=[r.deferred?`d${r.deferred}`:'',r.dropped?`x${r.dropped}`:'',r.unreached?`u${r.unreached}`:''].filter(Boolean).join('/'); return `${r.win?'W':'L'} g${r.gate} w${r.wave} t${r.ticks}${f?` (${f})`:''}`; }
 function sweep(fixtures, factorNames) {
   const out={}; const md=[];
   for(const fn of factorNames){
@@ -100,7 +101,7 @@ function main(){
   for(const r of baselineCheck(fixtures)) console.log(`  ${r.name.padEnd(14)} verified=${r.strict} exact=${r.exact} ${r.win?'W':'L'} gate ${r.gate}`);
   const {out,md}=sweep(fixtures,which);
   console.log(md);
-  console.log('\nCell format: W/L = win/loss, g = Gate HP at end, w = last wave, (dN/xM) = N deferred / M dropped actions. Evolution off = EVOLUTION_WAVES emptied.');
+  console.log('\nCell format: W/L = win/loss, g = Gate HP at end, w = last wave, t = simulation ticks, (dN/xM/uK) = N deferred, M dropped after waiting, K unreached because the game ended first. Evolution off = EVOLUTION_WAVES emptied.');
   const gen=path.join(ROOT,'reports/generated'); fs.mkdirSync(gen,{recursive:true});
   fs.writeFileSync(path.join(gen,'replay-sweep.json'),JSON.stringify({policy:'defer-in-order, drop after 3600 ticks',factors:out},null,2)+'\n');
   fs.writeFileSync(path.join(gen,'replay-sweep.md'),md+'\n');
