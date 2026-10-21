@@ -20,6 +20,8 @@ node tests/prototype-regression.cjs
 
 Проверка без браузера: `node tools/replay-party.cjs путь/к/партии.json`.
 
+Записанные партии игрока лежат в `reports/replays/human-v0.4/` и служат эталонными таймлайнами для контрфактных прогонов баланса: `node tools/replay-sweep.cjs` меняет по одному правилу и воспроизводит действия игрока на записанных тиках (политика и верность — в `reports/balance-factors-v0.4.md`).
+
 ## Структура
 
 - [Паспорт проекта v2.13](docs/ultimate-td-passport-v2-13.md) — актуальные решения и текущая повестка.
