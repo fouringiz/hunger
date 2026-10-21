@@ -917,6 +917,85 @@ function weaponMuzzle(t,angle=t.angle) {
   const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
   return {x:t.x+m.a*length,y:t.y-14+m.b*length};
 }
+// Presentation observes new tower identities; build/reset and replay fingerprints stay untouched.
+const TURRET_DEPLOY_SECONDS = 1.65;
+let constructionScene = null, constructionArt = new WeakMap();
+function constructionProgress(t) {
+  const event=constructionArt.get(t);
+  if(!event || event.done)return 1;
+  return Math.max(0,Math.min(1,(presentationTime-event.at)/TURRET_DEPLOY_SECONDS));
+}
+function observeConstruction() {
+  if(constructionScene!==S){constructionScene=S;constructionArt=new WeakMap();}
+  for(const t of S.towers){
+    if(t.type!=='turret')continue;
+    let event=constructionArt.get(t);
+    if(!event){event={at:presentationTime,done:false,stage:0};constructionArt.set(t,event);}
+    // Combat keeps its existing timing. A fired or selling weapon must be visibly assembled.
+    if(t.selling || weaponFeedback.has(t) || S.phase==='over'){event.done=true;continue;}
+    if(event.done)continue;
+    const p=constructionProgress(t),stage=p>=.94?3:p>=.54?2:p>=.12?1:0;
+    if(stage>event.stage){
+      event.stage=stage;
+      playCue('turret-deploy-'+stage,[0,120,210,410][stage],stage===2?.16:.09,stage===3?'sine':'triangle');
+    }
+    if(p>=1)event.done=true;
+  }
+}
+function deploymentStep(p,start,end) {
+  const t=Math.max(0,Math.min(1,(p-start)/(end-start)));
+  return t*t*(3-2*t);
+}
+function drawTurretDeployment(t,p) {
+  if(p>=1)return false;
+  const spread=deploymentStep(p,0,.28),lift=deploymentStep(p,.25,.65),barrels=deploymentStep(p,.64,.94);
+  // Four foundation sections travel out from the same fixed central socket, at constant scale.
+  const r=LOW_BUILDING_RECTS[0];
+  const hasBase=lowBuildingArt&&lowBuildingArt.complete&&lowBuildingArt.naturalWidth;
+  for(let row=0;row<2;row++)for(let col=0;col<2;col++){
+    const x=-22+col*22+(col?-1:1)*9*(1-spread),y=-17+row*17+(row?-1:1)*7*(1-spread);
+    if(hasBase){ctx.drawImage(lowBuildingArt,r[0]+col*r[2]/2,r[1]+row*r[3]/2,r[2]/2,r[3]/2,x,y,22,17);}
+    else{ctx.fillStyle='#5d6952';ctx.strokeStyle='#939d80';ctx.lineWidth=1;roundRect(x,y,22,17,2);ctx.fill();ctx.stroke();}
+  }
+  // The shaft rises out of the socket; the housing is occluded by the near edge while emerging.
+  if(lift>0){
+    ctx.fillStyle='#24322f';ctx.fillRect(-5,-4-10*lift,10,10*lift);
+    ctx.fillStyle='#9da58f';ctx.fillRect(-3,-4-10*lift,2,10*lift);
+    const angle=-Math.PI/2,m=weaponProjection(angle),r=STRUCTURE_RECTS[5],split=200,size=.14;
+    ctx.save();ctx.beginPath();ctx.rect(-45,-75,90,71);ctx.clip();
+    for(const z of [3,0]){
+      ctx.save();ctx.translate(0,12-26*lift+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+      if(z)ctx.filter='brightness(0.38)';
+      if(structureArt&&structureArt.complete&&structureArt.naturalWidth){
+        // Retracted barrel tips slide inside the housing; crop at the receiver instead of scaling them.
+        ctx.save();ctx.beginPath();ctx.rect((split-103)*size-2,-25,40,50);ctx.clip();
+        ctx.drawImage(structureArt,r[0]+split,r[1],r[2]-split,r[3],(split-103)*size-15*(1-barrels),-91*size,(r[2]-split)*size,r[3]*size);ctx.restore();
+        ctx.drawImage(structureArt,r[0],r[1],split,r[3],-103*size,-91*size,split*size,r[3]*size);
+      }else{
+        ctx.fillStyle=z?'#182024':'#a2a68c';for(const y of [-5,3])ctx.fillRect(3,y,7+18*barrels,2);
+        ctx.fillStyle=z?'#182024':'#69765e';roundRect(-9,-8,18,16,3);ctx.fill();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  // Two sliding hatch leaves uncover the lift. They withdraw beneath the fixed socket rim.
+  const hatch=deploymentStep(p,.16,.43);
+  if(hatch<1){
+    ctx.save();ctx.beginPath();ctx.rect(-12,-12,24,14);ctx.clip();
+    for(const side of [-1,1]){
+      const x=side<0?-12-12*hatch:12*hatch;
+      if(structureArt&&structureArt.complete&&structureArt.naturalWidth){
+        // Armored hatch faces reuse the housing's paint and vents, retaining the game's material style.
+        ctx.drawImage(structureArt,468+(side<0?0:52),505,52,100,x,-12,12,14);
+      }else{ctx.fillStyle='#78816a';ctx.fillRect(x,-12,12,14);}
+      ctx.strokeStyle='#1b2625';ctx.lineWidth=1;ctx.strokeRect(x,-12,12,14);
+    }
+    ctx.restore();
+  }
+  if(p>.94){ctx.fillStyle='#a7ffcf';ctx.fillRect(-2,-14,4,2);}
+  return true;
+}
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon',cell=cannon?1:0;
   if(!lowBuildingSprite(cell,-22,-17,44,34) && !structureSprite(cell,-22,-22,44,40))return false;
@@ -1077,7 +1156,7 @@ function drawTowerBody(t) {
       for(let i=0;i<3;i++){ctx.fillStyle=t.soldiers[i].alive?'#b5da9a':'#62534a';ctx.fillRect(-13+i*11,-3,4,3);}
       }
     } else if(t.type === 'turret' || t.type === 'cannon') {
-      if(!drawPlantedWeapon(t,kick)) {
+      if(!(t.type==='turret' && drawTurretDeployment(t,constructionProgress(t))) && !drawPlantedWeapon(t,kick)) {
         ctx.fillStyle=c;roundRect(-18,-15,36,30,4);ctx.fill();
         ctx.save();ctx.translate(0,-6);ctx.rotate(t.angle);ctx.fillStyle='#909b8b';ctx.fillRect(-4,-5,29,10);ctx.restore();
       }
@@ -1275,6 +1354,7 @@ function stars(n, x, y, size) {
 }
 
 function draw() {
+  observeConstruction();
   buttons = [];
   ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);
   ctx.fillStyle = '#151820'; ctx.fillRect(0, 0, W, H);
