@@ -12,7 +12,7 @@ function verifyParty(data) {
   if(!match)throw new Error('Prototype inline script is missing.');
   const canvas={getContext:()=>({}),style:{},addEventListener(){}};
   const context=vm.createContext({document:{getElementById:()=>canvas},window:{devicePixelRatio:1},
-    location:{pathname:'/prototype/index.html',search:''},URLSearchParams,
+    location:{pathname:'/prototype/index.html',search:data.balancePreset?('?balance='+data.balancePreset):''},URLSearchParams,
     innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
   vm.runInContext(match[1],context,{timeout:10000});
   context.replayInput=data;
