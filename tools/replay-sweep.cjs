@@ -92,7 +92,7 @@ function runCounterfactual(data, overrides={}, opts={}) {
   })()`,ctx,{timeout:120000});
 }
 // The baseline reference set contains campaign-rule games only. A preset set must contain games of exactly that preset.
-function loadFixtures(dir=FIXTURE_DIR, preset=null) {
+function loadFixtures(dir=FIXTURE_DIR, preset='v04') {   // the v0.4 reference games are replayed under the legacy v04 rules
   const all=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort().map(f=>({name:f.replace(/\.json$/,''),data:JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'))}));
   const wrong=all.filter(x=>(x.data.balancePreset??null)!==preset);
   if(wrong.length) console.error(`Skipping replays whose preset is not ${preset??'none'}: `+wrong.map(x=>x.name).join(', '));

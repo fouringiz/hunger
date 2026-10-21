@@ -9,10 +9,11 @@ function boot(search){ const ctx=vm.createContext({document:{getElementById:()=>
   location:{pathname:'/prototype/index.html',search},URLSearchParams,structuredClone,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
   vm.runInContext(src,ctx); return ctx; }
 const g=(c,e)=>vm.runInContext(e,c);
-const base=boot(''), trial=boot('?infantry=1');
+const base=boot(''), trial=boot('?infantry=1'), legacy=boot('?balance=v04'), legacyTrial=boot('?balance=v04&infantry=1');
 const reference=JSON.parse(fs.readFileSync(path.join(ROOT,'reports/replays/human-v0.4/cannon-only.json'),'utf8'));
-assert.equal(g(base,'replayRulesFingerprint()'),reference.rules,'without the trial the rules fingerprint is the committed campaign one');
-assert.notEqual(g(trial,'replayRulesFingerprint()'),reference.rules,'the trial changes the rules fingerprint');
+assert.equal(g(legacy,'replayRulesFingerprint()'),reference.rules,'without the trial the rules fingerprint is the committed one for those rules');
+assert.notEqual(g(legacyTrial,'replayRulesFingerprint()'),reference.rules,'the trial changes the rules fingerprint');
+assert.notEqual(g(trial,'replayRulesFingerprint()'),g(base,'replayRulesFingerprint()'),'the trial changes the v0.5 rules fingerprint too');
 assert.equal(g(base,"performPlayerAction({kind:'deploy'}), performPlayerAction({kind:'build',slot:2,type:'barracks'})"),false,'Barracks cannot be built outside the trial');
 console.log('PASS the campaign is untouched without ?infantry=1');
 const exported=JSON.parse(g(trial,`(() => {
