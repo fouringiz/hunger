@@ -462,9 +462,13 @@ function sell(t) {                                              // demolition: f
   return true;
 }
 function replayRulesFingerprint() {
-  const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
+  // The Barracks entry and infantry constants belong to the opt-in field trial; they enter the fingerprint only when
+  // the trial is on, so a campaign game (and every committed reference replay) hashes exactly as before the trial existed.
+  const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
+  const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D};
+  if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
 function replayHash(value) {
@@ -480,7 +484,8 @@ function replaySourceFingerprint() {
 function replaySignature() {
   return JSON.stringify({tick:replay.tick,win:!!S.win,gate:S.gate,credits:S.credits,wave:S.wave,kills:S.kills,mutations:S.mutations.slice(),
     dmg:S.dmg,time:S.time,towers:SLOTS.map((s,i)=>{const t=s.tower; return t?{slot:i,type:t.type,generation:replay.generations[i],level:t.level,paused:t.paused,
-      selling:t.selling,cd:t.cd,warm:t.warm,sellT:t.sellT,invested:t.invested,kills:t.kills}:null;})});
+      selling:t.selling,cd:t.cd,warm:t.warm,sellT:t.sellT,invested:t.invested,kills:t.kills,
+      ...(INFANTRY_TRIAL&&t.soldiers?{soldiers:t.soldiers.map(u=>({hp:u.hp,d:u.d,alive:u.alive,arrived:u.arrived,cd:u.cd,retalCd:u.retalCd,target:u.target?S.enemies.indexOf(u.target):-1}))}:{})}:null;})});
 }
 function replayStatus() { return {mode:replay.mode,tick:replay.tick,error:replay.error,events:replay.events.length,terminal:replay.terminal}; }
 function beginReplayRecording() {
@@ -521,6 +526,7 @@ function validateReplay(data) {
   if(!data||typeof data!=='object'||Array.isArray(data)) throw new Error('Replay file must contain a JSON object.');
   try { if(JSON.stringify(data).length>REPLAY_LIMIT) throw new Error('Replay file exceeds the 5 MB limit.'); }
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
+  if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
   if(data.protocol!==1||data.baseRevision!=='e607abf'||data.gameVersion!=='prototype-v0.4'||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
@@ -581,7 +587,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',balancePreset:BALANCE_PRESET_NAME,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }

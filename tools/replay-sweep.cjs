@@ -29,7 +29,7 @@ function makeContext(search='') {
 // the original functions unchanged and only count; tests pin that an instrumented run ends in the same signature.
 // A replay recorded under a balance preset is replayed under that preset.
 function runCounterfactual(data, overrides={}, opts={}) {
-  const ctx=makeContext(data.balancePreset?('?balance='+data.balancePreset):'');
+  const ctx=makeContext('?'+[data.balancePreset?'balance='+data.balancePreset:'',data.infantryTrial?'infantry=1':''].filter(Boolean).join('&'));
   ctx.__events=data.events.filter(e=>e.kind!=='speed').map(e=>({...e}));
   ctx.__ov=overrides; ctx.__initial=data.initial; ctx.__instrument=!!opts.instrument;
   return vm.runInContext(`(() => {
