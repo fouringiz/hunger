@@ -57,7 +57,9 @@ function runCounterfactual(data, overrides={}) {
   })()`,ctx,{timeout:120000});
 }
 function loadFixtures(dir=FIXTURE_DIR) {
-  return fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort().map(f=>({name:f.replace(/\.json$/,''),data:JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'))}));
+  const all=fs.readdirSync(dir).filter(f=>f.endsWith('.json')).sort().map(f=>({name:f.replace(/\.json$/,''),data:JSON.parse(fs.readFileSync(path.join(dir,f),'utf8'))}));
+  const skipped=all.filter(x=>x.data.balancePreset); if(skipped.length) console.error('Skipping candidate-preset replays (not reference timelines): '+skipped.map(x=>x.name).join(', '));
+  return all.filter(x=>!x.data.balancePreset);
 }
 function baselineCheck(fixtures) {
   const rows=[];

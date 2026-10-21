@@ -32,6 +32,18 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 // Opt-in geometry aid for presentation review; absent from normal play and the regression VM.
 const DEBUG_HIT_BOUNDS = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debugHitBounds');
+// Balance presets for playtesting declared candidates (reports/balance-factors-v0.4.md). Selected only by URL:
+// ?balance=parityA. No preset = the campaign rules exactly. A preset is part of the replay fingerprint and is written
+// into exported replays, so candidate games never mix with the baseline reference set. Delete a preset once it is
+// accepted into the rules or rejected.
+const BALANCE_PRESETS = {
+  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25}
+};
+const BALANCE_PRESET_NAME = (() => { if (typeof location === 'undefined') return null;
+  const n = new URLSearchParams(location.search).get('balance'); return BALANCE_PRESETS[n] ? n : null; })();
+const BALANCE_PRESET = BALANCE_PRESET_NAME ? BALANCE_PRESETS[BALANCE_PRESET_NAME] : null;
+// The preset is applied to ENEMY/TOWER values only (below), so simulation function sources stay untouched and the
+// rules fingerprint changes through the values themselves: baseline replays keep verifying without a preset.
 let evolutionCardDismissed = false;
 const leechDrainVisuals = new WeakMap();
 let scale = 1, dpr = 1;
@@ -87,7 +99,9 @@ const TOWER = {
   generator: {name:'Generator', cost:90,  power:-40, kind:'gen', color:'#ffe66d',
               upg:[0,55,85],  desc:'+40/+60/+85 power. Leeches feed on it.'}
 };
-const GEN_POWER = [40, 60, 85];                   // generator output by level: slot-efficient, not credit-efficient
+const GEN_POWER = [40, 60, 85];
+if (BALANCE_PRESET) { TOWER.turret.dmg = BALANCE_PRESET.turretDmg; TOWER.voltaic.dmg = BALANCE_PRESET.voltaicDmg; TOWER.cannon.dmg = BALANCE_PRESET.cannonDmg;
+  for (const k in ENEMY) ENEMY[k].hp = Math.round(ENEMY[k].hp * BALANCE_PRESET.enemyHp * 100) / 100; }                   // generator output by level: slot-efficient, not credit-efficient
 const BASE_POWER = 40, PAUSED_DRAW = 0.25, WARMUP = 2.5, BROWNOUT_MULT = 0.6, WAVES = 10;
 const RANK_KILLS = [0, 12, 35];
 const SELL_RATE = 0.6, SELL_TIME = 1.8;          // 60% refund, 1.8 s demolition
@@ -402,6 +416,7 @@ function validateReplay(data) {
   if(!data||typeof data!=='object'||Array.isArray(data)) throw new Error('Replay file must contain a JSON object.');
   try { if(JSON.stringify(data).length>REPLAY_LIMIT) throw new Error('Replay file exceeds the 5 MB limit.'); }
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
+  if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
   if(data.protocol!==1||data.baseRevision!=='e607abf'||data.gameVersion!=='prototype-v0.4'||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
@@ -461,7 +476,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',balancePreset:BALANCE_PRESET_NAME,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -1141,6 +1156,7 @@ function draw() {
   ctx.fillStyle = '#e8ecf2'; ctx.fill();
   text(pw.cons + ' / ' + pw.prod, bx + 48 + bw + 8, HUD/2, 12, pw.brown ? '#ff6b6b' : barColor, 'left', '600');
   text('Wave ' + S.wave + '/' + WAVES, 560, HUD/2, 14, '#e8ecf2', 'center', '700');
+  if (BALANCE_PRESET) text('BALANCE: ' + BALANCE_PRESET.label, 560, HUD + 12, 11, '#ffb454', 'center', '700');
   if(['playing','verified','error'].includes(replay.mode)) btn(640,7,130,26,'Exit replay',()=>reset(),true,true);
   else if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', () => performPlayerAction({kind:'wave'}), true, true);
   if ((S.phase === 'build' || S.phase === 'wave')&&replay.mode!=='playing'&&replay.mode!=='verified') btn(786, 7, 60, 26, '×' + S.speed, () => performPlayerAction({kind:'speed',value:S.speed===1?2:1}));
