@@ -14,4 +14,19 @@ console.log('PASS cannon damage override changes the outcome in the declared dir
 const noEvo=runCounterfactual(fixtures.find(f=>f.name==='voltaic-only').data,{evolution:false});
 assert.equal(noEvo.mutations.length,0,'evolution off produces no mutations');
 console.log('PASS evolution override removes the schedule');
-console.log('3 sweep scenarios, 0 failures');
+const {loadPresetFixtures}=require('../tools/replay-sweep.cjs');
+const preset=loadPresetFixtures('parityA');
+assert.equal(preset.length,4,'the parityA candidate set holds four games');
+for(const r of baselineCheck(preset)) assert.ok(r.strict&&r.exact,`${r.name} (parityA): strict verifier and counterfactual player agree under the preset`);
+console.log('PASS the parityA candidate set reproduces exactly under its preset');
+for(const {name,data} of [...fixtures,...preset]){
+  const plain=runCounterfactual(data,{}), measured=runCounterfactual(data,{},{instrument:true});
+  assert.equal(measured.signature,plain.signature,`${name}: instrumentation must not change the game`);
+}
+console.log('PASS instrumented runs end in the same state as plain runs on all eight games');
+const v=runCounterfactual(fixtures.find(f=>f.name==='voltaic-only').data,{},{instrument:true}).measures;
+assert.ok(v.rodBreaks>0 && v.rodBreaksAfterRodDied>0 && v.rodBreaksAfterRodDied<v.rodBreaks,'rod breaks are counted, including chains stopped by a rod that died from the hit');
+const vOff=runCounterfactual(fixtures.find(f=>f.name==='voltaic-only').data,{evolution:false},{instrument:true}).measures;
+assert.equal(vOff.rodBreaks,0,'no Grounding, no rod breaks');
+console.log('PASS chain breaks are measured only under Grounding');
+console.log('6 sweep scenarios, 0 failures');
