@@ -123,6 +123,9 @@ function evolutionMemo(kind, replacement) {
 // ---------------------------------------------------------------- state
 let S;
 let presentationTime = 0, weaponFeedback = new WeakMap(), presentationBursts = [];
+const REPLAY_LIMIT = 5 * 1024 * 1024, REPLAY_EVENT_LIMIT = 20000, REPLAY_TICK_LIMIT = 1000000;
+let replay = {mode:'idle', tick:0, seq:0, events:[], checkpoints:[], error:null, initial:null, terminal:null, playbackBudget:0, nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
+let replayUiMessage='', replayLoading=false, replayLoadTicket=0;
 function reset() {
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
@@ -131,6 +134,8 @@ function reset() {
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        toast:'', toastT:0, accumulator:0};
   weaponFeedback = new WeakMap(); presentationBursts = []; presentationTime = 0;
+  replay = {mode:'idle', tick:0, seq:0, events:[], checkpoints:[], error:null, initial:null, terminal:null, playbackBudget:0, nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
+  replayLoading=false; replayLoadTicket++; replayUiMessage='';
 }
 reset();
 
@@ -272,6 +277,7 @@ function startWave() {
   // EXPERIMENTAL Dispersal: the mutated wave leaves the mouth less densely. Composition and speed are unchanged;
   // the wave lasts longer, which may also help the defense — the paired control must measure wave duration.
   if (S.mutations.includes('dispersal')) for (const s of S.spawnQueue) s.delay *= DISPERSAL_SPACING;
+  return true;
 }
 function endWave() {
   let memo = '';
@@ -297,22 +303,25 @@ function endWave() {
   S.phase = 'build'; S.buildTimer = 20;
 }
 function build(slot, type) {
-  const T = TOWER[type]; if (slot.tower || S.credits < T.cost) return;
+  const T = TOWER[type]; if (!T || !slot || slot.tower || S.credits < T.cost) return false;
   S.credits -= T.cost;
   const t = {type, T, x:slot.x, y:slot.y, level:1, paused:false, warm:0, cd:0, kills:0, angle:-Math.PI/2, slot,
              invested:T.cost, selling:false, sellT:0, leeched:null};
   slot.tower = t; S.towers.push(t); S.selected = {kind:'tower', tower:t};
   if (type === 'generator') playCue('generator', 310, 0.24, 'sine');
+  return true;
 }
 function upgrade(t) {
-  if (t.level >= 3 || t.selling) return;
+  if (!t || t.level >= 3 || t.selling) return false;
   const cost = t.T.upg[t.level]; if (S.credits < cost) return;
   S.credits -= cost; t.level++; t.invested += cost;
   if (t.type === 'generator') playCue('generator', 390, 0.2, 'sine');
+  return true;
 }
 function togglePause(t) {
-  if (t.type === 'generator' || t.selling) return;
+  if (!t || t.type === 'generator' || t.selling) return false;
   if (t.paused) { t.paused = false; t.warm = WARMUP; } else { t.paused = true; }
+  return true;
 }
 function returnLeechToLane(e) {
   if (e.gen) e.gen.leeched = null;
@@ -327,10 +336,134 @@ function returnLeechToLane(e) {
   }
 }
 function sell(t) {                                              // demolition: fire stops now, credits on completion
-  if (t.selling) return;
+  if (!t || t.selling) return false;
   t.selling = true; t.sellT = SELL_TIME;
   if (t.leeched) returnLeechToLane(t.leeched);
   S.selected = null;
+  return true;
+}
+function replayRulesFingerprint() {
+  const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
+    BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D};
+  return replayHash(JSON.stringify(rules));
+}
+function replayHash(value) {
+  let h = 2166136261;
+  for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); }
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+function replaySourceFingerprint() {
+  const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,endWave,build,upgrade,togglePause,
+    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,update,stepSimulation,performPlayerAction];
+  return replayHash(sources.map(fn=>fn.toString()).join('\n'));
+}
+function replaySignature() {
+  return JSON.stringify({tick:replay.tick,win:!!S.win,gate:S.gate,credits:S.credits,wave:S.wave,kills:S.kills,mutations:S.mutations.slice(),
+    dmg:S.dmg,time:S.time,towers:SLOTS.map((s,i)=>{const t=s.tower; return t?{slot:i,type:t.type,generation:replay.generations[i],level:t.level,paused:t.paused,
+      selling:t.selling,cd:t.cd,warm:t.warm,sellT:t.sellT,invested:t.invested,kills:t.kills}:null;})});
+}
+function replayStatus() { return {mode:replay.mode,tick:replay.tick,error:replay.error,events:replay.events.length,terminal:replay.terminal}; }
+function beginReplayRecording() {
+  const initial={time:S.time,accumulator:S.accumulator,buildTimer:25,credits:200,gate:GATE_MAX,speed:1,map:'perimeter-07'};
+  replay={mode:'recording',tick:0,seq:0,events:[],checkpoints:[],error:null,initial,terminal:null,playbackBudget:0,nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
+  S.phase='build'; S.buildTimer=25; S.report=''; S.speed=1;
+}
+function replayRecord(action) {
+  if (replay.mode==='recording') {
+    if (replay.events.length>=REPLAY_EVENT_LIMIT) { replay.mode='error'; replay.error='Replay action limit reached.'; return; }
+    replay.events.push({...action,tick:replay.tick,seq:replay.seq++});
+  }
+}
+function performPlayerAction(a, playback=false) {
+  if (!a || typeof a!=='object' || (!playback&&(replay.mode==='playing' || replay.mode==='verified')) || replay.mode==='error') return false;
+  if(!playback&&a.kind==='deploy'&&replayLoading)return false;
+  const actionContext={wave:S.wave,time:S.time};
+  if (a.kind==='deploy') { if(S.phase!=='menu') return false; beginReplayRecording(); return true; }
+  if (a.kind==='playagain') { if(S.phase!=='over') return false; reset(); beginReplayRecording(); return true; }
+  if (S.phase!=='build' && S.phase!=='wave') return false;
+  let event={kind:a.kind}, ok=false, index=Number.isInteger(a.slot)?a.slot:-1, t=index>=0&&index<SLOTS.length?SLOTS[index].tower:null;
+  if(a.kind==='build') {
+    if(index<0||index>=SLOTS.length||!Object.prototype.hasOwnProperty.call(TOWER,a.type)) return false;
+    ok=build(SLOTS[index],a.type); if(ok){ replay.generations[index]++; event={kind:'build',slot:index,type:a.type,generation:replay.generations[index]}; }
+  } else if(a.kind==='upgrade'||a.kind==='sell'||a.kind==='pause'||a.kind==='resume') {
+    if(!t||replay.generations[index]!==a.generation||t.type!==a.type) return false;
+    event={kind:a.kind,slot:index,type:a.type,generation:a.generation};
+    if(a.kind==='upgrade') ok=upgrade(t)===true;
+    if(a.kind==='sell') ok=sell(t)===true;
+    if(a.kind==='pause') ok=!t.paused&&togglePause(t)===true;
+    if(a.kind==='resume') ok=t.paused&&togglePause(t)===true;
+  } else if(a.kind==='wave') { if(S.phase!=='build') return false; ok=startWave()===true; }
+  else if(a.kind==='speed') { if(a.value!==1&&a.value!==2) return false; S.speed=a.value; event={kind:'speed',value:a.value}; ok=true; }
+  if(ok) replayRecord({...event,...actionContext});
+  return ok;
+}
+function validateReplay(data) {
+  if(!data||typeof data!=='object'||Array.isArray(data)) throw new Error('Replay file must contain a JSON object.');
+  try { if(JSON.stringify(data).length>REPLAY_LIMIT) throw new Error('Replay file exceeds the 5 MB limit.'); }
+  catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||data.gameVersion!=='prototype-v0.4'||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
+    !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
+  if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
+  let prevTick=-1,prevSeq=-1;
+  for(let eventIndex=0;eventIndex<data.events.length;eventIndex++){
+    const e=data.events[eventIndex];
+    if(!e||!Number.isInteger(e.tick)||e.tick<0||e.tick>=data.terminal.tick||e.seq!==eventIndex||e.tick<prevTick||(e.tick===prevTick&&e.seq<=prevSeq)||!Number.isInteger(e.wave)||e.wave<0||e.wave>WAVES||!Number.isFinite(e.time)||e.time<0||e.time>1e7) throw new Error('Replay actions are malformed or out of order.');
+    if(!['build','upgrade','sell','pause','resume','wave','speed'].includes(e.kind)) throw new Error('Replay contains an unknown action.');
+    if(['build','upgrade','sell','pause','resume'].includes(e.kind)&&(!Number.isInteger(e.slot)||e.slot<0||e.slot>=SLOTS.length||!Number.isInteger(e.generation)||e.generation<1||!Object.prototype.hasOwnProperty.call(TOWER,e.type))) throw new Error('Replay tower reference is invalid.');
+    if(e.kind==='build'&&e.generation<1) throw new Error('Replay build generation is invalid.');
+    if(e.kind==='speed'&&e.value!==1&&e.value!==2) throw new Error('Replay speed is invalid.');
+    prevTick=e.tick;prevSeq=e.seq;
+  }
+  if(typeof data.terminal.win!=='boolean'||typeof data.terminal.signature!=='string'||data.terminal.signature.length>100000||data.checkpoints.length>WAVES) throw new Error('Replay result is invalid.');
+  prevTick=-1;
+  for(const c of data.checkpoints){if(!c||!Number.isInteger(c.tick)||c.tick<=prevTick||c.tick>data.terminal.tick||typeof c.signature!=='string'||c.signature.length>100000) throw new Error('Replay checkpoint is invalid.');prevTick=c.tick;}
+  return true;
+}
+function loadReplay(data) {
+  validateReplay(data); // validate before touching the current game
+  reset(); replay={mode:'playing',tick:0,seq:0,events:data.events.map(e=>({...e})),checkpoints:data.checkpoints.map(c=>({...c})),error:null,initial:{...data.initial},terminal:{...data.terminal},playbackBudget:0,nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
+  S.time=data.initial.time;S.accumulator=data.initial.accumulator;S.credits=200;S.gate=GATE_MAX;S.speed=1;S.phase='build';S.buildTimer=25;
+  return replayStatus();
+}
+function replayFail(message) { replay.mode='error';replay.error=message;return replayStatus(); }
+function prepareReplayTick() {
+  if(replay.preparedTick===replay.tick) return replay.mode==='playing';
+  if(replay.mode!=='playing') return false;
+  if(replay.tick>=REPLAY_TICK_LIMIT) { replayFail('Replay tick limit reached.'); return false; }
+  while(replay.nextEvent<replay.events.length&&replay.events[replay.nextEvent].tick===replay.tick){
+    const e=replay.events[replay.nextEvent++];
+    if(e.wave!==S.wave||e.time!==S.time) { replayFail('Replay action time or wave did not match.');return false; }
+    if(e.kind==='build'&&e.generation!==replay.generations[e.slot]+1) { replayFail('Replay build generation does not match.');return false; }
+    if(e.kind!=='build'&&['upgrade','sell','pause','resume'].includes(e.kind)&&e.generation!==replay.generations[e.slot]) { replayFail('Replay references a stale tower generation.');return false; }
+    if(!performPlayerAction(e,true)) { replayFail('Replay action could not be applied at tick '+replay.tick+'.');return false; }
+  }
+  replay.preparedTick=replay.tick;
+  return true;
+}
+function advanceReplayTick(prepared=false) {
+  if(replay.mode!=='playing') return replayStatus();
+  if(!prepared&&!prepareReplayTick()) return replayStatus();
+  stepSimulation(SIM_STEP);replay.tick++;
+  replay.preparedTick=-1;
+  if(replay.nextCheckpoint<replay.checkpoints.length&&replay.checkpoints[replay.nextCheckpoint].tick===replay.tick){
+    if(replay.checkpoints[replay.nextCheckpoint].signature!==replaySignature()) return replayFail('Replay wave checkpoint did not match.');
+    replay.nextCheckpoint++;
+  }
+  if(S.phase==='over'){
+    const sig=replaySignature();
+    if(replay.tick!==replay.terminal.tick||S.win!==replay.terminal.win||replay.nextEvent!==replay.events.length||replay.nextCheckpoint!==replay.checkpoints.length||sig!==replay.terminal.signature) return replayFail('Replay result did not match the saved result.');
+    replay.mode='verified';return replayStatus();
+  }
+  if(replay.tick>=replay.terminal.tick) return replayFail('Replay did not finish at the saved result tick.');
+  return replayStatus();
+}
+function exportReplay() {
+  if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+    fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
+    initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
 function finishSell(t) {
   const refund = Math.round(t.invested * SELL_RATE);
@@ -461,10 +594,22 @@ function fireElectro(t, st, target) {
 
 // ---------------------------------------------------------------- update
 function update(dt) {
+  if(['finished','verified','error'].includes(replay.mode)) return;
   S.accumulator += dt;
   const ticks = Math.floor((S.accumulator + 1e-9) / SIM_STEP);
   S.accumulator = Math.max(0, S.accumulator - ticks * SIM_STEP);
-  for (let i = 0; i < ticks; i++) stepSimulation(SIM_STEP);
+  for (let i = 0; i < ticks; i++) {
+    const oldPhase=S.phase;
+    stepSimulation(SIM_STEP);
+    if(replay.mode==='recording'){
+      replay.tick++;
+      if(oldPhase==='wave'&&S.phase!=='wave') replay.checkpoints.push({tick:replay.tick,signature:replaySignature()});
+      if(S.phase==='over'){
+        const signature=replaySignature(); replay.terminal={tick:replay.tick,win:!!S.win,signature}; replay.mode='finished';
+      }
+      if(replay.mode==='finished') break;
+    }
+  }
 }
 function stepSimulation(dt) {
   S.time += dt;
@@ -666,8 +811,33 @@ function evolutionBody(cell, x, y, mutation) {
   ctx.restore();
 }
 let buttons = [];
+let replayFileInput = null;
+if (typeof document.createElement === 'function' && document.body) {
+  replayFileInput=document.createElement('input'); replayFileInput.type='file'; replayFileInput.accept='application/json,.json';
+  replayFileInput.style.display='none'; document.body.appendChild(replayFileInput);
+  replayFileInput.addEventListener('change', async ev=>{
+    const f=ev.target.files&&ev.target.files[0]; if(!f)return;
+    if(replayLoading)return;
+    const ticket=++replayLoadTicket;replayLoading=true;
+    try { if(f.size>REPLAY_LIMIT) throw new Error('Replay file exceeds the 5 MB limit.'); const content=await f.text();if(ticket!==replayLoadTicket)return;const data=JSON.parse(content);loadReplay(data);replayUiMessage='Replay loaded. Playback started.'; }
+    catch(err){ if(ticket===replayLoadTicket)replayUiMessage=err&&err.message?err.message:'Replay could not be loaded.'; }
+    finally { if(ticket===replayLoadTicket)replayLoading=false; replayFileInput.value=''; }
+  });
+}
+function saveReplayFile() {
+  try {
+    const data=exportReplay(), json=JSON.stringify(data);
+    if(json.length>REPLAY_LIMIT) throw new Error('Replay file exceeds the 5 MB limit.');
+    if(typeof Blob==='undefined'||typeof URL==='undefined'||!URL.createObjectURL||!document.createElement) throw new Error('Replay download is unavailable here.');
+    const url=URL.createObjectURL(new Blob([json],{type:'application/json'})), a=document.createElement('a');
+    a.href=url;a.download='ultimate-td-replay.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),0);replayUiMessage='Replay saved.';
+  } catch(err){ replayUiMessage=err&&err.message?err.message:'Replay could not be saved.'; }
+}
+function chooseReplayFile() { if(replayLoading)return; replayUiMessage=''; if(replayFileInput) replayFileInput.click(); else replayUiMessage='Replay loading is unavailable here.'; }
 function btn(x, y, w, h, label, fn, enabled = true, accent = false) {
-  buttons.push({x, y, w, h, fn, enabled});
+  if(['playing','verified','error'].includes(replay.mode)&&!label.startsWith('SFX ')&&label!=='Exit replay'&&label!=='Back to menu') enabled=false;
+  if(replayLoading&&(label==='DEPLOY GARRISON'||label==='Load replay')) enabled=false;
+  buttons.push({x, y, w, h, label, fn, enabled});
   ctx.fillStyle = enabled ? (accent ? '#45644b' : '#263733') : '#202a29';
   ctx.strokeStyle = enabled ? (accent ? '#d3c68b' : '#76897b') : '#3a4945';
   ctx.lineWidth = 1; roundRect(x, y, w, h, 2); ctx.fill(); ctx.stroke();
@@ -971,8 +1141,9 @@ function draw() {
   ctx.fillStyle = '#e8ecf2'; ctx.fill();
   text(pw.cons + ' / ' + pw.prod, bx + 48 + bw + 8, HUD/2, 12, pw.brown ? '#ff6b6b' : barColor, 'left', '600');
   text('Wave ' + S.wave + '/' + WAVES, 560, HUD/2, 14, '#e8ecf2', 'center', '700');
-  if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', startWave, true, true);
-  if (S.phase === 'build' || S.phase === 'wave') btn(786, 7, 60, 26, '×' + S.speed, () => { S.speed = S.speed === 1 ? 2 : 1; });
+  if(['playing','verified','error'].includes(replay.mode)) btn(640,7,130,26,'Exit replay',()=>reset(),true,true);
+  else if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', () => performPlayerAction({kind:'wave'}), true, true);
+  if ((S.phase === 'build' || S.phase === 'wave')&&replay.mode!=='playing'&&replay.mode!=='verified') btn(786, 7, 60, 26, '×' + S.speed, () => performPlayerAction({kind:'speed',value:S.speed===1?2:1}));
   text('Gate ' + S.gate, 954, HUD/2, 14, S.gate > 6 ? '#7cffb2' : '#ff6b6b', 'right', '700');
 
   // bottom bar: a fresh toast wins over the standing line
@@ -980,6 +1151,7 @@ function draw() {
   if (S.toastT > 0) bottom = S.toast;
   else if (S.phase === 'build') bottom = 'Next wave: ' + previewText(S.wave + 1) + (S.report ? '     |     ' + S.report : '');
   else if (S.phase === 'wave') bottom = 'Wave ' + S.wave + ' in progress. Towers aim themselves. Tap one to pause, upgrade or sell it.';
+  if(replay.mode==='error') bottom='REPLAY ERROR: '+replay.error+'  Use Exit replay to return to the menu.';
   wrappedText(bottom,14,H-BOT+10,W-28,2,S.toastT>0?'#ffe66d':'#c9d0dc');
 
   // Evolution is announced during the existing interwave build window; the card sits in unused lower-left terrain.
@@ -1018,8 +1190,8 @@ function draw() {
       const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'generator'];
       let x0 = Math.max(6, Math.min(W - 6 - 4*98, s.x - 196)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
       menuPanel(x0,y0,4);
-      items.forEach((k, i) => { const T = TOWER[k];
-        btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => build(s, k), S.credits >= T.cost); });
+        items.forEach((k, i) => { const T = TOWER[k];
+        btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => performPlayerAction({kind:'build',slot:SLOTS.indexOf(s),type:k}), S.credits >= T.cost); });
       wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.',x0,y0+42,386);
     } else {
       const t = S.selected.tower; const st = tstats(t);
@@ -1028,16 +1200,18 @@ function draw() {
       if (t.selling) {
         text('Demolition in progress…', x0, y0 + 10, 12, '#8a93a6', 'left');
       } else if (t.type !== 'generator') {
-        btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => togglePause(t));
+        const towerIndex=SLOTS.indexOf(t.slot), towerRef={slot:towerIndex,type:t.type,generation:replay.generations[towerIndex]};
+        btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
         const cost = t.T.upg[t.level];
-        btn(x0 + 98, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => upgrade(t), t.level < 3 && S.credits >= cost);
-        btn(x0 + 196, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => sell(t));
+        btn(x0 + 98, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => performPlayerAction({kind:'upgrade',...towerRef}), t.level < 3 && S.credits >= cost);
+        btn(x0 + 196, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));
         wrappedText(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
              '  kills ' + t.kills + (rank(t) ? (rank(t) === 2 ? '  Elite (stripes burn on sale)' : '  Veteran (stripes burn on sale)') : ''), x0, y0 + 42, 288);
       } else {
         const cost = t.T.upg[t.level];
-        btn(x0, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => upgrade(t), t.level < 3 && S.credits >= cost);
-        btn(x0 + 98, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => sell(t));
+        const towerIndex=SLOTS.indexOf(t.slot), towerRef={slot:towerIndex,type:t.type,generation:replay.generations[towerIndex]};
+        btn(x0, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => performPlayerAction({kind:'upgrade',...towerRef}), t.level < 3 && S.credits >= cost);
+        btn(x0 + 98, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));
         wrappedText(isDrained(t) ? 'Generator: LEECHED — output 0. Nearby towers are on it.'
                        : 'Generator L' + t.level + ': +' + GEN_POWER[t.level-1] + ' power' + (t.level < 3 ? ' (next +' + GEN_POWER[t.level] + ')' : '') + '. Cannot be paused.',
              x0, y0 + 42, 288);
@@ -1057,8 +1231,10 @@ function draw() {
     text('Build your defense. Protect the generators.',52,291,15,'#afc1b2');
     text('The swarm adapts to your fire. Be ready to rebuild.',52,316,15,'#afc1b2');
     text('Tap a platform to build. Tap a tower to upgrade or sell.',52,351,12,'#8b9e91');
-    btn(52,392,210,44,'DEPLOY GARRISON',()=>{S.phase='build';S.buildTimer=25;S.report='';},true,true);
-    text('10 WAVES  /  AUTOMATIC FIRE  /  THREE WEAPON LINES',52,463,10,'#7e9586','left','600');
+    btn(52,392,210,44,'DEPLOY GARRISON',()=>performPlayerAction({kind:'deploy'}),true,true);
+    btn(52,444,130,32,'Load replay',chooseReplayFile);
+    if(replayUiMessage) text(replayUiMessage,52,487,11,'#ffe66d');
+    text('10 WAVES  /  AUTOMATIC FIRE  /  THREE WEAPON LINES',200,463,10,'#7e9586','left','600');
     sprite(1,745,265,300,-.3);sprite(0,645,393,118,.4);sprite(2,843,390,130,-.6);
     text('CONTACTS CONFIRMED',745,466,10,'#bbab78','center','600');
   }
@@ -1073,7 +1249,14 @@ function draw() {
     }
     text('Waves ' + S.wave + '/' + WAVES + '   Kills ' + S.kills + '   Credits left ' + S.credits, W/2, S.win ? 292 : 245, 15, '#c9d0dc', 'center');
     text(S.win ? 'DISPATCH: Held. All of it. — H.' : 'DISPATCH: Gate lost. Composition noted. Next time. — H.', W/2, S.win ? 318 : 275, 14, '#8a93a6', 'center');
-    btn(W/2 - 70, S.win ? 350 : 320, 140, 36, 'Play again', () => { reset(); S.phase = 'build'; S.buildTimer = 25; }, true, true);
+    if(replay.mode==='finished') {
+      btn(W/2 - 150, S.win ? 350 : 320, 140, 36, 'Save replay',saveReplayFile,true,true);
+      btn(W/2 + 10, S.win ? 350 : 320, 140, 36, 'Play again',()=>{reset();beginReplayRecording();},true,true);
+    }
+    else if(replay.mode==='verified'||replay.mode==='error') btn(W/2 - 70, S.win ? 350 : 320, 140, 36, 'Back to menu',()=>reset(),true,true);
+    else btn(W/2 - 70, S.win ? 350 : 320, 140, 36, 'Play again', () => { reset(); beginReplayRecording(); }, true, true);
+    const replayLine=replayUiMessage||(replay.mode==='verified'?'Replay verified.':replay.mode==='playing'?'Replaying saved result…':replay.mode==='error'?replay.error:'');
+    if(replayLine) text(replayLine,W/2,S.win?404:374,12,replay.mode==='error'?'#ff6b6b':'#ffe66d','center');
   }
   // Reserve a clear gap after speed and before the Gate readout; keep the control above overlays.
   btn(850, 7, 54, 26, soundEnabled ? 'SFX on' : 'SFX off', toggleSound);
@@ -1084,6 +1267,7 @@ canvas.addEventListener('pointerdown', ev => {
   const rect = canvas.getBoundingClientRect();
   const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
   for (const b of buttons) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (b.enabled) { b.fn(); if (soundEnabled) audioGesture(); } return; }
+  if(['playing','verified','error'].includes(replay.mode)) return;
   if (S.phase !== 'build' && S.phase !== 'wave') return;
   let hit = null;
   for (const s of SLOTS) if (Math.hypot(s.x - x, s.y - y) < 26) { hit = s; break; }
@@ -1099,7 +1283,14 @@ function frame(now) {
   const raw = Math.max(0, Math.min(0.25, (now - last) / 1000)); last = now;
   presentationTime += raw;
   presentationBursts = presentationBursts.filter(b => presentationTime - b.at < b.life);
-  update(raw * S.speed);
+  if(replay.mode==='playing'){
+    replay.playbackBudget=Math.min(0.25,replay.playbackBudget+raw);
+    while(replay.mode==='playing'&&prepareReplayTick()){
+      const stepWallTime=SIM_STEP/S.speed;
+      if(replay.playbackBudget+1e-9<stepWallTime) break;
+      replay.playbackBudget=Math.max(0,replay.playbackBudget-stepWallTime); advanceReplayTick(true);
+    }
+  } else if(!['verified','error','finished'].includes(replay.mode)) update(raw * S.speed);
   syncGeneratorHum();
   draw();
   requestAnimationFrame(frame);
