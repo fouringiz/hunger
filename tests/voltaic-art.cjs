@@ -52,7 +52,7 @@ const loaded = runtime();
 loaded.run('voltaicArt.complete=true; voltaicArt.naturalWidth=1254');
 const beforeDraw = loaded.run('JSON.stringify({phase:S.phase,wave:S.wave,gate:S.gate,credits:S.credits,time:S.time,towers:S.towers.map(t=>[t.type,t.x,t.y,t.angle,t.level,t.cd])})');
 loaded.run('draw()');
-assert.ok(loaded.calls.drawImages.some(args => args[0] === loaded.calls.images[1] && args[1] === -34 && args[2] === -25.5 && args[3] === 68 && args[4] === 68), 'loaded sprite draws at 68px with its discharge tip over the tower center');
+assert.ok(loaded.calls.drawImages.some(args => args[0] === loaded.calls.images[1] && args[1] === -28 && args[2] === -40 && args[3] === 56 && args[4] === 56), 'loaded sprite has a raised body and a ground footprint over its platform');
 assert.ok(loaded.calls.arcs.some(([x,y,r]) => x===0 && y===0 && r===4), 'dynamic charge dot remains over the sprite');
 assert.equal(loaded.run('JSON.stringify({phase:S.phase,wave:S.wave,gate:S.gate,credits:S.credits,time:S.time,towers:S.towers.map(t=>[t.type,t.x,t.y,t.angle,t.level,t.cd])})'), beforeDraw, 'draw does not change the game state');
 console.log('voltaic art: paths, fallbacks, sprite sizing, charge cue, and draw parity passed');
