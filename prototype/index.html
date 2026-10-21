@@ -867,28 +867,73 @@ const crawlerArt = typeof Image === 'undefined' ? null : new Image();
 if (crawlerArt) crawlerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-crawlers-v2.png';
 const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
+const groundActorArt = typeof Image === 'undefined' ? null : new Image();
+if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
+const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
+if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
+const GROUND_ACTOR_RECTS = [[29,229,593,329],[625,198,612,375],[30,784,655,360],[732,645,479,510]];
+const LOW_BUILDING_RECTS = [[59,137,429,321],[539,101,419,360],[49,507,438,430],[515,503,488,444],[86,955,371,481],[504,1064,482,393]];
+function lowBuildingSprite(cell,x,y,width,height) {
+  if(!lowBuildingArt || !lowBuildingArt.complete || !lowBuildingArt.naturalWidth) return false;
+  try {ctx.drawImage(lowBuildingArt,...LOW_BUILDING_RECTS[cell],x,y,width,height);return true;}catch(_){return false;}
+}
+function groundActorMetrics(type) {
+  const index={forager:0,carapacid:1,leech:2}[type], r=GROUND_ACTOR_RECTS[index];
+  const width=type==='carapacid'?58:type==='leech'?43:34;
+  return {index,r,width,height:r[3]/r[2]*width};
+}
+function enemyHeading(e) {
+  const p=posAt(e.d+4),q=posAt(e.d);let angle=Math.atan2(p.y-q.y,p.x-q.x);
+  if((e.state==='seek'||e.state==='attached')&&e.gen)angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
+  if(e.state==='return'){const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x);}
+  return angle;
+}
+function enemyBodyPoint(e) { const m=groundActorMetrics(e.type);return {x:e.x,y:e.y-m.height*.48}; }
+function groundActorSprite(e,angle) {
+  if(!groundActorArt || !groundActorArt.complete || !groundActorArt.naturalWidth) return false;
+  const m=groundActorMetrics(e.type);
+  // Distance-driven contraction is continuous and stops when movement stops. The underside never rises.
+  const phase=(e.d+(e.state==='lane'?0:(e.x+e.y)*.25))*.3;
+  const stretch=1+Math.sin(phase)*.018;
+  ctx.save();ctx.scale((Math.cos(angle)<0?-1:1)*stretch,1);
+  let drawn=false;try{ctx.drawImage(groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height);drawn=true;}catch(_){}finally{ctx.restore();}return drawn;
+}
 // Explicit source rectangles avoid generated artwork bleeding across nominal grid cells.
 const STRUCTURE_RECTS = [[43,111,302,271],[390,95,311,287],[739,83,330,302],[1102,72,327,313],
   [89,406,211,277],[412,474,307,188],[795,472,213,243],[1086,474,312,189],
   [80,716,226,290],[392,777,350,195],[790,752,223,281],[1055,777,351,195]];
-const WEAPON_PIVOTS = [[105,184],[103,91],[107,80],[207,91],[114,184],[101,93],[110,80],[251,93]];
 function structureSprite(cell, x, y, width, height) {
   if (!structureArt || !structureArt.complete || !structureArt.naturalWidth) return false;
   const r=STRUCTURE_RECTS[cell];
   try { ctx.drawImage(structureArt,...r,x,y,width,height); return true; } catch (_) { return false; }
 }
-function weaponFacing(angle) { return (Math.round((angle+Math.PI/2)/(Math.PI/2))+4)%4; }
+// Project the yaw of an upper assembly continuously onto the low-angle ground plane.
+function weaponProjection(angle) {
+  const depth=.56, yaw=Math.atan2(Math.sin(angle)/depth,Math.cos(angle));
+  return {a:Math.cos(yaw),b:Math.sin(yaw)*depth,c:-Math.sin(yaw),d:Math.cos(yaw)*depth};
+}
+function weaponMuzzle(t,angle=t.angle) {
+  if(t.type==='voltaic')return {x:t.x,y:t.y-58};
+  const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
+  return {x:t.x+m.a*length,y:t.y-14+m.b*length};
+}
 function drawPlantedWeapon(t,kick) {
-  const cannon=t.type==='cannon', cell=cannon?1:0;
-  // Ground footprint stays centered on the slot, independent of aim and recoil.
-  if (!structureSprite(cell,-22,-22,44,40)) return false;
-  const index=(cannon?4:0)+weaponFacing(t.angle), r=STRUCTURE_RECTS[4+index], pivot=WEAPON_PIVOTS[index], size=.14;
-  structureSprite(4+index,-pivot[0]*size-Math.cos(t.angle)*kick,-10-pivot[1]*size-Math.sin(t.angle)*kick,r[2]*size,r[3]*size);
+  const cannon=t.type==='cannon',cell=cannon?1:0;
+  if(!lowBuildingSprite(cell,-22,-17,44,34) && !structureSprite(cell,-22,-22,44,40))return false;
+  const m=weaponProjection(t.angle),r=STRUCTURE_RECTS[cannon?9:5],pivot=cannon?[101,93]:[103,91],size=.14;
+  // The foundation stays fixed. Only the textured upper assembly rotates, with a shallow extruded side.
+  for(const z of [3,0]){
+    ctx.save();ctx.translate(-Math.cos(t.angle)*kick,-14+z-Math.sin(t.angle)*kick);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+    if(z)ctx.filter='brightness(0.38)';
+    if(structureArt&&structureArt.complete&&structureArt.naturalWidth){ctx.drawImage(structureArt,...r,-pivot[0]*size,-pivot[1]*size,r[2]*size,r[3]*size);}
+    else{ctx.fillStyle=z?'#182024':'#69765e';roundRect(-9,-8,18,16,3);ctx.fill();ctx.fillStyle='#a2a68c';ctx.fillRect(0,-3,28,6);}
+    ctx.restore();
+  }
   return true;
 }
 function crawlerSprite(e,angle) {
   if (!['carapacid','leech'].includes(e.type) || !crawlerArt || !crawlerArt.complete || !crawlerArt.naturalWidth) return false;
-  const pose=Math.floor(S.time*5+e.d*.025)%2, row=e.type==='carapacid'?0:1;
+  const pose=0, row=e.type==='carapacid'?0:1;
   // Both poses remain planted; no vertical bob or rotation of the entire body.
   const rects=[[42,165,608,426],[648,164,585,440],[34,768,606,373],[661,787,570,361]], r=rects[row*2+pose];
   const scale=row===0?58/608:43/606, width=r[2]*scale, height=r[3]*scale;
@@ -910,6 +955,12 @@ function soldierGroundPoint(s,t) {
 }
 let terrainArt = null;
 function infantrySprite(cell, x, y, size, flip = false) {
+  if(cell<2 && groundActorArt && groundActorArt.complete && groundActorArt.naturalWidth){
+    const r=GROUND_ACTOR_RECTS[3],height=size,width=size*r[2]/r[3];
+    ctx.save();ctx.translate(x,y);if(flip)ctx.scale(-1,1);
+    let drawn=false;try{ctx.drawImage(groundActorArt,...r,-width/2,-height,width,height);drawn=true;}catch(_){}finally{ctx.restore();}
+    if(drawn)return true;
+  }
   if (!infantryArt || !infantryArt.complete || !infantryArt.naturalWidth) return false;
   const sw = infantryArt.naturalWidth / 2, sh = infantryArt.naturalHeight / 2;
   // Measured foot anchors of this sheet; the raised strike weapon must not move the feet.
@@ -1004,8 +1055,9 @@ function drawTowerBody(t) {
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
       const artSize=t.type==='voltaic'?56:48;
     if (t.type === 'voltaic') {
-      let drawn = false;
-      if (voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
+      let drawn = lowBuildingSprite(4,-22,-62,44,76);
+      const capY=drawn?-58:-28;
+      if (!drawn && voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
         try { ctx.drawImage(voltaicArt,-artSize/2,-40,artSize,artSize); drawn = true; } catch (_) {}
       }
       if (!drawn) {
@@ -1013,10 +1065,9 @@ function drawTowerBody(t) {
         ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
         for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
       }
-      const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
+      const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,capY,4,0,Math.PI*2);ctx.fill();
     } else if(t.type === 'barracks') {
-      if(!structureSprite(3,-22,-26,44,42)) {
+      if(!lowBuildingSprite(3,-25,-32,50,46) && !structureSprite(3,-22,-26,44,42)) {
       ctx.fillStyle='#283a30';roundRect(-20,-5,40,24,3);ctx.fill();
       ctx.fillStyle='#1a2823';ctx.fillRect(-20,3,40,16);
       ctx.fillStyle='#768466';ctx.beginPath();ctx.moveTo(-23,-6);ctx.lineTo(-13,-21);ctx.lineTo(16,-21);ctx.lineTo(23,-6);ctx.closePath();ctx.fill();
@@ -1030,7 +1081,7 @@ function drawTowerBody(t) {
         ctx.fillStyle=c;roundRect(-18,-15,36,30,4);ctx.fill();
         ctx.save();ctx.translate(0,-6);ctx.rotate(t.angle);ctx.fillStyle='#909b8b';ctx.fillRect(-4,-5,29,10);ctx.restore();
       }
-    } else if(!structureSprite(2,-22,-25,44,40)) {
+    } else if(!lowBuildingSprite(2,-22,-38,44,52) && !structureSprite(2,-22,-25,44,40)) {
       ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
     }
     if(t.type==='generator') {
@@ -1054,14 +1105,11 @@ function drawTowerBody(t) {
     ctx.restore();
 }
 function enemyArt(e) {
-  const p=posAt(e.d+4), q=posAt(e.d);
-  let angle=Math.atan2(p.y-q.y,p.x-q.x);
-  if((e.state==='seek' || e.state==='attached') && e.gen) angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
-  if(e.state==='return') { const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x); }
+  const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
-  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,1,e.r+2,Math.max(2.5,e.r*.22),0,0,Math.PI*2);ctx.fill();
-  const trialBody = e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
+  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
+  const trialBody = groundActorSprite(e,angle) || e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
   if(!trialBody && !crawlerSprite(e,angle) && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
     ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
   }
@@ -1069,8 +1117,7 @@ function enemyArt(e) {
 }
 function rosterSpecimen(cell,x,y,size) {
   ctx.save();ctx.translate(x,y+size*.35);let drawn=false;
-  if(cell===0) drawn=infantrySprite(2,0,0,size);
-  else { const normal=cell===1?58:43;ctx.scale(size/normal,size/normal);drawn=crawlerSprite({type:cell===1?'carapacid':'leech',d:0},0); }
+  const type=cell===0?'forager':cell===1?'carapacid':'leech',normal=groundActorMetrics(type).width;ctx.scale(size/normal,size/normal);drawn=groundActorSprite({type,d:0,state:'lane'},0) || (cell===0?infantrySprite(2,0,0,normal):crawlerSprite({type,d:0},0));
   ctx.restore();return drawn;
 }
 function evolutionBody(cell, x, y, mutation) {
@@ -1165,18 +1212,19 @@ function drawGeneratorDrainCue(t) {
 }
 function drawLeechCue(e) {
   if (e.dead || (e.state !== 'seek' && e.state !== 'attached' && e.state !== 'return')) return;
+  const body=enemyBodyPoint(e),mouth={x:body.x+Math.cos(enemyHeading(e))*12,y:body.y};
   let target;
   if (e.state === 'return') target = posAt(e.returnD);
-  else if (e.gen) target = {x:e.gen.x, y:e.gen.y};
+  else if (e.gen) target = {x:e.gen.x, y:e.gen.y-16};
   else return;
-  let dx = target.x-e.x, dy = target.y-e.y, distance = Math.hypot(dx,dy);
+  let dx = target.x-mouth.x, dy = target.y-mouth.y, distance = Math.hypot(dx,dy);
   if (!distance) return;
   dx /= distance; dy /= distance;
   const px = -dy, py = dx;
   ctx.save();
   if (e.state === 'attached') {
     // A short live tether carries moving charge from the generator coils into the feeding body.
-    const sx = e.gen.x, sy = e.gen.y, ex = e.x, ey = e.y;
+    const sx = e.gen.x, sy = e.gen.y-16, ex = mouth.x, ey = mouth.y;
     ctx.strokeStyle = 'rgba(199,125,255,0.55)'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
     for (let i=0; i<3; i++) {
@@ -1187,8 +1235,8 @@ function drawLeechCue(e) {
   } else {
     // A compact tendril points toward its destination without drawing a map-wide line.
     const length = Math.min(distance, e.state === 'seek' ? 34 : 28);
-    const startX = e.x + dx*7, startY = e.y + dy*7;
-    const endX = e.x + dx*length, endY = e.y + dy*length;
+    const startX = mouth.x, startY = mouth.y;
+    const endX = mouth.x + dx*length, endY = mouth.y + dy*length;
     const wave = Math.sin(S.time*9 + e.x*0.07) * (e.state === 'seek' ? 5 : 2);
     ctx.strokeStyle = e.state === 'seek' ? 'rgba(219,161,255,0.86)' : 'rgba(199,125,255,0.48)';
     ctx.lineWidth = e.state === 'seek' ? 2 : 1.3;
@@ -1235,13 +1283,15 @@ function draw() {
   terrain();
   if (INFANTRY_TRIAL) { ctx.fillStyle='#101a1ddd'; roundRect(420,46,120,18,3); ctx.fill(); text('FIELD TRIAL: INFANTRY',480,55,9,'#b6d29e','center','700'); }
   // Reinforced Gate: armored pylons and a luminous containment field.
+  if(!lowBuildingSprite(5,GATE.x-26,GATE.y-48,52,64)){
   ctx.fillStyle='#071312aa';ctx.fillRect(GATE.x-26,GATE.y-38,55,80);
   ctx.fillStyle='#53645b';ctx.fillRect(GATE.x-22,GATE.y-35,14,70);ctx.fillRect(GATE.x+13,GATE.y-35,14,70);
   ctx.fillStyle='#9eac91';ctx.fillRect(GATE.x-22,GATE.y-35,14,5);ctx.fillRect(GATE.x+13,GATE.y-35,14,5);
   ctx.fillStyle=S.gate>6?'#79e4bd55':'#ff745566';ctx.fillRect(GATE.x-8,GATE.y-30,21,60);
   ctx.strokeStyle=S.gate>6?'#b0ffe0':'#ff8360';ctx.lineWidth=2;
   for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(GATE.x-8,GATE.y-25+i*16);ctx.lineTo(GATE.x+13,GATE.y-25+i*16);ctx.stroke();}
-  text('THE GATE',GATE.x-3,GATE.y-47,10,'#c5d8bf','center','700');
+  }
+  text('THE GATE',GATE.x-3,GATE.y-61,10,'#c5d8bf','center','700');
   text(S.gate,GATE.x+2,GATE.y+47,12,'#b0ffe0','center','700');
 
   // slots
@@ -1263,7 +1313,7 @@ function draw() {
   for (const t of S.towers) if (t.type === 'turret') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age >= 0 && age < 0.065) {
-      const x=t.x+Math.cos(feedback.angle)*27, y=t.y+Math.sin(feedback.angle)*27;
+      const {x,y}=weaponMuzzle(t,feedback.angle);
       ctx.globalAlpha=1-age/0.065;ctx.fillStyle='#fff0ad';ctx.beginPath();ctx.arc(x,y,2.5+3*(1-age/0.065),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
     }
   }
@@ -1275,7 +1325,7 @@ function draw() {
       const d = age * 30;
       ctx.fillStyle='#e8bb62'; ctx.beginPath(); ctx.ellipse(b.x + Math.cos(b.angle+1.9)*d, b.y + Math.sin(b.angle+1.9)*d + age*age*24, 2, 1, b.angle, 0, Math.PI*2); ctx.fill();
     } else if (b.kind === 'cannonMuzzle') {
-      const x=b.x+Math.cos(b.angle)*24, y=b.y+Math.sin(b.angle)*24;
+      const {x,y}=weaponMuzzle({type:'cannon',x:b.x,y:b.y},b.angle);
       ctx.fillStyle='#ffd27f';ctx.beginPath();ctx.arc(x,y,5*k+1,0,Math.PI*2);ctx.fill();
     } else if (b.kind === 'impactDust') {
       ctx.strokeStyle='#d7c3a0';ctx.lineWidth=2;
@@ -1286,7 +1336,7 @@ function draw() {
   // The vector Voltaic charges between discharges and blooms briefly on each actual chain event.
   for (const t of S.towers) if (t.type === 'voltaic') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
-    if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,17+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
+    if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(enemy=>({y:enemy.y,enemy}))];
@@ -1310,13 +1360,13 @@ function draw() {
       ctx.moveTo(e.x - e.r - 8, e.y + 3); ctx.lineTo(e.x - e.r - 2, e.y + 3); ctx.stroke();
     }
     if (e.rod) {                                                                         // Grounding: copper veins
-      ctx.strokeStyle = '#e0a060'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(e.x - e.r*0.7, e.y - e.r*0.5); ctx.lineTo(e.x + e.r*0.2, e.y + e.r*0.1); ctx.lineTo(e.x + e.r*0.7, e.y - e.r*0.4);
-      ctx.moveTo(e.x - e.r*0.4, e.y + e.r*0.6); ctx.lineTo(e.x + e.r*0.5, e.y + e.r*0.5); ctx.stroke();
+      const body=enemyBodyPoint(e);ctx.strokeStyle = '#e0a060'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(body.x - e.r*.7,body.y - 3);ctx.lineTo(body.x,body.y + 1);ctx.lineTo(body.x + e.r*.6,body.y - 2);
+      ctx.moveTo(body.x-e.r*.4,body.y+4);ctx.lineTo(body.x+e.r*.4,body.y+3);ctx.stroke();
     }
     if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=INFANTRY_TRIAL && e.type==='forager'?e.y-31:e.y-e.r-9; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
+    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-groundActorMetrics(e.type).height-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
   if (DEBUG_HIT_BOUNDS) {
@@ -1341,7 +1391,9 @@ function draw() {
     text('DEBUG  body r   |   Carapacid intercept r + 3   |   shell hit radius = splash + e.r*0.5', 20, H - BOT - 16, 9, '#e6e2cf');
   }
   // shots / shells / fx
-  for (const s of S.shots) {
+  for (const original of S.shots) {
+    const tower=S.towers.find(t=>t.x===original.x1&&t.y===original.y1),origin=tower?weaponMuzzle(tower):{x:original.x1,y:original.y1-8};
+    const s={...original,x1:origin.x,y1:origin.y,y2:original.y2-8};
     if (s.electro) {                                             // jagged bolt: presentation-only jitter from time and endpoints
       ctx.strokeStyle = s.blocked ? '#ff9f43' : '#9df7ff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, s.life / 0.12);
       const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
@@ -1351,7 +1403,7 @@ function draw() {
     }
     ctx.strokeStyle = s.blocked ? '#ff9f43' : '#ffffff'; ctx.lineWidth = s.blocked ? 2.5 : 1.5;
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
-  for (const sh of S.shells) { const k = sh.t / sh.flight; const x = sh.sx + (sh.tx-sh.sx)*k, y = sh.sy + (sh.ty-sh.sy)*k - Math.sin(k*Math.PI)*70;
+  for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower); const x = start.x + (sh.tx-start.x)*k, y = start.y + (sh.ty-start.y)*k - Math.sin(k*Math.PI)*70;
     ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(255,174,66,0.25)'; ctx.beginPath(); ctx.arc(sh.tx, sh.ty, 6, 0, Math.PI*2); ctx.fill(); }
   for (const f of S.fx) { const k = f.life / f.max; ctx.globalAlpha = k; ctx.strokeStyle = f.color; ctx.lineWidth = 2;
