@@ -80,9 +80,35 @@ Turret-only at ×1.25: two deferrals and one real drop while alive; the other 29
 3. **Pressure alone separates the mixed timeline from the mono timelines** (×1.25: only mixed holds 20/20; ×1.5: only mixed wins), but this does **not** isolate adaptation: at ×1.5 the mixed timeline wins *with* evolution (g10) and loses *without* it — the sparser Dispersal waves appear to help the defense under heavy pressure, the effect the Dispersal study warned about. One timeline, one cell; flagged, not concluded.
 4. **Growth and constant multipliers differ in profile**: growth 0.10–0.11 leaves early waves untouched and only the Turret and Voltaic timelines fail (through their mutations); a constant ×1.25 breaks the Cannon timeline too.
 
+## Combinations (second pass)
+
+Predeclared combinations of the single-factor parity shifts, enemy HP unchanged unless stated. `node tools/replay-sweep.cjs combos`.
+
+| combination | evolution | cannon-only | mixed | turret-only | voltaic-only |
+|---|---|---|---|---|---|
+| parity A: turret 8.5 + voltaic 17 + cannon 40 | on | W g20 w10 t23838 (d1) | W g20 w10 t23859 | W g20 w10 t30116 | W g20 w10 t24795 |
+| parity A: turret 8.5 + voltaic 17 + cannon 40 | off | W g13 w10 t23332 (d1) | W g20 w10 t22910 | W g20 w10 t28451 (d7/u1) | W g20 w10 t21776 (d4/u2) |
+| parity B: turret 8.5 + voltaic 17 + cannon 36 | on | L g0 w9 t20189 (d2) | W g20 w10 t23859 | W g20 w10 t30116 | W g20 w10 t24795 |
+| parity B: turret 8.5 + voltaic 17 + cannon 36 | off | W g1 w10 t23722 (d1) | W g20 w10 t22935 | W g20 w10 t28451 (d7/u1) | W g20 w10 t21776 (d4/u2) |
+| parity A @ HP x1.25 | on | L g0 w8 t17633 (d7/u1) | W g20 w10 t23932 (d1) | L g0 w5 t13825 (d1/u22) | W g4 w10 t25437 |
+| parity A @ HP x1.25 | off | L g0 w10 t24854 (d8) | W g20 w10 t22983 | W g4 w10 t30120 (d1) | W g20 w10 t22094 (d4/u2) |
+| parity B @ HP x1.25 | on | L g0 w8 t18421 (d9/u1) | W g20 w10 t23932 (d1) | L g0 w5 t13825 (d1/u22) | W g4 w10 t25437 |
+| parity B @ HP x1.25 | off | L g0 w9 t21692 (d10) | W g20 w10 t22987 (d1) | W g4 w10 t30120 (d1) | W g20 w10 t22094 (d4/u2) |
+| parity B @ growth 0.10 | on | L g0 w8 t16938 (d5/u1) | W g20 w10 t23859 | W g17 w10 t30195 | W g15 w10 t25211 |
+| parity B @ growth 0.10 | off | L g0 w10 t24170 (d4) | W g20 w10 t22983 | W g17 w10 t30039 | W g20 w10 t21864 (d4/u2) |
+
+Reading, with the same limits as above (four plans, one per line; the plans invest differently — 890 / 960 / 1085 / 2060 credits — so a mono column compares the player's *plan*, not the line in the abstract):
+
+- **Parity A at recorded pressure makes every timeline sweep 20/20.** Lines are closer to each other; nothing is threatened. The cannon-only timeline ends *better* with evolution (g20) than without (g13): the third sighting of Dispersal's spawn spacing helping the defense.
+- **Parity B at recorded pressure turns the cannon plan into the only loser**, and only through its mutations (loss with evolution, W g1 without). The cheap two-cannon plan stops working; whether 36 under-cuts the line as a whole cannot be read from one plan.
+- **Parity A at HP ×1.25 shows the structure the design asks for:** the turret plan loses with evolution and wins g4 without; the voltaic plan holds g4 with evolution and g20 without; the mixed plan is clean either way; the cannon plan loses regardless. Each mono plan is punished by its own counters and the mixed plan is not — on these four timelines only.
+- **Parity B at growth 0.10** removes the cannon plan with or without evolution (the line is too weak for that plan), leaves turret unaffected by evolution (g17 / g17) and costs voltaic 5 HP.
+
+These rows are a candidate for the next *human* playtest, not for the passport: parity A with pressure ×1.25 (constant), evolution on. The Dispersal implementation (spawn spacing) is now flagged three times as helping the defense under pressure and should be redesigned before any number is fixed.
+
 ## What they do not support
 
-- Any specific v0.5 numbers. Each factor was moved alone; combinations were not run.
+- Any specific v0.5 numbers. Combinations were run as predeclared candidates on four plans, not tuned.
 - Claims about human play beyond these four plans; the players' reactive decisions under changed rules are not modelled (deferral policy is a stand-in).
 - Mutation balance verdicts: the paired on/off differences come from one plan per line.
 
