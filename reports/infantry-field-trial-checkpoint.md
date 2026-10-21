@@ -1,6 +1,7 @@
 # Infantry field trial — checkpoint
 
-Status: implementation in progress; no balance verdict. Base: main `e607abf`.
+Status: implementation and automated checks complete; ready for user review.
+No balance verdict. Base: main `e607abf`.
 
 ## Approved scope
 
@@ -34,6 +35,24 @@ sequence. Do not claim equal-budget comparison from unequal unspent allowances.
 
 ## Remaining
 
-Playable implementation, asset anchor review, focused lifecycle/determinism
-tests, unchanged-mode regression, controlled comparison, independent review.
-Preserve report limitations and leave merging to the user.
+Implementation and the first three-quarter soldier/Forager contact sample are
+complete. The experimental menu is available with `?infantry=1`. Core regression,
+infantry lifecycle/determinism and art/menu/fallback checks pass. The architecture
+review found warmup and released-target prediction errors; both were fixed and
+checked with actual simulation steps.
+
+The controlled study compares exactly 110 additional credits for Barracks,
+Cannon or Turret L2 across 24 funded snapshots. All 18 conventional/reference
+snapshots and the funded final player layout match original main `e607abf`.
+The player-reported final layout is inferred as Cannon slots 2/3, Generator 15;
+its purchase history is not reproduced. Granting all L3 assets at wave one loses
+on wave nine in both main and this branch. Do not present that as a reproduction
+of the player's clean run.
+
+Independent review reproduced all 24 study rows and all 18 trial/normal-mode
+checks; no unresolved blocking findings remain. The comparison tool and report
+are included with the playable implementation. Live browser/mobile playtest
+remains pending.
+The first art sample uses left/right mirroring, not a full 3D camera or complete
+directional animation. The whole-roster/crowd redesign and tower-layer fix are
+outside this bounded infantry trial. Leave merging to the user.

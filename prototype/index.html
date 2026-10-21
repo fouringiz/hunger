@@ -44,6 +44,7 @@ const BALANCE_PRESET_NAME = (() => { if (typeof location === 'undefined') return
 const BALANCE_PRESET = BALANCE_PRESET_NAME ? BALANCE_PRESETS[BALANCE_PRESET_NAME] : null;
 // The preset is applied to ENEMY/TOWER values only (below), so simulation function sources stay untouched and the
 // rules fingerprint changes through the values themselves: baseline replays keep verifying without a preset.
+const INFANTRY_TRIAL = typeof location !== 'undefined' && new URLSearchParams(location.search).get('infantry') === '1';
 let evolutionCardDismissed = false;
 const leechDrainVisuals = new WeakMap();
 let scale = 1, dpr = 1;
@@ -89,7 +90,11 @@ const ENEMY = {
   carapacid:   {name:'Carapacid',   hp:340, speed:34, r:18, bounty:40, gateDmg:5, color:'#a83232'},
   leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'}
 };
+// DRAFT field-trial parameters; not a campaign weapon-line or balance verdict.
+const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8, marchSpeed:60,
+  retaliation:{forager:10, carapacid:30, leech:14}, retaliationInterval:1, contactRadius:12};
 const TOWER = {
+  barracks:  {name:'Barracks',  cost:INFANTRY.cost, power:INFANTRY.power, upg:[0,0,0], kind:'infantry', color:'#9fd49b', desc:'Three soldiers hold the nearest lane segment.'},
   turret:    {name:'Turret',    cost:60,  power:10,  range:130, dmg:7,  interval:0.28, kind:'flat', color:'#8fd3ff',
               upg:[0,50,90],  desc:'Flat fire. Blocked by Carapacid shadow.'},
   cannon:    {name:'Cannon',    cost:110, power:20,  range:190, minRange:70, dmg:45, splash:48, interval:1.7, kind:'arc', color:'#ffb454',
@@ -141,11 +146,13 @@ const REPLAY_LIMIT = 5 * 1024 * 1024, REPLAY_EVENT_LIMIT = 20000, REPLAY_TICK_LI
 let replay = {mode:'idle', tick:0, seq:0, events:[], checkpoints:[], error:null, initial:null, terminal:null, playbackBudget:0, nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
 let replayUiMessage='', replayLoading=false, replayLoadTicket=0;
 function reset() {
+  if (S && S.towers) for (const t of S.towers) if (t.type === 'barracks') releaseBarracks(t, false);
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
        spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
+       meleeDamage:0, infantryCasualties:0, infantryBlockedSeconds:0,
        toast:'', toastT:0, accumulator:0};
   weaponFeedback = new WeakMap(); presentationBursts = []; presentationTime = 0;
   replay = {mode:'idle', tick:0, seq:0, events:[], checkpoints:[], error:null, initial:null, terminal:null, playbackBudget:0, nextEvent:0,nextCheckpoint:0,generations:Array(SLOTS.length).fill(0)};
@@ -263,7 +270,7 @@ function makeEnemy(type, n) {
   const index = S.spawnedThisWave++;                             // deterministic: no randomness in the simulation
   const rod = muts.includes('grounding') && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);
   return {type, T, hp:T.hp*mul, maxHp:T.hp*mul, d:0, speed:T.speed, effSpeed:T.speed, r:T.r,
-          x:PATH[0][0], y:PATH[0][1], dead:false, incoming:0, dash:0,
+          x:PATH[0][0], y:PATH[0][1], dead:false, incoming:0, dash:0, blockedBy:null,
           muts, rod, state:'lane', gen:null, feedT:0};
 }
 function tstats(t) {
@@ -294,9 +301,11 @@ function startWave() {
   return true;
 }
 function endWave() {
+  clearInfantryContacts(true);
   let memo = '';
   // Background evolution: the incubators read the damage ledger on schedule, with no organism on the lane.
-  if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP) {
+  if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP &&
+      (!INFANTRY_TRIAL || Object.values(S.dmg).some(value => value > 0))) {
     const ledger = LEDGER_ORDER.map(k => [k, S.dmg[k] || 0]).sort((a, b) => b[1] - a[1] || LEDGER_ORDER.indexOf(a[0]) - LEDGER_ORDER.indexOf(b[0]));
     const nextUnused = line => (COUNTERS[line] || []).find(m => !S.mutations.includes(m));
     let kind = nextUnused(ledger[0][0]), replacement = false;      // the dominant line gets its next unused counter
@@ -317,16 +326,18 @@ function endWave() {
   S.phase = 'build'; S.buildTimer = 20;
 }
 function build(slot, type) {
+  if (type === 'barracks' && !INFANTRY_TRIAL) return false;
   const T = TOWER[type]; if (!T || !slot || slot.tower || S.credits < T.cost) return false;
   S.credits -= T.cost;
   const t = {type, T, x:slot.x, y:slot.y, level:1, paused:false, warm:0, cd:0, kills:0, angle:-Math.PI/2, slot,
              invested:T.cost, selling:false, sellT:0, leeched:null};
+  if (type === 'barracks') t.soldiers = Array.from({length:INFANTRY.soldiers}, (_, i) => ({id:i, hp:INFANTRY.hp, maxHp:INFANTRY.hp, d:nearestPathD(slot.x, slot.y)+(i-1)*18, x:slot.x, y:slot.y, target:null, cd:0, retalCd:0, alive:true, arrived:false}));
   slot.tower = t; S.towers.push(t); S.selected = {kind:'tower', tower:t};
   if (type === 'generator') playCue('generator', 310, 0.24, 'sine');
   return true;
 }
 function upgrade(t) {
-  if (!t || t.level >= 3 || t.selling) return false;
+  if (!t || t.type === 'barracks' || t.level >= 3 || t.selling) return false;
   const cost = t.T.upg[t.level]; if (S.credits < cost) return;
   S.credits -= cost; t.level++; t.invested += cost;
   if (t.type === 'generator') playCue('generator', 390, 0.2, 'sine');
@@ -334,7 +345,8 @@ function upgrade(t) {
 }
 function togglePause(t) {
   if (!t || t.type === 'generator' || t.selling) return false;
-  if (t.paused) { t.paused = false; t.warm = WARMUP; } else { t.paused = true; }
+  if (t.paused) { t.paused = false; t.warm = WARMUP; }
+  else { t.paused = true; if (t.type === 'barracks') releaseBarracks(t, false); }
   return true;
 }
 function returnLeechToLane(e) {
@@ -349,9 +361,102 @@ function returnLeechToLane(e) {
     if (distance < best) { best = distance; e.returnD = Math.min(GATE_D, s.start + s.L*u); }
   }
 }
+function nearestPathD(x, y) {
+  let best = Infinity, result = 0;
+  for (const s of SEG) {
+    const u = Math.max(0, Math.min(1, ((x-s.x1)*(s.x2-s.x1) + (y-s.y1)*(s.y2-s.y1)) / (s.L*s.L)));
+    const px = s.x1 + (s.x2-s.x1)*u, py = s.y1 + (s.y2-s.y1)*u, distance = Math.hypot(x-px,y-py);
+    if (distance < best) { best = distance; result = Math.max(0, Math.min(GATE_D, s.start+s.L*u)); }
+  }
+  return result;
+}
+function soldierPosition(s) { const p = posAt(s.d); return {x:p.x, y:p.y-8}; }
+function laneEffectiveSpeed(e, feastMul) {
+  let sp = e.speed;
+  if (e.type === 'forager') for (const c of S.enemies)
+    if (!c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
+  if (e.dash > 0) sp *= SPRINTER_DASH_MULT;
+  return sp * feastMul;
+}
+function releaseBarracks(t, withdraw = false) {
+  if (!t.soldiers) return;
+  for (const s of t.soldiers) {
+    if (s.target) { s.target.blockedBy = null; s.target = null; }
+    if (withdraw) s.alive = false;
+  }
+}
+function clearInfantryContacts(heal) {
+  for (const t of S.towers) if (t.type === 'barracks') {
+    releaseBarracks(t, false);
+    if (heal && S.wave < WAVES && !t.selling) for (const s of t.soldiers) {
+      if (!s.alive) { s.x=t.x; s.y=t.y; s.arrived=false; }
+      s.alive = true; s.hp = s.maxHp; s.cd = 0; s.retalCd = 0;
+    }
+  }
+  for (const e of S.enemies) if (e.blockedBy) e.blockedBy = null;
+}
+function updateInfantry(dt, brown) {
+  for (const t of S.towers) {
+    if (t.type !== 'barracks' || t.paused || t.selling || t.warm > 0) continue;
+    const rallyD = nearestPathD(t.x, t.y);
+    for (const s of t.soldiers) {
+      if (!s.alive || s.target || s.arrived) continue;
+      const targetD = Math.max(0, Math.min(GATE_D, rallyD + (s.id-1)*18));
+      const step = INFANTRY.marchSpeed * (brown ? BROWNOUT_MULT : 1) * dt;
+      const p = posAt(targetD), tx=p.x, ty=p.y-8, distance=Math.hypot(tx-s.x,ty-s.y);
+      if (distance <= step) { s.x=tx; s.y=ty; s.d=targetD; s.arrived=true; }
+      else { s.x += (tx-s.x)/distance*step; s.y += (ty-s.y)/distance*step; }
+    }
+  }
+  // Existing links are checked before movement, so a killed or diverted target releases immediately.
+  for (const t of S.towers) if (t.type === 'barracks') for (const s of t.soldiers) {
+    if (!s.target) continue;
+    const e = s.target;
+    if (t.paused || t.selling || t.warm > 0 || !s.alive || e.dead || e.type === 'leech' && e.state !== 'lane') {
+      e.blockedBy = null; s.target = null; e.effSpeed = e.resumeSpeed ?? e.effSpeed;
+    }
+  }
+}
+function infantryContact(e, prevD, nextD) {
+  if (e.type === 'leech' && e.state !== 'lane') return null;
+  // Acquire at the true crossing, or immediately before it when already close; never pull a body backwards.
+  const choices = [];
+  for (const t of S.towers) if (t.type === 'barracks' && !t.paused && !t.selling && t.warm <= 0) for (const s of t.soldiers) {
+    if (!s.alive || s.target || !s.arrived || s.d < 0) continue;
+    if (e.blockedBy && e.blockedBy !== s) continue;
+    if (prevD > s.d || nextD < s.d) continue;
+    if (Math.abs(nextD-s.d) <= INFANTRY.contactRadius + e.r) choices.push({s, d:s.d, distance:Math.abs(nextD-s.d)});
+  }
+  choices.sort((a,b) => a.d-b.d || a.s.id-b.s.id);
+  return choices[0] || null;
+}
+function resolveInfantryCombat(dt, brown) {
+  const attackRate = brown ? BROWNOUT_MULT : 1;
+  for (const t of S.towers) if (t.type === 'barracks') for (const s of t.soldiers) {
+    if (!s.alive || !s.target) continue;
+    if (t.paused || t.selling || t.warm > 0) { s.target.blockedBy = null; s.target = null; continue; }
+    const e = s.target;
+    if (!e.dead) {
+      const hit = INFANTRY.retaliation[e.type] || 0;
+      s.retalCd = (s.retalCd || 0) - dt;
+      if (hit && s.retalCd <= 0) { s.hp -= hit; s.retalCd = INFANTRY.retaliationInterval; }
+      if (s.hp <= 0) {
+        s.alive = false; s.target = null; e.blockedBy = null;
+        e.effSpeed = e.resumeSpeed ?? e.effSpeed;
+        S.infantryCasualties++;
+        S.fx.push({kind:'death',x:s.x,y:s.y,r:7,life:0.35,max:0.35,color:'#a4be8c'});
+        continue;
+      }
+      s.cd -= dt * attackRate;
+      S.infantryBlockedSeconds += dt;
+      if (s.cd <= 0) { s.cd = INFANTRY.interval; damage(e, INFANTRY.damage, null, 'melee'); }
+    }
+  }
+}
 function sell(t) {                                              // demolition: fire stops now, credits on completion
   if (!t || t.selling) return false;
   t.selling = true; t.sellT = SELL_TIME;
+  if (t.type === 'barracks') releaseBarracks(t, true);
   if (t.leeched) returnLeechToLane(t.leeched);
   S.selected = null;
   return true;
@@ -487,16 +592,18 @@ function finishSell(t) {
   S.fx.push({kind:'death', x:t.x, y:t.y, r:18, life:0.35, max:0.35, color:'#8a93a6'});
   toast('SATO: Asset liquidated. Depreciation applied: 40%. Recovered ' + refund + ' cr.');
 }
-function damage(e, amt, tower) {
+function damage(e, amt, tower, source = 'tower') {
   if (e.dead) return;
   const wasFeeding = !!(e.gen && isDrained(e.gen));
   const raw = amt;                                                                  // the ledger reads fire before resistances
   if (tower && tower.T.kind === 'flat' && e.muts.includes('keratin')) amt *= 0.7;   // Keratinization: −30% kinetic
   const dealt = Math.min(amt, Math.max(0, e.hp));                                   // overkill is not evolution pressure
   e.hp -= amt;
+  if (source === 'melee') S.meleeDamage += dealt;
   if (tower && amt > 0) S.dmg[tower.T.kind] = (S.dmg[tower.T.kind] || 0) + raw * (dealt / amt);   // damage ledger drives evolution
   if (e.hp <= 0) {
     e.dead = true; S.credits += e.T.bounty; S.kills++; S.waveKills++;
+    if (e.blockedBy) { e.blockedBy.target = null; e.blockedBy = null; }
     if (tower) tower.kills++;
     if (e.gen) {
       e.gen.leeched = null;
@@ -634,6 +741,7 @@ function stepSimulation(dt) {
   if (S.phase === 'build') { S.buildTimer -= dt; if (S.buildTimer <= 0) startWave(); }
   for (const t of S.towers) if (t.warm > 0) t.warm -= dt;
   for (const t of [...S.towers]) if (t.selling) { t.sellT -= dt; if (t.sellT <= 0) finishSell(t); }  // demolition runs in any phase
+  if (INFANTRY_TRIAL && S.phase === 'build') updateInfantry(dt, power().brown);
   if (S.phase !== 'wave') return;
 
   // spawning
@@ -641,6 +749,8 @@ function stepSimulation(dt) {
     S.spawnTimer -= dt;
     if (S.spawnTimer <= 0) { const s = S.spawnQueue.shift(); S.enemies.push(makeEnemy(s.type, S.wave)); S.spawnTimer = s.delay; }
   }
+  const infantryBrown = power().brown;
+  updateInfantry(dt, infantryBrown);
   // enemies
   const feastMul = 1 + 0.08 * S.feast;                          // FEAST: the whole swarm quickens
   for (const e of S.enemies) {
@@ -656,8 +766,14 @@ function stepSimulation(dt) {
         }
         if (nearest) { e.state = 'seek'; e.gen = nearest; nearest.leeched = e; }
       }
+      if (e.state !== 'lane' && e.blockedBy) { e.blockedBy.target = null; e.blockedBy = null; }
       if (e.state === 'lane') {
-        let sp = e.speed * feastMul; e.effSpeed = sp; e.d += sp * dt;
+        let sp = e.speed * feastMul; e.effSpeed = sp;
+        e.resumeSpeed = sp;
+        if (e.blockedBy) sp = 0;
+        const prevD = e.d, nextD = e.d + sp * dt;
+        if (!e.blockedBy) { const contact = infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
+        e.effSpeed = sp;
         const p = posAt(e.d); e.x = p.x; e.y = p.y;
         if (e.d >= GATE_D) { e.dead = true; S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
           S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'}); }
@@ -680,12 +796,14 @@ function stepSimulation(dt) {
       }
       continue;
     }
-    let sp = e.speed;
-    if (e.type === 'forager') for (const c of S.enemies)        // herd: tuck in behind a Carapacid and ride its shadow
-      if (!c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
-    if (e.dash > 0) { sp *= SPRINTER_DASH_MULT; e.dash -= dt; } // Sprinter Reflex dash
-    sp *= feastMul;
-    e.effSpeed = sp; e.d += sp * dt;
+    let sp = laneEffectiveSpeed(e, feastMul);
+    if (e.dash > 0) e.dash -= dt; // current tick uses dash before decrement; resume uses the remaining dash time
+    e.resumeSpeed = laneEffectiveSpeed(e, feastMul);
+    e.effSpeed = sp;
+    if (e.blockedBy) sp = 0;
+    const prevD = e.d, nextD = e.d + sp * dt;
+    if (!e.blockedBy) { const contact = infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
+    e.effSpeed = sp;
     const p = posAt(e.d); e.x = p.x; e.y = p.y;
     if (e.d >= GATE_D) {
       e.dead = true;
@@ -693,9 +811,11 @@ function stepSimulation(dt) {
       S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'});
     }
   }
+  resolveInfantryCombat(dt, infantryBrown);
   // towers
   const pw = power(); // account for attachment or detachment during this update
   for (const t of S.towers) {
+    if (t.type === 'barracks') continue;
     if (t.type === 'generator' || t.paused || t.warm > 0 || t.selling) continue;
     const st = tstats(t);
     t.cd -= dt * (pw.brown ? BROWNOUT_MULT : 1) * (1 + 0.1 * rank(t));
@@ -730,7 +850,34 @@ const unitArt = typeof Image === 'undefined' ? null : new Image();
 if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
 const voltaicArt = typeof Image === 'undefined' ? null : new Image();
 if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-v1.png';
+const infantryArt = INFANTRY_TRIAL && typeof Image !== 'undefined' ? new Image() : null;
+if (infantryArt) infantryArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-infantry-trial-v1.png';
 let terrainArt = null;
+function infantrySprite(cell, x, y, size, flip = false) {
+  if (!infantryArt || !infantryArt.complete || !infantryArt.naturalWidth) return false;
+  const sw = infantryArt.naturalWidth / 2, sh = infantryArt.naturalHeight / 2;
+  // Measured foot anchors of this sheet; the raised strike weapon must not move the feet.
+  const foot = cell < 2 ? 0.96 : cell === 2 ? 0.84 : 0.88;
+  ctx.save(); ctx.translate(x,y); if (flip) ctx.scale(-1,1);
+  let drawn = false;
+  try { ctx.drawImage(infantryArt, cell%2*sw, Math.floor(cell/2)*sh, sw, sh, -size*0.53, -size*foot, size, size); drawn = true; }
+  catch (_) {} finally { ctx.restore(); }
+  return drawn;
+}
+function drawInfantrySoldier(s) {
+  const approach = posAt(s.d-20), flip = s.target ? s.target.x < s.x || Math.abs(s.target.x-s.x)<1 && approach.x<s.x : approach.x<s.x;
+  const strike = s.target && s.cd > INFANTRY.interval-0.16;
+  ctx.fillStyle='#00000075';ctx.beginPath();ctx.ellipse(s.x,s.y,7,3,0,0,Math.PI*2);ctx.fill();
+  if (!infantrySprite(strike ? 1 : 0,s.x,s.y,34,flip)) {
+    ctx.fillStyle='#6e9c72';ctx.beginPath();ctx.ellipse(s.x,s.y-7,4.5,7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#d8c9a2';ctx.beginPath();ctx.arc(s.x,s.y-15,3,0,Math.PI*2);ctx.fill();
+  }
+  if (strike) {
+    ctx.strokeStyle='#ffe2a1';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s.x,s.y-8,11,flip?Math.PI*.7:-Math.PI*.3,flip?Math.PI*1.3:Math.PI*.3);ctx.stroke();
+  }
+  ctx.fillStyle='#19251d';ctx.fillRect(s.x-7,s.y-33,14,3);
+  ctx.fillStyle=s.hp/s.maxHp<0.35?'#ff946c':'#75e394';ctx.fillRect(s.x-7,s.y-33,14*Math.max(0,s.hp/s.maxHp),3);
+}
 function sprite(cell, x, y, size, angle = 0) {
   if (!unitArt || !unitArt.complete || !unitArt.naturalWidth) return false;
   const sw = unitArt.naturalWidth / 3, sh = unitArt.naturalHeight / 2;
@@ -795,7 +942,8 @@ function enemyArt(e) {
   ctx.save();ctx.translate(e.x,e.y);
   ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(2,5,e.r+4,e.r*.65,0,0,Math.PI*2);ctx.fill();
   ctx.scale(1+pulse*.025,1-pulse*.025);
-  if(!sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
+  const trialBody = INFANTRY_TRIAL && e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
+  if(!trialBody && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
     ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
@@ -960,6 +1108,7 @@ function draw() {
   const pw = power();
 
   terrain();
+  if (INFANTRY_TRIAL) { ctx.fillStyle='#101a1ddd'; roundRect(420,46,120,18,3); ctx.fill(); text('FIELD TRIAL: INFANTRY',480,55,9,'#b6d29e','center','700'); }
   // Reinforced Gate: armored pylons and a luminous containment field.
   ctx.fillStyle='#071312aa';ctx.fillRect(GATE.x-26,GATE.y-38,55,80);
   ctx.fillStyle='#53645b';ctx.fillRect(GATE.x-22,GATE.y-35,14,70);ctx.fillRect(GATE.x+13,GATE.y-35,14,70);
@@ -979,7 +1128,7 @@ function draw() {
     if (S.phase === 'build' || S.phase === 'wave') text('+', s.x, s.y + 1, 16, '#4a5364', 'center');
   }
   // range of selected tower
-  if (S.selected && S.selected.kind === 'tower' && S.selected.tower.type !== 'generator') {
+  if (S.selected && S.selected.kind === 'tower' && S.selected.tower.type !== 'generator' && S.selected.tower.type !== 'barracks') {
     const t = S.selected.tower, st = tstats(t);
     ctx.strokeStyle = 'rgba(124,255,178,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
     ctx.beginPath(); ctx.arc(t.x, t.y, st.range, 0, Math.PI*2); ctx.stroke();
@@ -999,7 +1148,7 @@ function draw() {
     ctx.save(); ctx.translate(t.x - Math.cos(t.angle)*kick, t.y - Math.sin(t.angle)*kick);
     if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
-    const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
+      const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
     if (t.type === 'voltaic') {
       let drawn = false;
       if (voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
@@ -1012,6 +1161,14 @@ function draw() {
       }
       const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
+    } else if(t.type === 'barracks') {
+      ctx.fillStyle='#283a30';roundRect(-20,-5,40,24,3);ctx.fill();
+      ctx.fillStyle='#1a2823';ctx.fillRect(-20,3,40,16);
+      ctx.fillStyle='#768466';ctx.beginPath();ctx.moveTo(-23,-6);ctx.lineTo(-13,-21);ctx.lineTo(16,-21);ctx.lineTo(23,-6);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#a8b18b';ctx.lineWidth=1;ctx.stroke();
+      ctx.strokeStyle='#435342';for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-11+i*9,-19);ctx.lineTo(-17+i*13,-8);ctx.stroke();}
+      ctx.fillStyle='#101d1b';ctx.fillRect(-7,1,14,18);ctx.strokeStyle='#889677';ctx.strokeRect(-7,1,14,18);
+      for(let i=0;i<3;i++){ctx.fillStyle=t.soldiers[i].alive?'#b5da9a':'#62534a';ctx.fillRect(-13+i*11,-3,4,3);}
     } else if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
       ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
     }
@@ -1063,8 +1220,15 @@ function draw() {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,17+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
-  // enemies
-  for (const e of S.enemies) {
+  // Ground anchors determine depth for the first three-quarter contact sample.
+  const actors = S.enemies.map(enemy=>({y:enemy.y,enemy}));
+  if (INFANTRY_TRIAL) {
+    for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldier.y,soldier});
+    actors.sort((a,b)=>a.y-b.y);
+  }
+  for (const actor of actors) {
+    if (actor.soldier) { drawInfantrySoldier(actor.soldier); continue; }
+    const e = actor.enemy;
     enemyArt(e);
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
@@ -1083,8 +1247,8 @@ function draw() {
     }
     if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-    if (e.hp < e.maxHp) { const w = e.r*2+6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w, 4);
-      ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, e.y-e.r-9, w*(e.hp/e.maxHp), 4); }
+    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=INFANTRY_TRIAL && e.type==='forager'?e.y-31:e.y-e.r-9; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
+      ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
@@ -1161,6 +1325,10 @@ function draw() {
   else if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', () => performPlayerAction({kind:'wave'}), true, true);
   if ((S.phase === 'build' || S.phase === 'wave')&&replay.mode!=='playing'&&replay.mode!=='verified') btn(786, 7, 60, 26, '×' + S.speed, () => performPlayerAction({kind:'speed',value:S.speed===1?2:1}));
   text('Gate ' + S.gate, 954, HUD/2, 14, S.gate > 6 ? '#7cffb2' : '#ff6b6b', 'right', '700');
+  if (INFANTRY_TRIAL && S.phase !== 'menu') {
+    const soldiers=S.towers.filter(t=>t.type==='barracks'&&!t.selling).flatMap(t=>t.soldiers);
+    text('INFANTRY '+soldiers.filter(s=>s.alive).length+'/'+soldiers.length+'  |  LOST '+S.infantryCasualties,W-14,H-BOT-9,10,'#c5d5b7','right','700');
+  }
 
   // bottom bar: a fresh toast wins over the standing line
   let bottom = '';
@@ -1204,11 +1372,12 @@ function draw() {
   if (S.selected && (S.phase === 'build' || S.phase === 'wave')) {
     if (S.selected.kind === 'slot') {
       const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'generator'];
-      let x0 = Math.max(6, Math.min(W - 6 - 4*98, s.x - 196)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
-      menuPanel(x0,y0,4);
+      if (INFANTRY_TRIAL) items.push('barracks');
+      let x0 = Math.max(6, Math.min(W - 6 - items.length*98, s.x - items.length*49)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
+      menuPanel(x0,y0,items.length);
         items.forEach((k, i) => { const T = TOWER[k];
         btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => performPlayerAction({kind:'build',slot:SLOTS.indexOf(s),type:k}), S.credits >= T.cost); });
-      wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.',x0,y0+42,386);
+      wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.' + (INFANTRY_TRIAL ? ' Barracks: three automatic melee soldiers.' : ''),x0,y0+42,items.length*98-10);
     } else {
       const t = S.selected.tower; const st = tstats(t);
       let x0 = Math.max(6, Math.min(W - 6 - 3*98, t.x - 147)); const y0 = t.y > H/2 ? t.y - 74 : t.y + 26;
@@ -1219,9 +1388,12 @@ function draw() {
         const towerIndex=SLOTS.indexOf(t.slot), towerRef={slot:towerIndex,type:t.type,generation:replay.generations[towerIndex]};
         btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
         const cost = t.T.upg[t.level];
-        btn(x0 + 98, y0, 92, 30, t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => performPlayerAction({kind:'upgrade',...towerRef}), t.level < 3 && S.credits >= cost);
+        btn(x0 + 98, y0, 92, 30, t.type === 'barracks' ? 'No upgrade' : t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => performPlayerAction({kind:'upgrade',...towerRef}), t.type !== 'barracks' && t.level < 3 && S.credits >= cost);
         btn(x0 + 196, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));
-        wrappedText(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
+        if (t.type === 'barracks') {
+          const alive = t.soldiers.filter(soldier => soldier.alive).length;
+          wrappedText('Barracks  ' + alive + '/3 soldiers ready. ' + (alive < 3 ? 'Casualties replaced between waves.' : 'Soldiers engage automatically.'), x0, y0 + 42, 288);
+        } else wrappedText(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
              '  kills ' + t.kills + (rank(t) ? (rank(t) === 2 ? '  Elite (stripes burn on sale)' : '  Veteran (stripes burn on sale)') : ''), x0, y0 + 42, 288);
       } else {
         const cost = t.T.upg[t.level];
@@ -1242,6 +1414,7 @@ function draw() {
     text('THE EXPEDITION  /  FIELD OPERATIONS',52,80,11,'#b8bd8b','left','700');
     text('THE HUNGER',48,139,56,'#e0e7cc','left','900');
     text('HOLD THE LINE. LEARN WHAT COMES NEXT.',52,185,12,'#9bac91','left','600');
+    if (INFANTRY_TRIAL) text('FIELD TRIAL: INFANTRY — AUTOMATIC MELEE SUPPORT',52,204,10,'#b6d29e','left','700');
     ctx.fillStyle='#b9a866';ctx.fillRect(52,218,54,3);
     text('PERIMETER 07',52,256,22,'#d4dec4','left','700');
     text('Build your defense. Protect the generators.',52,291,15,'#afc1b2');
