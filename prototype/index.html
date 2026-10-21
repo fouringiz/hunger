@@ -856,8 +856,53 @@ const unitArt = typeof Image === 'undefined' ? null : new Image();
 if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
 const voltaicArt = typeof Image === 'undefined' ? null : new Image();
 if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-v1.png';
-const infantryArt = INFANTRY_TRIAL && typeof Image !== 'undefined' ? new Image() : null;
+const infantryArt = typeof Image !== 'undefined' ? new Image() : null;
 if (infantryArt) infantryArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-infantry-trial-v1.png';
+const crawlerArt = typeof Image === 'undefined' ? null : new Image();
+if (crawlerArt) crawlerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-crawlers-v2.png';
+const structureArt = typeof Image === 'undefined' ? null : new Image();
+if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
+// Explicit source rectangles avoid generated artwork bleeding across nominal grid cells.
+const STRUCTURE_RECTS = [[43,111,302,271],[390,95,311,287],[739,83,330,302],[1102,72,327,313],
+  [89,406,211,277],[412,474,307,188],[795,472,213,243],[1086,474,312,189],
+  [80,716,226,290],[392,777,350,195],[790,752,223,281],[1055,777,351,195]];
+const WEAPON_PIVOTS = [[105,184],[103,91],[107,80],[207,91],[114,184],[101,93],[110,80],[251,93]];
+function structureSprite(cell, x, y, width, height) {
+  if (!structureArt || !structureArt.complete || !structureArt.naturalWidth) return false;
+  const r=STRUCTURE_RECTS[cell];
+  try { ctx.drawImage(structureArt,...r,x,y,width,height); return true; } catch (_) { return false; }
+}
+function weaponFacing(angle) { return (Math.round((angle+Math.PI/2)/(Math.PI/2))+4)%4; }
+function drawPlantedWeapon(t,kick) {
+  const cannon=t.type==='cannon', cell=cannon?1:0;
+  // Ground footprint stays centered on the slot, independent of aim and recoil.
+  if (!structureSprite(cell,-22,-22,44,40)) return false;
+  const index=(cannon?4:0)+weaponFacing(t.angle), r=STRUCTURE_RECTS[4+index], pivot=WEAPON_PIVOTS[index], size=.14;
+  structureSprite(4+index,-pivot[0]*size-Math.cos(t.angle)*kick,-10-pivot[1]*size-Math.sin(t.angle)*kick,r[2]*size,r[3]*size);
+  return true;
+}
+function crawlerSprite(e,angle) {
+  if (!['carapacid','leech'].includes(e.type) || !crawlerArt || !crawlerArt.complete || !crawlerArt.naturalWidth) return false;
+  const pose=Math.floor(S.time*5+e.d*.025)%2, row=e.type==='carapacid'?0:1;
+  // Both poses remain planted; no vertical bob or rotation of the entire body.
+  const rects=[[42,165,608,426],[648,164,585,440],[34,768,606,373],[661,787,570,361]], r=rects[row*2+pose];
+  const scale=row===0?58/608:43/606, width=r[2]*scale, height=r[3]*scale;
+  ctx.save(); if(Math.cos(angle)<0) ctx.scale(-1,1);
+  let drawn=false;try{ctx.drawImage(crawlerArt,...r,-width/2,-height,width,height);drawn=true;}catch(_){}finally{ctx.restore();}
+  return drawn;
+}
+// A slot-seeded visual formation, never simulation randomness: stable in a replay and across redraws.
+function soldierGroundPoint(s,t) {
+  if(!t) return {x:s.x,y:s.y};
+  const slot=SLOTS.indexOf(t.slot), hash=n=>{let v=Math.imul(n^0x9e3779b9,0x85ebca6b);v^=v>>>13;v=Math.imul(v,0xc2b2ae35);v^=v>>>16;return (v>>>0)/4294967295;};
+  const angle=hash(slot+53)*Math.PI*2+s.id*Math.PI*2/3+(hash(slot*47+s.id*137+31)-.5)*.5;
+  const radius=17+hash(slot*173+s.id*71+113)*5;
+  const origin=posAt(nearestPathD(t.x,t.y)), station=posAt(s.d);
+  const dx=origin.x-station.x+Math.cos(angle)*radius, dy=origin.y-station.y+Math.sin(angle)*radius*.7;
+  const distance=Math.hypot(s.x-t.x,s.y-t.y), length=Math.max(1,Math.hypot(origin.x-t.x,origin.y-8-t.y));
+  const blend=Math.min(1,distance/length);
+  return {x:s.x+dx*blend,y:s.y+dy*blend};
+}
 let terrainArt = null;
 function infantrySprite(cell, x, y, size, flip = false) {
   if (!infantryArt || !infantryArt.complete || !infantryArt.naturalWidth) return false;
@@ -870,7 +915,8 @@ function infantrySprite(cell, x, y, size, flip = false) {
   catch (_) {} finally { ctx.restore(); }
   return drawn;
 }
-function drawInfantrySoldier(s) {
+function drawInfantrySoldier(s,t) {
+  const ground=soldierGroundPoint(s,t);ctx.save();ctx.translate(ground.x-s.x,ground.y-s.y);
   const approach = posAt(s.d-20), flip = s.target ? s.target.x < s.x || Math.abs(s.target.x-s.x)<1 && approach.x<s.x : approach.x<s.x;
   const strike = s.target && s.cd > INFANTRY.interval-0.16;
   ctx.fillStyle='#00000075';ctx.beginPath();ctx.ellipse(s.x,s.y,7,3,0,0,Math.PI*2);ctx.fill();
@@ -883,6 +929,7 @@ function drawInfantrySoldier(s) {
   }
   ctx.fillStyle='#19251d';ctx.fillRect(s.x-7,s.y-33,14,3);
   ctx.fillStyle=s.hp/s.maxHp<0.35?'#ff946c':'#75e394';ctx.fillRect(s.x-7,s.y-33,14*Math.max(0,s.hp/s.maxHp),3);
+  ctx.restore();
 }
 function sprite(cell, x, y, size, angle = 0) {
   if (!unitArt || !unitArt.complete || !unitArt.naturalWidth) return false;
@@ -938,24 +985,91 @@ function terrain() {
   }
   ctx.drawImage(terrainArt,0,0);
 }
+function drawTowerBody(t) {
+    const c = t.T.color;
+    const feedback = weaponFeedback.get(t), age = feedback ? presentationTime - feedback.at : Infinity;
+    const kick = age < 0.12 ? Math.sin((1 - age / 0.12) * Math.PI) * (feedback.kind === 'cannon' ? 7 : 2.5) : 0;
+    // Keep the platform visually planted while the weapon assembly recoils.
+    if (t.type === 'turret' || t.type === 'cannon') {
+      ctx.fillStyle='#26343a';ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#60787c';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.save(); ctx.translate(t.x, t.y);
+    if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
+    ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
+      const artSize=t.type==='voltaic'?56:48;
+    if (t.type === 'voltaic') {
+      let drawn = false;
+      if (voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
+        try { ctx.drawImage(voltaicArt,-artSize/2,-40,artSize,artSize); drawn = true; } catch (_) {}
+      }
+      if (!drawn) {
+        ctx.fillStyle='#1b2a2c';roundRect(-20,-20,40,40,5);ctx.fill();ctx.strokeStyle='#5f7a78';ctx.lineWidth=1.5;roundRect(-20,-20,40,40,5);ctx.stroke();
+        ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+        for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
+      }
+      const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
+    } else if(t.type === 'barracks') {
+      if(!structureSprite(3,-22,-26,44,42)) {
+      ctx.fillStyle='#283a30';roundRect(-20,-5,40,24,3);ctx.fill();
+      ctx.fillStyle='#1a2823';ctx.fillRect(-20,3,40,16);
+      ctx.fillStyle='#768466';ctx.beginPath();ctx.moveTo(-23,-6);ctx.lineTo(-13,-21);ctx.lineTo(16,-21);ctx.lineTo(23,-6);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#a8b18b';ctx.lineWidth=1;ctx.stroke();
+      ctx.strokeStyle='#435342';for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-11+i*9,-19);ctx.lineTo(-17+i*13,-8);ctx.stroke();}
+      ctx.fillStyle='#101d1b';ctx.fillRect(-7,1,14,18);ctx.strokeStyle='#889677';ctx.strokeRect(-7,1,14,18);
+      for(let i=0;i<3;i++){ctx.fillStyle=t.soldiers[i].alive?'#b5da9a':'#62534a';ctx.fillRect(-13+i*11,-3,4,3);}
+      }
+    } else if(t.type === 'turret' || t.type === 'cannon') {
+      if(!drawPlantedWeapon(t,kick)) {
+        ctx.fillStyle=c;roundRect(-18,-15,36,30,4);ctx.fill();
+        ctx.save();ctx.translate(0,-6);ctx.rotate(t.angle);ctx.fillStyle='#909b8b';ctx.fillRect(-4,-5,29,10);ctx.restore();
+      }
+    } else if(!structureSprite(2,-22,-25,44,40)) {
+      ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
+    }
+    if(t.type==='generator') {
+      const glow=isDrained(t)?'#c77dff':'#9df7bf';
+      ctx.fillStyle=glow;ctx.fillRect(-5,-4,10,3);
+      text(isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
+      if(isDrained(t)){ctx.strokeStyle=glow;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,25+Math.sin(S.time*8)*2,0,Math.PI*2);ctx.stroke();}
+      drawGeneratorDrainCue(t);
+    }
+    if (t.type !== 'generator') {
+      for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
+      for (let i = 0; i < rank(t); i++) { ctx.fillStyle = '#ffe66d'; ctx.fillRect(6 + i*6, 16, 4, 4); }       // veterancy stripes
+      if (t.paused && !t.selling) text('II', 0, 0, 14, '#e8ecf2', 'center', '800');
+      if (t.warm > 0) { ctx.strokeStyle = '#ffe66d'; ctx.lineWidth = 3; ctx.beginPath();
+        ctx.arc(0, 0, 20, -Math.PI/2, -Math.PI/2 + Math.PI*2*(t.warm/WARMUP)); ctx.stroke(); }
+    }
+    if (t.selling) { ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#8a93a6'; ctx.lineWidth = 3; ctx.beginPath();
+      ctx.arc(0, 0, 22, -Math.PI/2, -Math.PI/2 + Math.PI*2*(1 - t.sellT/SELL_TIME)); ctx.stroke();
+      text('SELL', 0, 0, 10, '#e8ecf2', 'center', '800'); }
+    ctx.restore();
+}
 function enemyArt(e) {
   const p=posAt(e.d+4), q=posAt(e.d);
   let angle=Math.atan2(p.y-q.y,p.x-q.x);
   if((e.state==='seek' || e.state==='attached') && e.gen) angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
   if(e.state==='return') { const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x); }
-  const pulse=Math.sin(S.time*9+e.d*.06);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
-  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(2,5,e.r+4,e.r*.65,0,0,Math.PI*2);ctx.fill();
-  ctx.scale(1+pulse*.025,1-pulse*.025);
-  const trialBody = INFANTRY_TRIAL && e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
-  if(!trialBody && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
+  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,1,e.r+2,Math.max(2.5,e.r*.22),0,0,Math.PI*2);ctx.fill();
+  const trialBody = e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
+  if(!trialBody && !crawlerSprite(e,angle) && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
     ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
+function rosterSpecimen(cell,x,y,size) {
+  ctx.save();ctx.translate(x,y+size*.35);let drawn=false;
+  if(cell===0) drawn=infantrySprite(2,0,0,size);
+  else { const normal=cell===1?58:43;ctx.scale(size/normal,size/normal);drawn=crawlerSprite({type:cell===1?'carapacid':'leech',d:0},0); }
+  ctx.restore();return drawn;
+}
 function evolutionBody(cell, x, y, mutation) {
-  if (!sprite(cell, x, y, 24)) {
+  if (!rosterSpecimen(cell,x,y,24) && !sprite(cell, x, y, 24)) {
     // Keep the card legible when the atlas has not loaded or is unavailable.
     ctx.save(); ctx.translate(x,y);
     ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.ellipse(0,0,8,5,0,0,Math.PI*2); ctx.fill();
@@ -1141,63 +1255,6 @@ function draw() {
     if (t.T.minRange) { ctx.beginPath(); ctx.arc(t.x, t.y, t.T.minRange, 0, Math.PI*2); ctx.stroke(); }
     ctx.setLineDash([]);
   }
-  // towers
-  for (const t of S.towers) {
-    const c = t.T.color;
-    const feedback = weaponFeedback.get(t), age = feedback ? presentationTime - feedback.at : Infinity;
-    const kick = age < 0.12 ? Math.sin((1 - age / 0.12) * Math.PI) * (feedback.kind === 'cannon' ? 7 : 2.5) : 0;
-    // Keep the platform visually planted while the weapon assembly recoils.
-    if (t.type === 'turret' || t.type === 'cannon') {
-      ctx.fillStyle='#26343a';ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#60787c';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.stroke();
-    }
-    ctx.save(); ctx.translate(t.x - Math.cos(t.angle)*kick, t.y - Math.sin(t.angle)*kick);
-    if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
-    ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
-      const artSize=t.type==='cannon'?78:t.type==='generator'?66:68;
-    if (t.type === 'voltaic') {
-      let drawn = false;
-      if (voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
-        try { ctx.drawImage(voltaicArt,-artSize/2,-artSize*0.375,artSize,artSize); drawn = true; } catch (_) {}
-      }
-      if (!drawn) {
-        ctx.fillStyle='#1b2a2c';roundRect(-20,-20,40,40,5);ctx.fill();ctx.strokeStyle='#5f7a78';ctx.lineWidth=1.5;roundRect(-20,-20,40,40,5);ctx.stroke();
-        ctx.fillStyle='#2f4446';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
-        for(let i=0;i<3;i++){ctx.strokeStyle=i%2?'#b08a4a':'#8fd3d6';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,5+i*3,0,Math.PI*2);ctx.stroke();}
-      }
-      const glow=0.55+0.45*Math.sin(S.time*6);ctx.fillStyle='rgba(157,247,255,'+glow+')';ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#9df7ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(t.angle)*18,Math.sin(t.angle)*18);ctx.stroke();
-    } else if(t.type === 'barracks') {
-      ctx.fillStyle='#283a30';roundRect(-20,-5,40,24,3);ctx.fill();
-      ctx.fillStyle='#1a2823';ctx.fillRect(-20,3,40,16);
-      ctx.fillStyle='#768466';ctx.beginPath();ctx.moveTo(-23,-6);ctx.lineTo(-13,-21);ctx.lineTo(16,-21);ctx.lineTo(23,-6);ctx.closePath();ctx.fill();
-      ctx.strokeStyle='#a8b18b';ctx.lineWidth=1;ctx.stroke();
-      ctx.strokeStyle='#435342';for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(-11+i*9,-19);ctx.lineTo(-17+i*13,-8);ctx.stroke();}
-      ctx.fillStyle='#101d1b';ctx.fillRect(-7,1,14,18);ctx.strokeStyle='#889677';ctx.strokeRect(-7,1,14,18);
-      for(let i=0;i<3;i++){ctx.fillStyle=t.soldiers[i].alive?'#b5da9a':'#62534a';ctx.fillRect(-13+i*11,-3,4,3);}
-    } else if(!sprite(t.type==='turret'?3:t.type==='cannon'?4:5,0,-2,artSize,t.type==='generator'?0:t.angle)) {
-      ctx.fillStyle=c;roundRect(-14,-14,28,28,4);ctx.fill();
-    }
-    if(t.type==='generator') {
-      const glow=isDrained(t)?'#c77dff':'#9df7bf';
-      ctx.fillStyle=glow;ctx.fillRect(-5,-4,10,3);
-      text(isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
-      if(isDrained(t)){ctx.strokeStyle=glow;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,25+Math.sin(S.time*8)*2,0,Math.PI*2);ctx.stroke();}
-      drawGeneratorDrainCue(t);
-    }
-    if (t.type !== 'generator') {
-      for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
-      for (let i = 0; i < rank(t); i++) { ctx.fillStyle = '#ffe66d'; ctx.fillRect(6 + i*6, 16, 4, 4); }       // veterancy stripes
-      if (t.paused && !t.selling) text('II', 0, 0, 14, '#e8ecf2', 'center', '800');
-      if (t.warm > 0) { ctx.strokeStyle = '#ffe66d'; ctx.lineWidth = 3; ctx.beginPath();
-        ctx.arc(0, 0, 20, -Math.PI/2, -Math.PI/2 + Math.PI*2*(t.warm/WARMUP)); ctx.stroke(); }
-    }
-    if (t.selling) { ctx.globalAlpha = 1;
-      ctx.strokeStyle = '#8a93a6'; ctx.lineWidth = 3; ctx.beginPath();
-      ctx.arc(0, 0, 22, -Math.PI/2, -Math.PI/2 + Math.PI*2*(1 - t.sellT/SELL_TIME)); ctx.stroke();
-      text('SELL', 0, 0, 10, '#e8ecf2', 'center', '800'); }
-    ctx.restore();
-  }
   for (const t of S.towers) if (t.type === 'turret') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age >= 0 && age < 0.065) {
@@ -1226,14 +1283,15 @@ function draw() {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y,17+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
-  // Ground anchors determine depth for the first three-quarter contact sample.
-  const actors = S.enemies.map(enemy=>({y:enemy.y,enemy}));
+  // Ground anchors determine depth consistently for buildings, creatures and soldiers.
+  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(enemy=>({y:enemy.y,enemy}))];
   if (INFANTRY_TRIAL) {
-    for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldier.y,soldier});
-    actors.sort((a,b)=>a.y-b.y);
+    for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierGroundPoint(soldier,t).y,soldier,tower:t});
   }
+  actors.sort((a,b)=>a.y-b.y);
   for (const actor of actors) {
-    if (actor.soldier) { drawInfantrySoldier(actor.soldier); continue; }
+    if (actor.soldier) { drawInfantrySoldier(actor.soldier,actor.tower); continue; }
+    if (actor.tower) { drawTowerBody(actor.tower); continue; }
     const e = actor.enemy;
     enemyArt(e);
     if (e.type === 'leech') drawLeechCue(e);
@@ -1430,7 +1488,7 @@ function draw() {
     btn(52,444,130,32,'Load replay',chooseReplayFile);
     if(replayUiMessage) text(replayUiMessage,52,487,11,'#ffe66d');
     text('10 WAVES  /  AUTOMATIC FIRE  /  THREE WEAPON LINES',200,463,10,'#7e9586','left','600');
-    sprite(1,745,265,300,-.3);sprite(0,645,393,118,.4);sprite(2,843,390,130,-.6);
+    rosterSpecimen(1,745,265,300);rosterSpecimen(0,645,393,118);rosterSpecimen(2,843,390,130);
     text('CONTACTS CONFIRMED',745,466,10,'#bbab78','center','600');
   }
   if (S.phase === 'over') {
