@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.4</title>
+<title>Ultimate TD — core loop prototype v0.5</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,8 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.5: balance pass — Turret 7→8.5, Voltaic 14→17, Cannon 45→40 damage; enemy HP growth per wave 0.08→0.11
+// (early waves unchanged, late waves heavier). Numbers are draft; v0.4 recordings replay under ?balance=v04.
 // v0.4: Voltaic line (chain lightning; a Carapacid in the way intercepts the bolt; lightning rods end the chain),
 // Grounding (deterministic rods: every third spawn + every Carapacid), EXPERIMENTAL Dispersal (spawn spacing),
 // three-column damage ledger with next-unused-counter selection.
@@ -37,7 +39,9 @@ const DEBUG_HIT_BOUNDS = typeof location !== 'undefined' && new URLSearchParams(
 // into exported replays, so candidate games never mix with the baseline reference set. Delete a preset once it is
 // accepted into the rules or rejected.
 const BALANCE_PRESETS = {
-  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25}
+  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25, hpGrowth:0.08},
+  // The campaign rules of prototype v0.4, kept only so v0.4 recordings stay verifiable. Not a playtest candidate.
+  v04:     {label:'v0.4 rules', turretDmg:7, voltaicDmg:14, cannonDmg:45, enemyHp:1, hpGrowth:0.08}
 };
 const BALANCE_PRESET_NAME = (() => { if (typeof location === 'undefined') return null;
   const n = new URLSearchParams(location.search).get('balance'); return BALANCE_PRESETS[n] ? n : null; })();
@@ -95,16 +99,17 @@ const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8,
   retaliation:{forager:10, carapacid:30, leech:14}, retaliationInterval:1, contactRadius:12};
 const TOWER = {
   barracks:  {name:'Barracks',  cost:INFANTRY.cost, power:INFANTRY.power, upg:[0,0,0], kind:'infantry', color:'#9fd49b', desc:'Three soldiers hold the nearest lane segment.'},
-  turret:    {name:'Turret',    cost:60,  power:10,  range:130, dmg:7,  interval:0.28, kind:'flat', color:'#8fd3ff',
+  turret:    {name:'Turret',    cost:60,  power:10,  range:130, dmg:8.5, interval:0.28, kind:'flat', color:'#8fd3ff',
               upg:[0,50,90],  desc:'Flat fire. Blocked by Carapacid shadow.'},
-  cannon:    {name:'Cannon',    cost:110, power:20,  range:190, minRange:70, dmg:45, splash:48, interval:1.7, kind:'arc', color:'#ffb454',
+  cannon:    {name:'Cannon',    cost:110, power:20,  range:190, minRange:70, dmg:40, splash:48, interval:1.7, kind:'arc', color:'#ffb454',
               upg:[0,80,140], desc:'Arcing splash. Ignores shadow. Dead zone up close.'},
-  voltaic:   {name:'Voltaic',   cost:95,  power:18,  range:120, dmg:14, hops:3, hopRange:70, hopFalloff:0.7, interval:0.6, kind:'electro', color:'#9df7ff',
+  voltaic:   {name:'Voltaic',   cost:95,  power:18,  range:120, dmg:17, hops:3, hopRange:70, hopFalloff:0.7, interval:0.6, kind:'electro', color:'#9df7ff',
               upg:[0,70,120], desc:'Chain lightning. The bolt jumps to nearby bodies; a Carapacid in the way takes it first; lightning rods end the chain.'},
   generator: {name:'Generator', cost:90,  power:-40, kind:'gen', color:'#ffe66d',
               upg:[0,55,85],  desc:'+40/+60/+85 power. Leeches feed on it.'}
 };
 const GEN_POWER = [40, 60, 85];
+const HP_GROWTH = BALANCE_PRESET ? BALANCE_PRESET.hpGrowth : 0.11;   // enemy HP growth per wave (v0.5; v0.4 was 0.08)
 if (BALANCE_PRESET) { TOWER.turret.dmg = BALANCE_PRESET.turretDmg; TOWER.voltaic.dmg = BALANCE_PRESET.voltaicDmg; TOWER.cannon.dmg = BALANCE_PRESET.cannonDmg;
   for (const k in ENEMY) ENEMY[k].hp = Math.round(ENEMY[k].hp * BALANCE_PRESET.enemyHp * 100) / 100; }                   // generator output by level: slot-efficient, not credit-efficient
 const BASE_POWER = 40, PAUSED_DRAW = 0.25, WARMUP = 2.5, BROWNOUT_MULT = 0.6, WAVES = 10;
@@ -265,7 +270,7 @@ function previewText(n) {
 }
 function satedBonus() { return Math.min(0.25, 0.02 * S.stolen); }   // Sated Waves: stolen power feeds future waves
 function makeEnemy(type, n) {
-  const T = ENEMY[type]; const mul = (1 + 0.08*(n-1)) * (1 + satedBonus());
+  const T = ENEMY[type]; const mul = (1 + HP_GROWTH*(n-1)) * (1 + satedBonus());
   const muts = [...S.mutations];
   const index = S.spawnedThisWave++;                             // deterministic: no randomness in the simulation
   const rod = muts.includes('grounding') && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);
@@ -467,7 +472,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH};
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -528,7 +533,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||data.gameVersion!=='prototype-v0.4'||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -587,7 +592,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.4',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.5',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
