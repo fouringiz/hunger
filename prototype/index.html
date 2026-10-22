@@ -871,8 +871,6 @@ const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
 if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
-const crawlBodyArt = typeof Image === 'undefined' ? null : new Image();
-if(crawlBodyArt)crawlBodyArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/hunger-crawl-bodies-v4.webp';
 const GROUND_ACTOR_RECTS = [[29,229,593,329],[625,198,612,375],[30,784,655,360],[732,645,479,510]];
 const LOW_BUILDING_RECTS = [[59,137,429,321],[539,101,419,360],[49,507,438,430],[515,503,488,444],[86,955,371,481],[504,1064,482,393]];
 function lowBuildingSprite(cell,x,y,width,height) {
@@ -891,71 +889,7 @@ function enemyHeading(e) {
   return angle;
 }
 function enemyBodyPoint(e) { const m=groundActorMetrics(e.type);return {x:e.x,y:e.y-m.height*.48}; }
-// Ground gait is sampled from travelled distance, never from a bobbing body or a pose timer.
-let crawlScene=null,crawlTravel=new WeakMap();
-function crawlDistance(e) {
-  if(crawlScene!==S){crawlScene=S;crawlTravel=new WeakMap();}
-  const x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=e.d||0;
-  let last=crawlTravel.get(e);
-  if(!last){last={x,y,d,state:e.state,distance:Math.max(0,d)};crawlTravel.set(e,last);return last.distance;}
-  const delta=e.state==='lane'&&last.state==='lane'?Math.abs(d-last.d):Math.hypot(x-last.x,y-last.y);
-  last.distance+=delta;last.x=x;last.y=y;last.d=d;last.state=e.state;return last.distance;
-}
-function crawlPose(e,angle) {
-  const width=groundActorMetrics(e.type).width,heavy=e.type==='carapacid',slug=e.type==='leech';
-  const pairs=heavy?4:slug?5:3,stride=heavy?9:slug?6:8,duty=heavy?.76:.68;
-  const distance=crawlDistance(e),cycle=distance/(stride/duty),ca=Math.cos(angle),sa=Math.sin(angle),endView=Math.abs(sa)>.66;
-  const groundY=endView?-groundActorMetrics(e.type).height*.25:0;
-  // Forward travel is already in screen coordinates; only the sideways footprint is foreshortened.
-  const project=(u,v,z=0)=>({x:u*ca-v*sa,y:groundY+u*sa+v*ca*.56-z});
-  const legs=[];
-  for(let i=0;i<pairs;i++)for(const side of [-1,1]){
-    const span=width*(endView?(heavy?.3:.25):.58),anchor=(i/(pairs-1)-.5)*span;
-    const taper=endView?.7+.3*(1-Math.abs(anchor)/(span*.5)):1,offset=heavy||slug?i*.23:i*.5;
-    const phase=((cycle+offset+(side>0?.5:0))%1+1)%1,stance=phase<duty;
-    const swing=stance?0:(phase-duty)/(1-duty),travel=stance?stride*(.5-phase/duty):stride*(-.5+swing);
-    const lift=stance?0:Math.sin(swing*Math.PI)*(heavy?1.2:1.8);
-    const root=project(anchor,side*width*.055,heavy?7:5);
-    const foot=project(anchor+travel+Math.sign(anchor),side*width*taper*(endView?(slug?.34:.43):heavy?.13:slug?.15:.2),lift);
-    const knee=project(anchor+travel*.45+Math.sign(anchor)*2.5,side*width*.24*taper,2.5+lift*.35);
-    legs.push({root,knee,foot,stance,phase,side});
-  }
-  return {legs,distance};
-}
-function crawlLimb(a,b,width,color) {
-  const length=Math.max(.01,Math.hypot(b.x-a.x,b.y-a.y)),px=-(b.y-a.y)/length*width,py=(b.x-a.x)/length*width;
-  ctx.fillStyle=color;ctx.strokeStyle='#25171b';ctx.lineWidth=.6;
-  ctx.beginPath();ctx.moveTo(a.x+px,a.y+py);ctx.lineTo(b.x+px*.45,b.y+py*.45);ctx.lineTo(b.x-px*.45,b.y-py*.45);ctx.lineTo(a.x-px,a.y-py);ctx.closePath();ctx.fill();ctx.stroke();
-  ctx.strokeStyle='#f5d5a466';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(a.x+px*.6,a.y+py*.6);ctx.lineTo(b.x,b.y);ctx.stroke();
-}
-function drawCrawlLeg(leg,type) {
-  const heavy=type==='carapacid',slug=type==='leech';
-  if(leg.stance){ctx.fillStyle='#0a1210aa';ctx.beginPath();ctx.ellipse(leg.foot.x,leg.foot.y+.5,1.7,.7,0,0,Math.PI*2);ctx.fill();}
-  crawlLimb(leg.root,leg.knee,heavy?2:1.25,slug?'#802153':'#8c352b');
-  crawlLimb(leg.knee,leg.foot,heavy?1.6:1,'#ccb58b');
-  ctx.fillStyle=slug?'#d8bbba':'#e3cfab';ctx.beginPath();ctx.arc(leg.knee.x,leg.knee.y,heavy?1.5:.9,0,Math.PI*2);ctx.fill();
-}
-function riggedCrawlerSprite(e,angle) {
-  if(!crawlBodyArt||!crawlBodyArt.complete||!crawlBodyArt.naturalWidth)return false;
-  const row={forager:0,carapacid:1,leech:2}[e.type];if(row===undefined)return false;
-  const pose=crawlPose(e,angle),m=groundActorMetrics(e.type),scale=m.width/224;
-  const view=Math.abs(Math.sin(angle))>.66?(Math.sin(angle)<0?1:2):0;
-  for(const leg of pose.legs)drawCrawlLeg(leg,e.type);
-  ctx.save();if(view===0&&Math.cos(angle)<0)ctx.scale(-1,1);
-  // All views share the same row scale and body underside; the walking rig supplies contact feet.
-  if(e.type==='leech'){
-    for(let strip=0;strip<8;strip++){
-      const wave=Math.sin(pose.distance*.3-strip*.8)*.35;
-      ctx.drawImage(crawlBodyArt,view*256+strip*32,row*256,32,256,(-128+strip*32)*scale,-236*scale+2+wave,32*scale,256*scale);
-    }
-  }else ctx.drawImage(crawlBodyArt,view*256,row*256,256,256,-128*scale,-236*scale+2,256*scale,256*scale);
-  ctx.restore();
-  // Only the short near-side lower limbs emerge over the belly; roots stay occluded by the body.
-  for(const leg of pose.legs)if(leg.foot.y>0)crawlLimb(leg.knee,leg.foot,e.type==='carapacid'?1.6:1,'#ccb58b');
-  return true;
-}
 function groundActorSprite(e,angle) {
-  if(riggedCrawlerSprite(e,angle))return true;
   if(!groundActorArt || !groundActorArt.complete || !groundActorArt.naturalWidth) return false;
   const m=groundActorMetrics(e.type);
   // Distance-driven contraction is continuous and stops when movement stops. The underside never rises.
@@ -1366,8 +1300,7 @@ function enemyArt(e) {
   const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
-  const metrics=groundActorMetrics(e.type),endView=Math.abs(Math.sin(angle))>.66;
-  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,endView?-metrics.height*.25:0,metrics.width*(endView?.34:.46),endView?metrics.height*.5:Math.max(2,metrics.width*.1),0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
   const trialBody = groundActorSprite(e,angle) || e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
   if(!trialBody && !crawlerSprite(e,angle) && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
     ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
