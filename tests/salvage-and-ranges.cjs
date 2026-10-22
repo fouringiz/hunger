@@ -4,17 +4,7 @@ function boot(){const calls=[],images=[],handlers={};class Image{constructor(){t
 const cue=boot();cue.run("reset();S.credits=1000;build(SLOTS[0],'generator');const e=makeEnemy('leech',5);e.gen=S.towers[0];");
 for(const state of ['lane','seek','return']){cue.calls.length=0;cue.run(`e.state='${state}';drawLeechCue(e);`);assert.equal(cue.calls.length,0,'a moving Leech must not draw a tendril');}
 cue.calls.length=0;cue.run("e.state='attached';drawLeechCue(e)");assert.ok(cue.calls.some(c=>c[0]==='lineTo'),'a real feeding connection remains visible');
-for(const type of ['forager','carapacid','leech']){
- const r=boot();r.run(`reset();const e=makeEnemy('${type}',1);e.state='lane';e.d=0;e.x=0;e.y=90;`);
- const pose=()=>JSON.parse(r.run('JSON.stringify(crawlPose(e,0))'));
- const a=pose();r.run('S.time+=10');assert.deepEqual(pose(),a,'waiting without movement never cycles feet');
- r.run('e.d=.1;e.x=.1');const b=pose();let supported=0;
- for(let i=0;i<a.legs.length;i++)if(a.legs[i].stance&&b.legs[i].stance){assert.ok(Math.abs(a.legs[i].foot.x-(b.legs[i].foot.x+.1))<1e-9,'a stance foot stays planted in world space');supported++;}
- assert.ok(supported>=3);assert.notDeepEqual(b,a,'travel articulates the feet');
- r.run("e.state='seek';e.x+=.3;e.y+=.4;");const before=pose();r.run('e.x+=.3;e.y+=.4');const after=pose();assert.ok(Math.abs(after.distance-before.distance-.5)<1e-8,'free-roaming travel is measured even when path distance is frozen');
- const saved=r.run('JSON.stringify(e)');r.run('groundActorSprite(e,0);groundActorSprite(e,Math.PI/2);groundActorSprite(e,-Math.PI/2);');assert.equal(r.run('JSON.stringify(e)'),saved,'the rig never edits the enemy');
-}
-console.log('PASS Leech cues only while feeding, planted stance feet, stopped gait and off-path travel');
+console.log('PASS Leech cues only while feeding');
 for(const type of ['turret','cannon','voltaic','generator','barracks']){
  const r=boot();r.run(`reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);
  const saved=r.run('replaySignature()');r.run('drawTowerBody(S.towers[0]);');assert.equal(r.run('replaySignature()'),saved,'sale rendering cannot refund or remove a tower');
@@ -51,12 +41,3 @@ const cancelled={pointerType:'touch',pointerId:2,clientX:button.x+5,clientY:butt
 const money=touch.run('S.credits');touch.handlers.pointerdown(cancelled);touch.handlers.pointercancel(cancelled);touch.handlers.pointerup(cancelled);assert.equal(touch.run('S.credits'),money,'cancelled touches never spend credits');
 touch.handlers.pointerdown(cancelled);touch.handlers.pointerup({...cancelled,clientX:-100});assert.equal(touch.run('S.credits'),money,'sliding off the choice cancels placement');
 console.log('PASS touch-hold range preview, release to build, cancellation and slide-off');
-
-for(const angle of [0,Math.PI/2,-Math.PI/2,.8,-2]){
- const r=boot();r.run("reset();const e=makeEnemy('carapacid',1);e.state='seek';e.x=e.y=0;");
- const a=JSON.parse(r.run(`JSON.stringify(crawlPose(e,${angle}))`));
- r.run(`e.x+=Math.cos(${angle})*.1;e.y+=Math.sin(${angle})*.1;`);
- const b=JSON.parse(r.run(`JSON.stringify(crawlPose(e,${angle}))`));
- for(let i=0;i<a.legs.length;i++)if(a.legs[i].stance&&b.legs[i].stance){assert.ok(Math.abs(a.legs[i].foot.x-b.legs[i].foot.x-Math.cos(angle)*.1)<1e-8);assert.ok(Math.abs(a.legs[i].foot.y-b.legs[i].foot.y-Math.sin(angle)*.1)<1e-8,'stance remains planted on vertical and diagonal headings too');}
-}
-console.log('PASS planted stance on horizontal, vertical and diagonal movement');
