@@ -14,6 +14,8 @@
 
 Анимационная проба Фуражира в органической грязи: `node tools/preview-forager.cjs`, затем откройте `reports/generated/forager-study.html`. Это отдельный просмотр для выбора движения и материалов, до переноса в игру.
 
+Проба раздельного корпуса и ног: `node tools/preview-forager-puppet.cjs`, затем откройте `reports/generated/forager-puppet-study.html`. Лапы закрепляются на грунте во время упора; есть остановка, скорость, образец игрового размера и метки контакта. Проверка походки: `node tools/check-forager-puppet.cjs`.
+
 Проверки игровой логики:
 
 ```sh
