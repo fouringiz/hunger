@@ -1534,6 +1534,82 @@ function stars(n, x, y, size) {
   for (let i = 0; i < 3; i++) text(i < n ? '★' : '☆', x + (i-1)*size*1.3, y, size, i < n ? '#ffe66d' : '#3a3f4b', 'center', '700');
 }
 
+// Gate presentation: a road-width checkpoint, anchored at the existing leak point.
+// Its rear jamb, field and front jamb participate in the same depth order as units.
+const GATE_REAR = {x:GATE.x+10,y:GATE.y-35};
+const GATE_FRONT = {x:GATE.x-10,y:GATE.y+35};
+function gatePolygon(points,fill,stroke) {
+  ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke();}
+}
+function drawGateApproach() {
+  ctx.save();ctx.translate(GATE.x,GATE.y);
+  // Inset concrete apron replaces the road edge here; seams connect it to the lane.
+  gatePolygon([[-36,-30],[30,-30],[30,30],[-36,30]],'#28332f','#6c7663');
+  ctx.fillStyle='#414c40';ctx.fillRect(-34,-26,64,52);
+  ctx.strokeStyle='#25372f';ctx.lineWidth=1;
+  for(let x=-32;x<30;x+=12){ctx.beginPath();ctx.moveTo(x,-25);ctx.lineTo(x,25);ctx.stroke();}
+  // The threshold passes through (0,0), exactly where the simulation counts a leak.
+  gatePolygon([[7,-29],[15,-29],[-7,29],[-15,29]],'#172b27','#6d8b75');
+  ctx.strokeStyle=S.gate>6?'#73d6b188':'#de755688';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(8,-27);ctx.lineTo(-8,27);ctx.stroke();
+  for(const y of [-24,24])for(let x=-31;x<-17;x+=5){
+    gatePolygon([[x,y-2],[x+3,y-2],[x+1,y+2],[x-2,y+2]],'#ac9760');
+  }
+  // Ground shadows and sockets stay below actors, including while art is loading.
+  for(const p of [GATE_REAR,GATE_FRONT]){
+    const x=p.x-GATE.x,y=p.y-GATE.y;
+    gatePolygon([[x-12,y-5],[x+11,y-5],[x+23,y+9],[x-2,y+9]],'#09141388');
+    gatePolygon([[x-12,y-8],[x+12,y-8],[x+14,y+6],[x-14,y+6]],'#4c5549','#858c73');
+    ctx.fillStyle='#27362e';ctx.fillRect(x-9,y-5,18,8);
+  }
+  ctx.restore();
+}
+function drawGateJamb(p,front) {
+  ctx.save();
+  // Short perimeter buttresses continue toward the right edge, tying the Gate to the map.
+  const h=12,y=p.y,x=p.x;
+  gatePolygon([[x+6,y-3],[W,y-3],[W,y-h-3],[x+6,y-h-3]],'#283831','#60705c');
+  gatePolygon([[x+6,y-h-3],[W,y-h-3],[W,y-h-10],[x+12,y-h-10]],'#6c765e','#8c967a');
+  ctx.strokeStyle='#192a25';ctx.lineWidth=2;
+  for(let q=x+18;q<W;q+=12){ctx.beginPath();ctx.moveTo(q,y-h-2);ctx.lineTo(q,y-4);ctx.stroke();}
+  // Reuse the armored left pylon from the atlas, without its old sideways field.
+  let drawn=false;
+  if(lowBuildingArt && lowBuildingArt.complete && lowBuildingArt.naturalWidth){
+    try{ctx.drawImage(lowBuildingArt,504,1064,153,335,x-11,y-47,23,50);drawn=true;}catch(_){}
+  }
+  if(!drawn){
+    gatePolygon([[x-8,y],[x+8,y],[x+8,y-44],[x-8,y-44]],'#55624d','#a6af8b');
+    gatePolygon([[x+8,y],[x+12,y-5],[x+12,y-48],[x+8,y-44]],'#27372d');
+    gatePolygon([[x-8,y-44],[x+8,y-44],[x+12,y-48],[x-4,y-48]],'#859073');
+    ctx.fillStyle='#15251f';ctx.fillRect(x-5,y-37,8,25);
+  }
+  ctx.fillStyle=S.gate>6?'#a6ffdc':'#ff8666';ctx.fillRect(x+(front?5:-5),y-30,2,12);
+  ctx.restore();
+}
+function drawGateField() {
+  if(S.gate<=0)return;
+  const a=GATE_REAR,b=GATE_FRONT,h=39,healthy=S.gate>6;
+  const pulse=.18+.025*Math.sin(presentationTime*2);
+  ctx.save();
+  gatePolygon([[a.x,a.y-2],[b.x,b.y-2],[b.x,b.y-h],[a.x,a.y-h]],
+    healthy?'rgba(90,238,185,'+pulse+')':'rgba(255,100,70,'+pulse+')');
+  ctx.strokeStyle=healthy?'#8aefc8aa':'#ff9775aa';ctx.lineWidth=1;
+  // Horizontal bands follow the plane between the two grounded pylons.
+  for(let z=4;z<h;z+=9){ctx.beginPath();ctx.moveTo(a.x,a.y-z);ctx.lineTo(b.x,b.y-z);ctx.stroke();}
+  ctx.globalAlpha=.3;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(a.x,a.y-2);ctx.lineTo(b.x,b.y-2);ctx.stroke();
+  ctx.restore();
+}
+function drawGateLabel() {
+  text('THE GATE',GATE.x-10,GATE_REAR.y-58,10,'#c5d8bf','center','700');
+  // A compact plaque belongs to the checkpoint instead of a number floating on the road.
+  ctx.fillStyle='#10241fe8';roundRect(GATE.x-30,GATE_FRONT.y+13,52,20,3);ctx.fill();
+  ctx.strokeStyle='#526e5e';ctx.lineWidth=1;ctx.stroke();
+  text(S.gate+' / '+GATE_MAX,GATE.x-4,GATE_FRONT.y+23,10,S.gate>6?'#b0ffe0':'#ff8360','center','700');
+}
+
 function draw() {
   observeConstruction();
   buttons = [];
@@ -1543,17 +1619,7 @@ function draw() {
 
   terrain();
   if (INFANTRY_TRIAL) { ctx.fillStyle='#101a1ddd'; roundRect(420,46,120,18,3); ctx.fill(); text('FIELD TRIAL: INFANTRY',480,55,9,'#b6d29e','center','700'); }
-  // Reinforced Gate: armored pylons and a luminous containment field.
-  if(!lowBuildingSprite(5,GATE.x-26,GATE.y-48,52,64)){
-  ctx.fillStyle='#071312aa';ctx.fillRect(GATE.x-26,GATE.y-38,55,80);
-  ctx.fillStyle='#53645b';ctx.fillRect(GATE.x-22,GATE.y-35,14,70);ctx.fillRect(GATE.x+13,GATE.y-35,14,70);
-  ctx.fillStyle='#9eac91';ctx.fillRect(GATE.x-22,GATE.y-35,14,5);ctx.fillRect(GATE.x+13,GATE.y-35,14,5);
-  ctx.fillStyle=S.gate>6?'#79e4bd55':'#ff745566';ctx.fillRect(GATE.x-8,GATE.y-30,21,60);
-  ctx.strokeStyle=S.gate>6?'#b0ffe0':'#ff8360';ctx.lineWidth=2;
-  for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(GATE.x-8,GATE.y-25+i*16);ctx.lineTo(GATE.x+13,GATE.y-25+i*16);ctx.stroke();}
-  }
-  text('THE GATE',GATE.x-3,GATE.y-61,10,'#c5d8bf','center','700');
-  text(S.gate,GATE.x+2,GATE.y+47,12,'#b0ffe0','center','700');
+  drawGateApproach();
 
   // slots
   for (const s of SLOTS) {
@@ -1597,8 +1663,14 @@ function draw() {
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
   }
+  actors.push({y:GATE_REAR.y,gatePart:'rear'},{y:GATE.y+.1,gatePart:'field'},{y:GATE_FRONT.y,gatePart:'front'});
   actors.sort((a,b)=>a.y-b.y);
   for (const actor of actors) {
+    if(actor.gatePart){
+      if(actor.gatePart==='field')drawGateField();
+      else drawGateJamb(actor.gatePart==='front'?GATE_FRONT:GATE_REAR,actor.gatePart==='front');
+      continue;
+    }
     if (actor.soldier) { drawInfantrySoldier(actor.soldier,actor.tower); continue; }
     if (actor.tower) { drawTowerBody(actor.tower); continue; }
     const e = actor.enemy;
@@ -1623,6 +1695,7 @@ function draw() {
     if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-groundActorMetrics(e.type).height-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
+  drawGateLabel();
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
     for (const e of S.enemies) {
