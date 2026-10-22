@@ -339,8 +339,8 @@ function startWave() {
   S.selected = null;
   // EXPERIMENTAL Dispersal: the mutated wave leaves the mouth less densely. Composition and speed are unchanged;
   // the wave lasts longer, which may also help the defense — the paired control must measure wave duration.
+  if (stacked && !S.rushMutation) rushEvolution();          // before spacing: the called wave already carries the rush mutation
   if (S.mutations.includes('dispersal')) for (const s of stream.queue) s.delay *= DISPERSAL_SPACING;
-  if (stacked && !S.rushMutation) rushEvolution();
   return true;
 }
 // The first wave called over a live wave gives the swarm one extra mutation it does not have, once per game, on top of
@@ -540,7 +540,7 @@ function replayHash(value) {
   return (h>>>0).toString(16).padStart(8,'0');
 }
 function replaySourceFingerprint() {
-  const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,endWave,build,upgrade,togglePause,
+  const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,build,upgrade,togglePause,
     returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
@@ -939,6 +939,7 @@ function stepSimulation(dt) {
   // by tools or tests, hold every wave open). The field is clear when no stream and no body remains.
   for (const st of [...S.streams]) if (!st.queue.length && !S.enemies.some(e => e.wave === undefined || e.wave === st.wave)) {
     S.streams = S.streams.filter(x => x !== st);
+    const live = S.streams[S.streams.length-1]; S.spawnQueue = live ? live.queue : [];   // S.spawnQueue always mirrors the newest live stream
     const fieldClear = !S.streams.length && !S.enemies.length;
     if (fieldClear) S.feast = 0;                                 // feast ends with the field
     endWave(st.wave, fieldClear);
@@ -1890,8 +1891,9 @@ function draw() {
       wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.' + (INFANTRY_TRIAL ? ' Barracks: three automatic melee soldiers.' : ''),x0,y0+42,items.length*98-10);
     } else {
       const t = S.selected.tower; const st = tstats(t);
-      let x0 = Math.max(6, Math.min(W - 6 - 3*98, t.x - 147)); const y0 = t.y > H/2 ? t.y - 74 : t.y + 26;
-      menuPanel(x0,y0);
+      const cols = t.type !== 'generator' && !t.selling && BRANCHES[t.type] && t.level === 3 ? 4 : 3;   // a level-3 tower shows two branch buttons
+      let x0 = Math.max(6, Math.min(W - 6 - cols*98, t.x - cols*49)); const y0 = t.y > H/2 ? t.y - 74 : t.y + 26;
+      menuPanel(x0,y0,cols);
       if (t.selling) {
         text('Demolition in progress…', x0, y0 + 10, 12, '#8a93a6', 'left');
       } else if (t.type !== 'generator') {
@@ -1899,7 +1901,6 @@ function draw() {
         btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
         const cost = t.T.upg[t.level], br = BRANCHES[t.type];
         if (br && t.level === 3) {                                // level 4: the upgrade button splits into the two branches
-          menuPanel(x0,y0,4);
           btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
           ['A','B'].forEach((k, i) => btn(x0 + 98*(1+i), y0, 92, 30, br[k].name + ' ' + br[k].cost, () => performPlayerAction({kind:'upgrade',...towerRef,branch:k}), S.credits >= br[k].cost));
           btn(x0 + 294, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));

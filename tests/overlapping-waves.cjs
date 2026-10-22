@@ -53,6 +53,26 @@ const cases={
     assert.equal(S.phase,'wave'); let k=0; while(S.phase==='wave'&&k++<600000) update(SIM_STEP);
     assert.equal(S.phase,'over');
   `,
+  'a later wave finishing first does not take the earlier wave\'s unspawned bodies (P1)': `
+    reset(); beginReplayRecording(); S.wave=7; S.phase='build';
+    performPlayerAction({kind:'wave'}); for(let i=0;i<120;i++) update(SIM_STEP); performPlayerAction({kind:'wave'});
+    const w8=S.streams.find(x=>x.wave===8), expected=waveDef(8).length;
+    let spawned8=S.enemies.filter(e=>e.wave===8).length+0; for(const e of S.enemies){ e.__s=true; e.dead=true; }
+    S.spawnQueue.length=0;                                       // wave 9 is out of bodies before wave 8 finishes
+    let k=0; while(S.phase==='wave'&&k++<200000){ update(SIM_STEP); for(const e of S.enemies){ if(!e.__s&&e.wave===8) spawned8++; e.__s=true; e.dead=true; } }
+    const before=w8.spawned; assert.equal(before,expected,'every body of wave 8 is released after wave 9 completed first');
+  `,
+  'a rush that grants Dispersal spaces the wave whose call earned it': `
+    reset(); beginReplayRecording(); performPlayerAction({kind:'wave'}); for(let i=0;i<60;i++) update(SIM_STEP);
+    S.mutations=Object.keys(MUT).filter(m=>m!=='dispersal');
+    performPlayerAction({kind:'wave'}); assert.equal(S.rushMutation,'dispersal');
+    const plain=waveDef(2).map(x=>x.delay), called=S.streams.find(x=>x.wave===2).queue.map(x=>x.delay);
+    called.forEach((d,i)=>assert.ok(Math.abs(d-plain[i]*DISPERSAL_SPACING)<1e-9,'interval '+i+' is spaced'));
+  `,
+  'the rush rule is part of the replay source fingerprint': `
+    const before=replaySourceFingerprint(); const keep=rushEvolution; rushEvolution=function(){ keep(); S.credits+=1; };
+    assert.notEqual(replaySourceFingerprint(),before,'changing rushEvolution changes the fingerprint'); rushEvolution=keep;
+  `,
   'legacy rule presets pay no early-call bonus': ``,
   'Cluster bomblets carry an airburst hint and strike three fragments each inside their blast': `
     reset(); S.credits=9000; build(SLOTS[5],'cannon'); const t=S.towers[0]; upgrade(t); upgrade(t); upgrade(t,'B');
@@ -72,4 +92,15 @@ const rec=JSON.parse(vm.runInContext(`(() => { reset(); beginReplayRecording(); 
   return JSON.stringify(exportReplay()); })()`,c));
 assert.ok(rec.events.some(e=>e.stacked),'the overlapping call is recorded'); assert.ok(verifyParty(rec).verified,'an overlapping game verifies');
 console.log('PASS an overlapping game is recorded and verifies'); n++;
+const stub=new Proxy({},{get(o,k){if(k==='createLinearGradient'||k==='createRadialGradient'||k==='createPattern')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=()=>{});}});
+class StubImage{constructor(){this.complete=true;this.naturalWidth=768;}}
+const canvasStub={getContext:()=>stub,style:{},addEventListener(){},getBoundingClientRect:()=>({left:0,top:0})};
+const r=vm.createContext({Image:StubImage,document:{getElementById:()=>canvasStub,createElement:()=>canvasStub},window:{devicePixelRatio:1},
+  location:{pathname:'/prototype/index.html',search:''},URLSearchParams,structuredClone,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
+vm.runInContext(src,r);
+const rightmost=vm.runInContext(`SLOTS.reduce((b,s,i)=>s.x>SLOTS[b].x?i:b,0)`,r);
+const span=JSON.parse(vm.runInContext(`(()=>{ reset(); S.phase='build'; S.credits=9999; build(SLOTS[${rightmost}],'cannon'); const t=SLOTS[${rightmost}].tower; upgrade(t); upgrade(t);
+  S.selected={kind:'tower',tower:t}; draw(); return JSON.stringify({maxRight:Math.max(...buttons.map(b=>b.x+b.w)), minLeft:Math.min(...buttons.map(b=>b.x)), count:buttons.length}); })()`,r));
+assert.ok(span.maxRight<=960-6 && span.minLeft>=6,'the level-3 menu with branch buttons stays on screen: '+JSON.stringify(span));
+console.log('PASS the level-3 menu with four buttons stays on screen at the rightmost slot'); n++;
 console.log(n+' overlapping-wave scenarios, 0 failures');
