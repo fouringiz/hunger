@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.5</title>
+<title>Ultimate TD — core loop prototype v0.6</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,8 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.6: level-4 branches — each line picks one of two specialisations for good (Machine Gun / Rifle,
+// Tesla / Prism, Howitzer / Cluster); each branch answers a specific swarm threat. Draft numbers, no randomness.
 // v0.5: balance pass — Turret 7→8.5, Voltaic 14→17, Cannon 45→40 damage; enemy HP growth per wave 0.08→0.11
 // (early waves unchanged, late waves heavier). Numbers are draft; v0.4 recordings replay under ?balance=v04.
 // v0.4: Voltaic line (chain lightning; a Carapacid in the way intercepts the bolt; lightning rods end the chain),
@@ -109,6 +111,17 @@ const TOWER = {
               upg:[0,55,85],  desc:'+40/+60/+85 power. Leeches feed on it.'}
 };
 const GEN_POWER = [40, 60, 85];
+// Level-4 branches. A tower at level 3 may take exactly one branch, for good (sell to change). Each branch answers a
+// threat: Rifle ignores the Carapacid shadow, Prism has no chain for lightning rods to cut, Cluster scatters bomblets
+// that dispersed or dashing bodies still run into. Multipliers apply on top of level-3 stats. Draft numbers.
+const BRANCHES = {
+  turret:  {A:{name:'Machine Gun', cost:150, intervalMul:0.5, dmgMul:0.75},
+            B:{name:'Rifle',       cost:150, intervalMul:2.5, dmgMul:4, rangeAdd:40, pierce:true}},
+  voltaic: {A:{name:'Tesla',       cost:170, hopsAdd:2, falloff:0.8},
+            B:{name:'Prism',       cost:170, dmgMul:3, noChain:true}},
+  cannon:  {A:{name:'Howitzer',    cost:200, dmgMul:2.2, intervalMul:1.4},
+            B:{name:'Cluster',     cost:200, bomblets:5, bombletDmgMul:0.35, bombletSplash:26, ring:60}}   // covers ~86 px against a plain shell's 48, with gaps
+};
 const HP_GROWTH = BALANCE_PRESET ? BALANCE_PRESET.hpGrowth : 0.11;   // enemy HP growth per wave (v0.5; v0.4 was 0.08)
 if (BALANCE_PRESET) { TOWER.turret.dmg = BALANCE_PRESET.turretDmg; TOWER.voltaic.dmg = BALANCE_PRESET.voltaicDmg; TOWER.cannon.dmg = BALANCE_PRESET.cannonDmg;
   for (const k in ENEMY) ENEMY[k].hp = Math.round(ENEMY[k].hp * BALANCE_PRESET.enemyHp * 100) / 100; }                   // generator output by level: slot-efficient, not credit-efficient
@@ -279,10 +292,22 @@ function makeEnemy(type, n) {
           muts, rod, state:'lane', gen:null, feedT:0};
 }
 function tstats(t) {
-  const T = t.T, lv = t.level;
-  return {dmg: T.dmg * Math.pow(1.35, lv-1), range: T.range + 15*(lv-1),
-          interval: T.interval * (lv === 3 ? 0.85 : 1), power: T.power + 5*(lv-1),
+  const T = t.T, lv = Math.min(t.level, 3);
+  const st = {dmg: T.dmg * Math.pow(1.35, lv-1), range: T.range + 15*(lv-1),
+          interval: T.interval * (lv === 3 ? 0.85 : 1), power: T.power + 5*(t.level-1),
           hops: (T.hops || 0) + (lv === 3 ? 1 : 0)};
+  const b = t.branch && BRANCHES[t.type] && BRANCHES[t.type][t.branch];
+  if (b) {                                                        // level 4: the branch reshapes level-3 stats
+    if (b.dmgMul) st.dmg *= b.dmgMul;
+    if (b.intervalMul) st.interval *= b.intervalMul;
+    if (b.rangeAdd) st.range += b.rangeAdd;
+    if (b.hopsAdd) st.hops += b.hopsAdd;
+    if (b.falloff) st.falloff = b.falloff;
+    if (b.noChain) st.hops = 0;
+    if (b.pierce) st.pierce = true;
+    if (b.bomblets) { st.bomblets = b.bomblets; st.bombletDmg = st.dmg * b.bombletDmgMul; st.bombletSplash = b.bombletSplash; st.ring = b.ring; }
+  }
+  return st;
 }
 function rank(t) { return t.kills >= RANK_KILLS[2] ? 2 : t.kills >= RANK_KILLS[1] ? 1 : 0; }
 function isDrained(t) { return !!(t.leeched && !t.leeched.dead && t.leeched.state === 'attached'); }
@@ -341,8 +366,15 @@ function build(slot, type) {
   if (type === 'generator') playCue('generator', 310, 0.24, 'sine');
   return true;
 }
-function upgrade(t) {
-  if (!t || t.type === 'barracks' || t.level >= 3 || t.selling) return false;
+function upgrade(t, branch) {
+  if (!t || t.type === 'barracks' || t.selling) return false;
+  if (branch !== undefined) {                                     // level 4: take a branch, once
+    const b = t.level === 3 && !t.branch && BRANCHES[t.type] && BRANCHES[t.type][branch];
+    if (!b || S.credits < b.cost) return false;
+    S.credits -= b.cost; t.level = 4; t.branch = branch; t.invested += b.cost;
+    return true;
+  }
+  if (t.level >= 3) return false;
   const cost = t.T.upg[t.level]; if (S.credits < cost) return;
   S.credits -= cost; t.level++; t.invested += cost;
   if (t.type === 'generator') playCue('generator', 390, 0.2, 'sine');
@@ -472,7 +504,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES};
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -490,6 +522,7 @@ function replaySignature() {
   return JSON.stringify({tick:replay.tick,win:!!S.win,gate:S.gate,credits:S.credits,wave:S.wave,kills:S.kills,mutations:S.mutations.slice(),
     dmg:S.dmg,time:S.time,towers:SLOTS.map((s,i)=>{const t=s.tower; return t?{slot:i,type:t.type,generation:replay.generations[i],level:t.level,paused:t.paused,
       selling:t.selling,cd:t.cd,warm:t.warm,sellT:t.sellT,invested:t.invested,kills:t.kills,
+      ...(t.branch?{branch:t.branch}:{}),
       ...(INFANTRY_TRIAL&&t.soldiers?{soldiers:t.soldiers.map(u=>({hp:u.hp,d:u.d,alive:u.alive,arrived:u.arrived,cd:u.cd,retalCd:u.retalCd,target:u.target?S.enemies.indexOf(u.target):-1}))}:{})}:null;})});
 }
 function replayStatus() { return {mode:replay.mode,tick:replay.tick,error:replay.error,events:replay.events.length,terminal:replay.terminal}; }
@@ -518,7 +551,8 @@ function performPlayerAction(a, playback=false) {
   } else if(a.kind==='upgrade'||a.kind==='sell'||a.kind==='pause'||a.kind==='resume') {
     if(!t||replay.generations[index]!==a.generation||t.type!==a.type) return false;
     event={kind:a.kind,slot:index,type:a.type,generation:a.generation};
-    if(a.kind==='upgrade') ok=upgrade(t)===true;
+    if(a.kind==='upgrade'&&a.branch!==undefined){ if(a.branch!=='A'&&a.branch!=='B') return false; event.branch=a.branch; }
+    if(a.kind==='upgrade') ok=upgrade(t,a.branch)===true;
     if(a.kind==='sell') ok=sell(t)===true;
     if(a.kind==='pause') ok=!t.paused&&togglePause(t)===true;
     if(a.kind==='resume') ok=t.paused&&togglePause(t)===true;
@@ -533,7 +567,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -545,6 +579,7 @@ function validateReplay(data) {
     if(['build','upgrade','sell','pause','resume'].includes(e.kind)&&(!Number.isInteger(e.slot)||e.slot<0||e.slot>=SLOTS.length||!Number.isInteger(e.generation)||e.generation<1||!Object.prototype.hasOwnProperty.call(TOWER,e.type))) throw new Error('Replay tower reference is invalid.');
     if(e.kind==='build'&&e.generation<1) throw new Error('Replay build generation is invalid.');
     if(e.kind==='speed'&&e.value!==1&&e.value!==2) throw new Error('Replay speed is invalid.');
+    if(e.branch!==undefined&&(e.kind!=='upgrade'||(e.branch!=='A'&&e.branch!=='B'))) throw new Error('Replay branch is invalid.');
     prevTick=e.tick;prevSeq=e.seq;
   }
   if(typeof data.terminal.win!=='boolean'||typeof data.terminal.signature!=='string'||data.terminal.signature.length>100000||data.checkpoints.length>WAVES) throw new Error('Replay result is invalid.');
@@ -592,7 +627,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.5',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.6',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -663,7 +698,7 @@ function pickTarget(t, st) {
 }
 function fireFlat(t, st, target) {
   let hit = target, bestU = 2;
-  for (const c of S.enemies) {                 // the Carapacid shadow: a shell body between tower and target takes the hit
+  if (!st.pierce) for (const c of S.enemies) {  // the Carapacid shadow: a shell body between tower and target takes the hit (the Rifle round passes it)
     if (c.dead || c === target || c.type !== 'carapacid') continue;
     const u = segHitsCircle(t.x, t.y, target.x, target.y, c.x, c.y, c.r + 3);
     if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
@@ -688,6 +723,16 @@ function fireArc(t, st, target) {
   presentationBursts.push({kind:'cannonMuzzle', x:t.x, y:t.y, angle:t.angle, at:presentationTime, life:0.16});
   if (presentationBursts.length > 18) presentationBursts.shift();
   playWeaponCue('cannon');
+  if (st.bomblets) {                                            // Cluster: the shell opens into bomblets, one at the aim point, the rest on a ring
+    target.incoming += st.bombletDmg;
+    for (const e of S.enemies)
+      if (!e.dead && e.muts.includes('sprinter') && Math.hypot(e.x-p.x, e.y-p.y) <= st.ring + st.bombletSplash + e.r) e.dash = flight;
+    for (let i = 0; i < st.bomblets; i++) {
+      const a = t.angle + (i - 1) * 2 * Math.PI / (st.bomblets - 1), r = i === 0 ? 0 : st.ring;
+      S.shells.push({sx:t.x, sy:t.y, tx:p.x + Math.cos(a)*r, ty:p.y + Math.sin(a)*r, t:0, flight, tower:t, dmg:st.bombletDmg, splash:st.bombletSplash, prime:i === 0 ? target : null});
+    }
+    return;
+  }
   target.incoming += st.dmg;                                    // anti-overkill ledger
   for (const e of S.enemies)                                    // Sprinter Reflex: dash at the shell-whistle
     if (!e.dead && e.muts.includes('sprinter') && Math.hypot(e.x-p.x, e.y-p.y) <= t.T.splash + e.r) e.dash = flight;
@@ -714,7 +759,7 @@ function fireElectro(t, st, target) {
       S.fx.push({kind:'spark', x:cur.x, y:cur.y, r:cur.r + 6, life:0.3, max:0.3, color:'#e0a060'});
       break;
     }
-    from = cur; dmg *= t.T.hopFalloff; let next = null, best = Infinity;
+    from = cur; dmg *= (st.falloff || t.T.hopFalloff); let next = null, best = Infinity;
     for (const e of S.enemies) {                                // nearest living body not yet struck, with no lethal charge already reserved
       if (e.dead || struck.includes(e) || e.hp - e.incoming <= 0) continue;   // hops follow the same anti-overkill rule as every first shot
       const d = Math.hypot(e.x - cur.x, e.y - cur.y);
@@ -1327,7 +1372,10 @@ function drawTowerBody(t) {
       drawGeneratorDrainCue(t);
     }
     if (t.type !== 'generator') {
-      for (let i = 0; i < t.level - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
+      for (let i = 0; i < Math.min(t.level, 3) - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
+      if (t.branch && BRANCHES[t.type]) { ctx.fillStyle = '#0b1918e0'; ctx.beginPath(); ctx.arc(14, -14, 8, 0, Math.PI*2); ctx.fill();   // branch badge
+        ctx.strokeStyle = t.branch === 'A' ? '#ffb454' : '#9df7ff'; ctx.lineWidth = 1.5; ctx.stroke();
+        text(BRANCHES[t.type][t.branch].name[0], 14, -13, 10, ctx.strokeStyle, 'center', '800'); }
       for (let i = 0; i < rank(t); i++) { ctx.fillStyle = '#ffe66d'; ctx.fillRect(6 + i*6, 16, 4, 4); }       // veterancy stripes
       if (t.paused && !t.selling) text('II', 0, 0, 14, '#e8ecf2', 'center', '800');
       if (t.warm > 0) { ctx.strokeStyle = '#ffe66d'; ctx.lineWidth = 3; ctx.beginPath();
@@ -1788,13 +1836,20 @@ function draw() {
       } else if (t.type !== 'generator') {
         const towerIndex=SLOTS.indexOf(t.slot), towerRef={slot:towerIndex,type:t.type,generation:replay.generations[towerIndex]};
         btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
-        const cost = t.T.upg[t.level];
-        btn(x0 + 98, y0, 92, 30, t.type === 'barracks' ? 'No upgrade' : t.level < 3 ? 'Upgrade ' + cost : 'Max level', () => performPlayerAction({kind:'upgrade',...towerRef}), t.type !== 'barracks' && t.level < 3 && S.credits >= cost);
+        const cost = t.T.upg[t.level], br = BRANCHES[t.type];
+        if (br && t.level === 3) {                                // level 4: the upgrade button splits into the two branches
+          menuPanel(x0,y0,4);
+          btn(x0, y0, 92, 30, t.paused ? 'Resume' : 'Pause', () => performPlayerAction({kind:t.paused?'resume':'pause',...towerRef}));
+          ['A','B'].forEach((k, i) => btn(x0 + 98*(1+i), y0, 92, 30, br[k].name + ' ' + br[k].cost, () => performPlayerAction({kind:'upgrade',...towerRef,branch:k}), S.credits >= br[k].cost));
+          btn(x0 + 294, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));
+        } else {
+        btn(x0 + 98, y0, 92, 30, t.type === 'barracks' ? 'No upgrade' : t.level < 3 ? 'Upgrade ' + cost : (t.branch && br ? br[t.branch].name : 'Max level'), () => performPlayerAction({kind:'upgrade',...towerRef}), t.type !== 'barracks' && t.level < 3 && S.credits >= cost);
         btn(x0 + 196, y0, 92, 30, 'Sell ' + Math.round(t.invested * SELL_RATE), () => performPlayerAction({kind:'sell',...towerRef}));
+        }
         if (t.type === 'barracks') {
           const alive = t.soldiers.filter(soldier => soldier.alive).length;
           wrappedText('Barracks  ' + alive + '/3 soldiers ready. ' + (alive < 3 ? 'Casualties replaced between waves.' : 'Soldiers engage automatically.'), x0, y0 + 42, 288);
-        } else wrappedText(t.T.name + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
+        } else wrappedText((t.branch && br ? br[t.branch].name : t.T.name) + ' L' + t.level + '  dmg ' + Math.round(st.dmg) + '  power ' + (t.paused ? Math.round(st.power*PAUSED_DRAW) : st.power) +
              '  kills ' + t.kills + (rank(t) ? (rank(t) === 2 ? '  Elite (stripes burn on sale)' : '  Veteran (stripes burn on sale)') : ''), x0, y0 + 42, 288);
       } else {
         const cost = t.T.upg[t.level];
