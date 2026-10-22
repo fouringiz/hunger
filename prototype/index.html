@@ -871,6 +871,8 @@ const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
 if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
+const crawlBodyArt = typeof Image === 'undefined' ? null : new Image();
+if(crawlBodyArt)crawlBodyArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/hunger-crawl-bodies-v4.webp';
 const GROUND_ACTOR_RECTS = [[29,229,593,329],[625,198,612,375],[30,784,655,360],[732,645,479,510]];
 const LOW_BUILDING_RECTS = [[59,137,429,321],[539,101,419,360],[49,507,438,430],[515,503,488,444],[86,955,371,481],[504,1064,482,393]];
 function lowBuildingSprite(cell,x,y,width,height) {
@@ -889,7 +891,71 @@ function enemyHeading(e) {
   return angle;
 }
 function enemyBodyPoint(e) { const m=groundActorMetrics(e.type);return {x:e.x,y:e.y-m.height*.48}; }
+// Ground gait is sampled from travelled distance, never from a bobbing body or a pose timer.
+let crawlScene=null,crawlTravel=new WeakMap();
+function crawlDistance(e) {
+  if(crawlScene!==S){crawlScene=S;crawlTravel=new WeakMap();}
+  const x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=e.d||0;
+  let last=crawlTravel.get(e);
+  if(!last){last={x,y,d,state:e.state,distance:Math.max(0,d)};crawlTravel.set(e,last);return last.distance;}
+  const delta=e.state==='lane'&&last.state==='lane'?Math.abs(d-last.d):Math.hypot(x-last.x,y-last.y);
+  last.distance+=delta;last.x=x;last.y=y;last.d=d;last.state=e.state;return last.distance;
+}
+function crawlPose(e,angle) {
+  const width=groundActorMetrics(e.type).width,heavy=e.type==='carapacid',slug=e.type==='leech';
+  const pairs=heavy?4:slug?5:3,stride=heavy?9:slug?6:8,duty=heavy?.76:.68;
+  const distance=crawlDistance(e),cycle=distance/(stride/duty),ca=Math.cos(angle),sa=Math.sin(angle),endView=Math.abs(sa)>.66;
+  const groundY=endView?-groundActorMetrics(e.type).height*.25:0;
+  // Forward travel is already in screen coordinates; only the sideways footprint is foreshortened.
+  const project=(u,v,z=0)=>({x:u*ca-v*sa,y:groundY+u*sa+v*ca*.56-z});
+  const legs=[];
+  for(let i=0;i<pairs;i++)for(const side of [-1,1]){
+    const span=width*(endView?(heavy?.3:.25):.58),anchor=(i/(pairs-1)-.5)*span;
+    const taper=endView?.7+.3*(1-Math.abs(anchor)/(span*.5)):1,offset=heavy||slug?i*.23:i*.5;
+    const phase=((cycle+offset+(side>0?.5:0))%1+1)%1,stance=phase<duty;
+    const swing=stance?0:(phase-duty)/(1-duty),travel=stance?stride*(.5-phase/duty):stride*(-.5+swing);
+    const lift=stance?0:Math.sin(swing*Math.PI)*(heavy?1.2:1.8);
+    const root=project(anchor,side*width*.055,heavy?7:5);
+    const foot=project(anchor+travel+Math.sign(anchor),side*width*taper*(endView?(slug?.34:.43):heavy?.13:slug?.15:.2),lift);
+    const knee=project(anchor+travel*.45+Math.sign(anchor)*2.5,side*width*.24*taper,2.5+lift*.35);
+    legs.push({root,knee,foot,stance,phase,side});
+  }
+  return {legs,distance};
+}
+function crawlLimb(a,b,width,color) {
+  const length=Math.max(.01,Math.hypot(b.x-a.x,b.y-a.y)),px=-(b.y-a.y)/length*width,py=(b.x-a.x)/length*width;
+  ctx.fillStyle=color;ctx.strokeStyle='#25171b';ctx.lineWidth=.6;
+  ctx.beginPath();ctx.moveTo(a.x+px,a.y+py);ctx.lineTo(b.x+px*.45,b.y+py*.45);ctx.lineTo(b.x-px*.45,b.y-py*.45);ctx.lineTo(a.x-px,a.y-py);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#f5d5a466';ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(a.x+px*.6,a.y+py*.6);ctx.lineTo(b.x,b.y);ctx.stroke();
+}
+function drawCrawlLeg(leg,type) {
+  const heavy=type==='carapacid',slug=type==='leech';
+  if(leg.stance){ctx.fillStyle='#0a1210aa';ctx.beginPath();ctx.ellipse(leg.foot.x,leg.foot.y+.5,1.7,.7,0,0,Math.PI*2);ctx.fill();}
+  crawlLimb(leg.root,leg.knee,heavy?2:1.25,slug?'#802153':'#8c352b');
+  crawlLimb(leg.knee,leg.foot,heavy?1.6:1,'#ccb58b');
+  ctx.fillStyle=slug?'#d8bbba':'#e3cfab';ctx.beginPath();ctx.arc(leg.knee.x,leg.knee.y,heavy?1.5:.9,0,Math.PI*2);ctx.fill();
+}
+function riggedCrawlerSprite(e,angle) {
+  if(!crawlBodyArt||!crawlBodyArt.complete||!crawlBodyArt.naturalWidth)return false;
+  const row={forager:0,carapacid:1,leech:2}[e.type];if(row===undefined)return false;
+  const pose=crawlPose(e,angle),m=groundActorMetrics(e.type),scale=m.width/224;
+  const view=Math.abs(Math.sin(angle))>.66?(Math.sin(angle)<0?1:2):0;
+  for(const leg of pose.legs)drawCrawlLeg(leg,e.type);
+  ctx.save();if(view===0&&Math.cos(angle)<0)ctx.scale(-1,1);
+  // All views share the same row scale and body underside; the walking rig supplies contact feet.
+  if(e.type==='leech'){
+    for(let strip=0;strip<8;strip++){
+      const wave=Math.sin(pose.distance*.3-strip*.8)*.35;
+      ctx.drawImage(crawlBodyArt,view*256+strip*32,row*256,32,256,(-128+strip*32)*scale,-236*scale+2+wave,32*scale,256*scale);
+    }
+  }else ctx.drawImage(crawlBodyArt,view*256,row*256,256,256,-128*scale,-236*scale+2,256*scale,256*scale);
+  ctx.restore();
+  // Only the short near-side lower limbs emerge over the belly; roots stay occluded by the body.
+  for(const leg of pose.legs)if(leg.foot.y>0)crawlLimb(leg.knee,leg.foot,e.type==='carapacid'?1.6:1,'#ccb58b');
+  return true;
+}
 function groundActorSprite(e,angle) {
+  if(riggedCrawlerSprite(e,angle))return true;
   if(!groundActorArt || !groundActorArt.complete || !groundActorArt.naturalWidth) return false;
   const m=groundActorMetrics(e.type);
   // Distance-driven contraction is continuous and stops when movement stops. The underside never rises.
@@ -936,6 +1002,7 @@ function observeConstruction() {
       event={at:presentationTime,done:!partsReady,interrupted:!partsReady,stage:0};constructionArt.set(t,event);
     }
     // Combat keeps its existing timing. A fired or selling weapon must be visibly assembled.
+    if(t.selling && event.saleFrom===undefined)event.saleFrom=constructionProgress(t);
     const engaged=t.type==='barracks' && t.soldiers.some(s=>s.target || !s.alive || s.hp<s.maxHp);
     if(t.selling || weaponFeedback.has(t) || engaged || isDrained(t) || S.phase==='over'){event.done=true;event.interrupted=true;continue;}
     if(event.done)continue;
@@ -966,9 +1033,9 @@ function drawWeaponDeployment(t,p) {
   if(lift>0){
     ctx.fillStyle='#24322f';ctx.fillRect(-5,-4-10*lift,10,10*lift);
     ctx.fillStyle='#9da58f';ctx.fillRect(-3,-4-10*lift,2,10*lift);
-    const angle=-Math.PI/2,m=weaponProjection(angle),r=STRUCTURE_RECTS[cannon?9:5],split=cannon?205:200,size=.14;
+    const angle=t.selling?t.angle:-Math.PI/2,m=weaponProjection(angle),r=STRUCTURE_RECTS[cannon?9:5],split=cannon?205:200,size=.14;
     const px=cannon?101:103,py=cannon?93:91;
-    ctx.save();ctx.beginPath();ctx.rect(-45,-75,90,71);ctx.clip();
+    ctx.save();ctx.beginPath();ctx.rect(-45,-75,90,71+19*deploymentStep(p,.45,.65));ctx.clip();
     for(const z of [3,0]){
       ctx.save();ctx.translate(0,12-26*lift+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
       if(z)ctx.filter='brightness(0.38)';
@@ -1163,6 +1230,49 @@ function sprite(cell, x, y, size, angle = 0) {
   ctx.drawImage(unitArt, cell % 3 * sw, Math.floor(cell / 3) * sh, sw, sh, -size/2, -size/2, size, size);
   ctx.restore(); return true;
 }
+function circleLaneInterval(segment,x,y,radius) {
+  const length=Math.min(segment.L,GATE_D-segment.start);if(length<=0)return null;
+  const ux=(segment.x2-segment.x1)/segment.L,uy=(segment.y2-segment.y1)/segment.L;
+  const dx=segment.x1-x,dy=segment.y1-y,along=dx*ux+dy*uy;
+  const square=radius*radius-(dx*dx+dy*dy-along*along);if(square<0)return null;
+  const half=Math.sqrt(Math.max(0,square)),lo=Math.max(0,-along-half),hi=Math.min(length,-along+half);
+  return hi>lo?{lo,hi,ux,uy}:null;
+}
+function laneCoverage(x,y,range,minRange=0) {
+  const covered=[],blind=[];
+  for(const segment of SEG){
+    const outer=circleLaneInterval(segment,x,y,range);if(!outer)continue;
+    const inner=minRange>0?circleLaneInterval(segment,x,y,minRange):null;
+    const push=(list,lo,hi)=>{if(hi>lo)list.push({x1:segment.x1+outer.ux*lo,y1:segment.y1+outer.uy*lo,x2:segment.x1+outer.ux*hi,y2:segment.y1+outer.uy*hi,length:hi-lo});};
+    if(inner){push(blind,inner.lo,inner.hi);push(covered,outer.lo,Math.min(outer.hi,inner.lo));push(covered,Math.max(outer.lo,inner.hi),outer.hi);}
+    else push(covered,outer.lo,outer.hi);
+  }
+  return {covered,blind,length:covered.reduce((n,p)=>n+p.length,0)};
+}
+function firingLaneSelection() {
+  if(!S.selected||!['build','wave'].includes(S.phase))return null;
+  let t;
+  if(S.selected.kind==='tower')t=S.selected.tower;
+  else if(placementPreview&&placementPreview.slot===S.selected.slot)t={...placementPreview.slot,type:placementPreview.type,T:TOWER[placementPreview.type],level:1};
+  if(!t||t.selling||!['turret','cannon','voltaic'].includes(t.type))return null;
+  return {tower:t,stats:tstats(t)};
+}
+function drawFiringLane() {
+  const selection=firingLaneSelection();if(!selection)return;
+  const {tower:t,stats:st}=selection,coverage=laneCoverage(t.x,t.y,st.range,t.T.minRange||0);
+  ctx.save();ctx.lineCap='round';
+  for(const [parts,color,dashed] of [[coverage.covered,'#8dffba',false],[coverage.blind,'#f5a168',true]]){
+    ctx.setLineDash(dashed?[4,5]:[]);ctx.lineWidth=dashed?5:7;ctx.strokeStyle=color;ctx.globalAlpha=.8;
+    for(const part of parts){ctx.beginPath();ctx.moveTo(part.x1,part.y1);ctx.lineTo(part.x2,part.y2);ctx.stroke();}
+  }
+  ctx.globalAlpha=.7;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.strokeStyle='#8dffba';ctx.beginPath();ctx.arc(t.x,t.y,st.range,0,Math.PI*2);ctx.stroke();
+  if(t.T.minRange){ctx.strokeStyle='#f5a168';ctx.beginPath();ctx.arc(t.x,t.y,t.T.minRange,0,Math.PI*2);ctx.stroke();}
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  const label=t.T.name.toUpperCase()+' · '+(t.type==='voltaic'?'FIRST STRIKE':'FIRING LANE')+' · '+Math.round(coverage.length/GATE_D*100)+'% ROUTE';
+  text(label,W-14,HUD+14,9,'#c3f3cf','right','700');
+  if(t.T.minRange)text('ORANGE: DEAD ZONE',W-14,HUD+26,9,'#f5a168','right');
+  ctx.restore();
+}
 function laneStroke(c) {
   c.beginPath(); c.moveTo(PATH[0][0], PATH[0][1]);
   for (const p of PATH) c.lineTo(p[0], p[1]);
@@ -1220,10 +1330,12 @@ function drawTowerBody(t) {
       ctx.strokeStyle='#60787c';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(t.x,t.y+4,15,9,0,0,Math.PI*2);ctx.stroke();
     }
     ctx.save(); ctx.translate(t.x, t.y);
-    if (t.selling) ctx.globalAlpha = 0.45 + 0.25 * Math.sin(S.time * 10);
+    // Retraction follows sellT, so the shell is closed before the existing refund/removal tick.
+    const saleProgress=t.selling?(constructionArt.get(t)?.saleFrom??1)*Math.max(0,Math.min(1,t.sellT/SELL_TIME)):null;
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
       const artSize=t.type==='voltaic'?56:48;
-    const deploying=drawBuildingDeployment(t,constructionProgress(t));
+    const buildProgress=constructionProgress(t);
+    const deploying=drawBuildingDeployment(t,saleProgress===null?buildProgress:saleProgress);
     if(!deploying){
     if (t.type === 'voltaic') {
       let drawn = lowBuildingSprite(4,-22,-62,44,76);
@@ -1257,10 +1369,10 @@ function drawTowerBody(t) {
     }
     }
     if(t.type==='generator') {
-      const glow=isDrained(t)?'#c77dff':'#9df7bf';
-      const portY=deploying?8-12*deploymentStep(constructionProgress(t),.78,.96):-4;
+      const glow=t.selling?'#77847c':isDrained(t)?'#c77dff':'#9df7bf';
+      const portY=deploying?8-12*deploymentStep(saleProgress===null?buildProgress:saleProgress,.78,.96):-4;
       ctx.fillStyle=glow;ctx.fillRect(-5,portY,10,3);
-      text(isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
+      text(t.selling?'OFFLINE':isDrained(t)?'DRAINED':'+'+GEN_POWER[t.level-1],0,25,9,glow,'center','700');
       if(isDrained(t)){ctx.strokeStyle=glow;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,25+Math.sin(S.time*8)*2,0,Math.PI*2);ctx.stroke();}
       drawGeneratorDrainCue(t);
     }
@@ -1281,7 +1393,8 @@ function enemyArt(e) {
   const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
-  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
+  const metrics=groundActorMetrics(e.type),endView=Math.abs(Math.sin(angle))>.66;
+  ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,endView?-metrics.height*.25:0,metrics.width*(endView?.34:.46),endView?metrics.height*.5:Math.max(2,metrics.width*.1),0,0,Math.PI*2);ctx.fill();
   const trialBody = groundActorSprite(e,angle) || e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
   if(!trialBody && !crawlerSprite(e,angle) && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
     ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.3,e.r*.8,angle,0,Math.PI*2);ctx.fill();
@@ -1318,7 +1431,7 @@ function evolutionBody(cell, x, y, mutation) {
   }
   ctx.restore();
 }
-let buttons = [];
+let buttons = [], placementPreview = null, pendingPlacement = null;
 let replayFileInput = null;
 if (typeof document.createElement === 'function' && document.body) {
   replayFileInput=document.createElement('input'); replayFileInput.type='file'; replayFileInput.accept='application/json,.json';
@@ -1384,44 +1497,18 @@ function drawGeneratorDrainCue(t) {
   }
 }
 function drawLeechCue(e) {
-  if (e.dead || (e.state !== 'seek' && e.state !== 'attached' && e.state !== 'return')) return;
+  // A feeding connection exists only while attached. Moving Leeches have no pointer/tendril.
+  if(e.dead || e.state!=='attached' || !e.gen)return;
   const body=enemyBodyPoint(e),mouth={x:body.x+Math.cos(enemyHeading(e))*12,y:body.y};
-  let target;
-  if (e.state === 'return') target = posAt(e.returnD);
-  else if (e.gen) target = {x:e.gen.x, y:e.gen.y-16};
-  else return;
-  let dx = target.x-mouth.x, dy = target.y-mouth.y, distance = Math.hypot(dx,dy);
-  if (!distance) return;
-  dx /= distance; dy /= distance;
-  const px = -dy, py = dx;
-  ctx.save();
-  if (e.state === 'attached') {
-    // A short live tether carries moving charge from the generator coils into the feeding body.
-    const sx = e.gen.x, sy = e.gen.y-16, ex = mouth.x, ey = mouth.y;
-    ctx.strokeStyle = 'rgba(199,125,255,0.55)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
-    for (let i=0; i<3; i++) {
-      const p = (S.time*1.7 + i/3) % 1;
-      ctx.fillStyle = `rgba(228,194,255,${0.45 + 0.45*Math.sin(S.time*8+i)})`;
-      ctx.beginPath(); ctx.arc(sx+(ex-sx)*p, sy+(ey-sy)*p, 1.3, 0, Math.PI*2); ctx.fill();
-    }
-  } else {
-    // A compact tendril points toward its destination without drawing a map-wide line.
-    const length = Math.min(distance, e.state === 'seek' ? 34 : 28);
-    const startX = mouth.x, startY = mouth.y;
-    const endX = mouth.x + dx*length, endY = mouth.y + dy*length;
-    const wave = Math.sin(S.time*9 + e.x*0.07) * (e.state === 'seek' ? 5 : 2);
-    ctx.strokeStyle = e.state === 'seek' ? 'rgba(219,161,255,0.86)' : 'rgba(199,125,255,0.48)';
-    ctx.lineWidth = e.state === 'seek' ? 2 : 1.3;
-    ctx.setLineDash(e.state === 'return' ? [2,3] : []);
-    ctx.beginPath(); ctx.moveTo(startX,startY);
-    ctx.quadraticCurveTo((startX+endX)/2 + px*wave, (startY+endY)/2 + py*wave, endX,endY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = e.state === 'seek' ? '#e6baff' : '#a879c8';
-    ctx.beginPath(); ctx.arc(endX,endY,1.8,0,Math.PI*2); ctx.fill();
+  ctx.save();ctx.strokeStyle='rgba(199,125,255,0.55)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(e.gen.x,e.gen.y-16);ctx.lineTo(mouth.x,mouth.y);ctx.stroke();
+  for(let i=0;i<3;i++){
+    const p=(S.time*1.7+i/3)%1;ctx.fillStyle='rgba(228,194,255,.7)';
+    ctx.beginPath();ctx.arc(e.gen.x+(mouth.x-e.gen.x)*p,e.gen.y-16+(mouth.y-e.gen.y+16)*p,1.3,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
+
 function wrappedText(s, x, y, width, lines = 3, color = '#c0cdbf') {
   ctx.font='11px sans-serif';
   const words=s.split(' ');let line='',row=0;
@@ -1542,14 +1629,7 @@ function draw() {
     roundRect(s.x - 16, s.y - 16, 32, 32, 4); ctx.stroke(); ctx.setLineDash([]);
     if (S.phase === 'build' || S.phase === 'wave') text('+', s.x, s.y + 1, 16, '#4a5364', 'center');
   }
-  // range of selected tower
-  if (S.selected && S.selected.kind === 'tower' && S.selected.tower.type !== 'generator' && S.selected.tower.type !== 'barracks') {
-    const t = S.selected.tower, st = tstats(t);
-    ctx.strokeStyle = 'rgba(124,255,178,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
-    ctx.beginPath(); ctx.arc(t.x, t.y, st.range, 0, Math.PI*2); ctx.stroke();
-    if (t.T.minRange) { ctx.beginPath(); ctx.arc(t.x, t.y, t.T.minRange, 0, Math.PI*2); ctx.stroke(); }
-    ctx.setLineDash([]);
-  }
+  drawFiringLane();
   for (const t of S.towers) if (t.type === 'turret') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age >= 0 && age < 0.065) {
@@ -1703,6 +1783,7 @@ function draw() {
   if (S.toastT > 0) bottom = S.toast;
   else if (S.phase === 'build') bottom = 'Next wave: ' + previewText(S.wave + 1) + (S.report ? '     |     ' + S.report : '');
   else if (S.phase === 'wave') bottom = 'Wave ' + S.wave + ' in progress. Towers aim themselves. Tap one to pause, upgrade or sell it.';
+  if(pendingPlacement)bottom='Release to build. Slide away to cancel.';
   if(replay.mode==='error') bottom='REPLAY ERROR: '+replay.error+'  Use Exit replay to return to the menu.';
   wrappedText(bottom,14,H-BOT+10,W-28,2,S.toastT>0?'#ffe66d':'#c9d0dc');
 
@@ -1737,14 +1818,15 @@ function draw() {
   }
 
   // selection menus
-  if (S.selected && (S.phase === 'build' || S.phase === 'wave')) {
+  if (S.selected && !pendingPlacement && (S.phase === 'build' || S.phase === 'wave')) {
     if (S.selected.kind === 'slot') {
       const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'generator'];
       if (INFANTRY_TRIAL) items.push('barracks');
       let x0 = Math.max(6, Math.min(W - 6 - items.length*98, s.x - items.length*49)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
       menuPanel(x0,y0,items.length);
         items.forEach((k, i) => { const T = TOWER[k];
-        btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => performPlayerAction({kind:'build',slot:SLOTS.indexOf(s),type:k}), S.credits >= T.cost); });
+        btn(x0 + i*98, y0, 92, 30, T.name + ' ' + T.cost, () => performPlayerAction({kind:'build',slot:SLOTS.indexOf(s),type:k}), S.credits >= T.cost);
+        buttons[buttons.length-1].placement={slot:s,type:k}; });
       wrappedText('Turret: rapid fire. Cannon: arcing splash. Voltaic: chain lightning, jumps between bodies. Generator: +40 power, upgradable to +85.' + (INFANTRY_TRIAL ? ' Barracks: three automatic melee soldiers.' : ''),x0,y0+42,items.length*98-10);
     } else {
       const t = S.selected.tower; const st = tstats(t);
@@ -1820,10 +1902,24 @@ function draw() {
 }
 
 // ---------------------------------------------------------------- input
+// Hover previews the build choice. A touch hold previews before purchase; releasing outside cancels.
+canvas.addEventListener('pointermove',ev=>{
+  const r=canvas.getBoundingClientRect(),x=(ev.clientX-r.left)/scale,y=(ev.clientY-r.top)/scale;
+  const button=buttons.find(b=>b.placement&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h);
+  if(button)placementPreview=button.placement;
+});
+canvas.addEventListener('pointerleave',()=>{placementPreview=null;});
 canvas.addEventListener('pointerdown', ev => {
   const rect = canvas.getBoundingClientRect();
   const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
-  for (const b of buttons) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) { if (b.enabled) { b.fn(); if (soundEnabled) audioGesture(); } return; }
+  for (const b of buttons) if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+    if(b.placement && ev.pointerType==='touch'){
+      placementPreview=b.placement;
+      if(b.enabled){pendingPlacement={button:b,id:ev.pointerId,scene:S};try{canvas.setPointerCapture?.(ev.pointerId);}catch(_){} }
+      if(soundEnabled)audioGesture();return;
+    }
+    if (b.enabled) { b.fn(); if (soundEnabled) audioGesture(); } return;
+  }
   if(['playing','verified','error'].includes(replay.mode)) return;
   if (S.phase !== 'build' && S.phase !== 'wave') return;
   let hit = null;
@@ -1832,6 +1928,15 @@ canvas.addEventListener('pointerdown', ev => {
   else S.selected = null;
   audioGesture();
 });
+
+canvas.addEventListener('pointerup',ev=>{
+  if(!pendingPlacement||pendingPlacement.id!==ev.pointerId)return;
+  const pending=pendingPlacement;pendingPlacement=null;
+  const r=canvas.getBoundingClientRect(),x=(ev.clientX-r.left)/scale,y=(ev.clientY-r.top)/scale,b=pending.button;
+  if(S===pending.scene&&S.selected?.kind==='slot'&&S.selected.slot===b.placement.slot&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h)b.fn();
+  try{canvas.releasePointerCapture?.(ev.pointerId);}catch(_){}
+});
+canvas.addEventListener('pointercancel',()=>{pendingPlacement=null;placementPreview=null;});
 
 // ---------------------------------------------------------------- loop
 let last = performance.now();

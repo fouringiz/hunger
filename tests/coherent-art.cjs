@@ -19,10 +19,10 @@ for(const base of bases)assert.deepEqual(base,bases[0],'aim and recoil do not mo
 assert.equal(normal.rotations.length,0,'the foundation is never rotated in the canvas plane');
 for(const type of ['forager','carapacid','leech']){
  normal.draws.length=0;normal.run(`enemyArt(makeEnemy('${type}',1));`);
- const expected=normal.images.find(i=>i.src.endsWith('hunger-ground-actors-v3.png'));
+ const expected=normal.images.find(i=>i.src.endsWith('hunger-crawl-bodies-v4.webp'));
  assert.ok(normal.draws.some(a=>a[0]===expected),type+' uses a grounded sprite in the normal campaign too');
 }
-normal.run("infantryArt.complete=false;groundActorArt.complete=false;");normal.draws.length=0;normal.run("enemyArt(makeEnemy('forager',1));");
+normal.run("infantryArt.complete=false;groundActorArt.complete=false;crawlBodyArt.complete=false;");normal.draws.length=0;normal.run("enemyArt(makeEnemy('forager',1));");
 assert.ok(!normal.draws.some(d=>d[0]===normal.images.find(i=>i.src.endsWith('hunger-crawlers-v2.png'))),'an unloaded Forager never becomes a Leech');
 const trial=boot('?infantry=1');trial.run("reset();S.phase='build';S.buildTimer=999;S.credits=1000;build(SLOTS[3],'barracks');for(let i=0;i<300;i++)update(SIM_STEP);");
 const points=()=>JSON.parse(trial.run('JSON.stringify(S.towers[0].soldiers.map(s=>soldierGroundPoint(s,S.towers[0])))'));
@@ -40,8 +40,14 @@ const angleSet=new Set();for(let i=0;i<64;i++){
 }
 assert.equal(angleSet.size,64,'the weapon has continuous yaw, not four directional cells');
 for(const type of ['forager','carapacid','leech']){
- const r=boot();for(const d of [0,1,40,80]){r.draws.length=0;r.run(`const sample${d}=makeEnemy('${type}',1);sample${d}.d=${d};groundActorSprite(sample${d},0);`);const a=r.draws[0];assert.equal(a[6]+a[8],0,'every crawling pose contacts the ground line');}
+ const r=boot();r.run(`const sample=makeEnemy('${type}',1);`);
+ for(const d of [0,1,40,80]){
+   const pose=JSON.parse(r.run(`sample.d=${d};JSON.stringify(crawlPose(sample,0))`));
+   assert.ok(pose.legs.filter(l=>l.stance).length>=3,'at least three feet support each crawling pose');
+   assert.ok(pose.legs.every(l=>Number.isFinite(l.foot.x)&&Number.isFinite(l.foot.y)),'all contact points stay finite');
+ }
 }
+
 const tesla=boot();tesla.run("reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
 const firstLines=tesla.lines.slice();tesla.lines.length=0;tesla.run('S.towers[0].angle=Math.PI/2;drawTowerBody(S.towers[0]);');assert.deepEqual(tesla.lines,firstLines,'Tesla draws no changing directional pointer');
 const drawnTesla=tesla.draws.find(d=>d[0]===tesla.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===86);
