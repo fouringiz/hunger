@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.6</title>
+<title>Ultimate TD — core loop prototype v0.7</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,8 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.7: overlapping waves — the next wave can be called at any time, even during a wave; calling early pays credits
+// for the skipped waiting time; the first call over a live wave gives the swarm one extra mutation. Cluster airbursts.
 // v0.6: level-4 branches — each line picks one of two specialisations for good (Machine Gun / Rifle,
 // Tesla / Prism, Howitzer / Cluster); each branch answers a specific swarm threat. Draft numbers, no randomness.
 // v0.5: balance pass — Turret 7→8.5, Voltaic 14→17, Cannon 45→40 damage; enemy HP growth per wave 0.08→0.11
@@ -41,9 +43,9 @@ const DEBUG_HIT_BOUNDS = typeof location !== 'undefined' && new URLSearchParams(
 // into exported replays, so candidate games never mix with the baseline reference set. Delete a preset once it is
 // accepted into the rules or rejected.
 const BALANCE_PRESETS = {
-  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25, hpGrowth:0.08},
+  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25, hpGrowth:0.08, earlyCallBonus:0},
   // The campaign rules of prototype v0.4, kept only so v0.4 recordings stay verifiable. Not a playtest candidate.
-  v04:     {label:'v0.4 rules', turretDmg:7, voltaicDmg:14, cannonDmg:45, enemyHp:1, hpGrowth:0.08}
+  v04:     {label:'v0.4 rules', turretDmg:7, voltaicDmg:14, cannonDmg:45, enemyHp:1, hpGrowth:0.08, earlyCallBonus:0}
 };
 const BALANCE_PRESET_NAME = (() => { if (typeof location === 'undefined') return null;
   const n = new URLSearchParams(location.search).get('balance'); return BALANCE_PRESETS[n] ? n : null; })();
@@ -122,7 +124,10 @@ const BRANCHES = {
   cannon:  {A:{name:'Howitzer',    cost:200, dmgMul:2.2, intervalMul:1.4},
             B:{name:'Cluster',     cost:200, bomblets:5, bombletDmgMul:0.35, bombletSplash:26, ring:60}}   // covers ~86 px against a plain shell's 48, with gaps
 };
-const HP_GROWTH = BALANCE_PRESET ? BALANCE_PRESET.hpGrowth : 0.11;   // enemy HP growth per wave (v0.5; v0.4 was 0.08)
+const HP_GROWTH = BALANCE_PRESET ? BALANCE_PRESET.hpGrowth : 0.11;
+const BUILD_PAUSE = 20;                             // seconds between waves when the field is clear
+// Credits per second of waiting skipped by calling a wave early (v0.7). A call over a live wave skips a whole pause.
+const EARLY_CALL_BONUS = BALANCE_PRESET && BALANCE_PRESET.earlyCallBonus !== undefined ? BALANCE_PRESET.earlyCallBonus : 3;   // enemy HP growth per wave (v0.5; v0.4 was 0.08)
 if (BALANCE_PRESET) { TOWER.turret.dmg = BALANCE_PRESET.turretDmg; TOWER.voltaic.dmg = BALANCE_PRESET.voltaicDmg; TOWER.cannon.dmg = BALANCE_PRESET.cannonDmg;
   for (const k in ENEMY) ENEMY[k].hp = Math.round(ENEMY[k].hp * BALANCE_PRESET.enemyHp * 100) / 100; }                   // generator output by level: slot-efficient, not credit-efficient
 const BASE_POWER = 40, PAUSED_DRAW = 0.25, WARMUP = 2.5, BROWNOUT_MULT = 0.6, WAVES = 10;
@@ -168,7 +173,7 @@ function reset() {
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
-       spawnQueue:[], spawnTimer:0, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
+       spawnQueue:[], spawnTimer:0, streams:[], rushMutation:null, memoPending:false, speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        meleeDamage:0, infantryCasualties:0, infantryBlockedSeconds:0,
        toast:'', toastT:0, accumulator:0};
@@ -322,19 +327,38 @@ function power() {
 }
 
 // ---------------------------------------------------------------- actions
+// Each called wave is its own spawn stream, so waves may overlap. With no overlap there is exactly one stream and the
+// game behaves as it did with a single queue. S.spawnQueue stays the newest wave's queue (tools and tests set it).
 function startWave() {
-  S.wave++; S.phase = 'wave'; S.spawnQueue = waveDef(S.wave); S.spawnTimer = 0.6;
-  S.waveKills = 0; S.waveLeaked = 0; S.selected = null; S.spawnedThisWave = 0;
+  const stacked = S.phase === 'wave';
+  if (stacked && S.wave >= WAVES) return false;
+  S.wave++; S.phase = 'wave';
+  const stream = {wave:S.wave, queue:waveDef(S.wave), timer:0.6, spawned:0};
+  S.streams.push(stream); S.spawnQueue = stream.queue; S.spawnTimer = stream.timer;
+  if (!stacked) { S.waveKills = 0; S.waveLeaked = 0; S.spawnedThisWave = 0; S.memoPending = false; }
+  S.selected = null;
   // EXPERIMENTAL Dispersal: the mutated wave leaves the mouth less densely. Composition and speed are unchanged;
   // the wave lasts longer, which may also help the defense — the paired control must measure wave duration.
-  if (S.mutations.includes('dispersal')) for (const s of S.spawnQueue) s.delay *= DISPERSAL_SPACING;
+  if (S.mutations.includes('dispersal')) for (const s of stream.queue) s.delay *= DISPERSAL_SPACING;
+  if (stacked && !S.rushMutation) rushEvolution();
   return true;
 }
-function endWave() {
-  clearInfantryContacts(true);
+// The first wave called over a live wave gives the swarm one extra mutation it does not have, once per game, on top of
+// the scheduled ones. The pick looks random to the player but depends only on the tick of the call, so replays repeat it.
+function rushEvolution() {
+  const pool = Object.keys(MUT).filter(m => !S.mutations.includes(m));
+  if (!pool.length) return;
+  const kind = pool[((Math.round(S.time * 60) * 2654435761) >>> 0) % pool.length];
+  S.rushMutation = kind; S.mutations.push(kind);
+  S.report = 'MEMORANDUM (Marsh): ' + MUT[kind].effect + ' Cause: a wave was called before the last one was cleared; the incubators answered your haste. — G.M.';
+  S.memoPending = true; evolutionCardDismissed = false;
+  toast('EVOLUTION: ' + MUT[kind].name + ' — the swarm answers your haste.');
+}
+function endWave(n = S.wave, fieldClear = true) {
+  if (fieldClear) clearInfantryContacts(true);
   let memo = '';
   // Background evolution: the incubators read the damage ledger on schedule, with no organism on the lane.
-  if (EVOLUTION_WAVES.includes(S.wave) && S.wave < WAVES && S.mutations.length < MUT_STACK_CAP &&
+  if (EVOLUTION_WAVES.includes(n) && n < WAVES && S.mutations.length < MUT_STACK_CAP + (S.rushMutation ? 1 : 0) &&
       (!INFANTRY_TRIAL || Object.values(S.dmg).some(value => value > 0))) {
     const ledger = LEDGER_ORDER.map(k => [k, S.dmg[k] || 0]).sort((a, b) => b[1] - a[1] || LEDGER_ORDER.indexOf(a[0]) - LEDGER_ORDER.indexOf(b[0]));
     const nextUnused = line => (COUNTERS[line] || []).find(m => !S.mutations.includes(m));
@@ -350,10 +374,12 @@ function endWave() {
       toast('EVOLUTION: ' + MUT[kind].name + ' next wave. Prepare your defense.');
     }
   }
-  S.report = memo || ('DISPATCH ' + S.wave + ': Wave held. Kills ' + S.waveKills + '. Leaked ' + S.waveLeaked + '.' +
-             (S.waveLeaked ? ' Tighten the lane.' : ''));
+  S.report = memo || (S.memoPending ? S.report : ('DISPATCH ' + n + ': Wave held. Kills ' + S.waveKills + '. Leaked ' + S.waveLeaked + '.' +
+             (S.waveLeaked ? ' Tighten the lane.' : '')));
+  if (memo) S.memoPending = true;
+  if (!fieldClear) return;
   if (S.wave >= WAVES) { S.phase = 'over'; S.win = true; return; }
-  S.phase = 'build'; S.buildTimer = 20;
+  S.phase = 'build'; S.buildTimer = BUILD_PAUSE;
 }
 function build(slot, type) {
   if (type === 'barracks' && !INFANTRY_TRIAL) return false;
@@ -504,7 +530,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS};
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -556,7 +582,10 @@ function performPlayerAction(a, playback=false) {
     if(a.kind==='sell') ok=sell(t)===true;
     if(a.kind==='pause') ok=!t.paused&&togglePause(t)===true;
     if(a.kind==='resume') ok=t.paused&&togglePause(t)===true;
-  } else if(a.kind==='wave') { if(S.phase!=='build') return false; ok=startWave()===true; }
+  } else if(a.kind==='wave') {                                    // early call: credits for the waiting skipped
+    if(S.phase==='build'){ const bonus=Math.round(EARLY_CALL_BONUS*Math.max(0,S.buildTimer)); ok=startWave()===true; if(ok) S.credits+=bonus; }
+    else { if(S.wave>=WAVES) return false; ok=startWave()===true; if(ok){ S.credits+=Math.round(EARLY_CALL_BONUS*BUILD_PAUSE); event={kind:'wave',stacked:true}; } }
+  }
   else if(a.kind==='speed') { if(a.value!==1&&a.value!==2) return false; S.speed=a.value; event={kind:'speed',value:a.value}; ok=true; }
   if(ok) replayRecord({...event,...actionContext});
   return ok;
@@ -580,6 +609,7 @@ function validateReplay(data) {
     if(e.kind==='build'&&e.generation<1) throw new Error('Replay build generation is invalid.');
     if(e.kind==='speed'&&e.value!==1&&e.value!==2) throw new Error('Replay speed is invalid.');
     if(e.branch!==undefined&&(e.kind!=='upgrade'||(e.branch!=='A'&&e.branch!=='B'))) throw new Error('Replay branch is invalid.');
+    if(e.stacked!==undefined&&(e.kind!=='wave'||e.stacked!==true)) throw new Error('Replay wave call is invalid.');
     prevTick=e.tick;prevSeq=e.seq;
   }
   if(typeof data.terminal.win!=='boolean'||typeof data.terminal.signature!=='string'||data.terminal.signature.length>100000||data.checkpoints.length>WAVES) throw new Error('Replay result is invalid.');
@@ -729,7 +759,8 @@ function fireArc(t, st, target) {
       if (!e.dead && e.muts.includes('sprinter') && Math.hypot(e.x-p.x, e.y-p.y) <= st.ring + st.bombletSplash + e.r) e.dash = flight;
     for (let i = 0; i < st.bomblets; i++) {
       const a = t.angle + (i - 1) * 2 * Math.PI / (st.bomblets - 1), r = i === 0 ? 0 : st.ring;
-      S.shells.push({sx:t.x, sy:t.y, tx:p.x + Math.cos(a)*r, ty:p.y + Math.sin(a)*r, t:0, flight, tower:t, dmg:st.bombletDmg, splash:st.bombletSplash, prime:i === 0 ? target : null});
+      S.shells.push({sx:t.x, sy:t.y, tx:p.x + Math.cos(a)*r, ty:p.y + Math.sin(a)*r, t:0, flight, tower:t, dmg:st.bombletDmg, splash:st.bombletSplash, prime:i === 0 ? target : null,
+        cluster:{cx:p.x, cy:p.y, i}});   // presentation only: the carrier opens in the air over (cx, cy)
     }
     return;
   }
@@ -801,9 +832,12 @@ function stepSimulation(dt) {
   if (S.phase !== 'wave') return;
 
   // spawning
-  if (S.spawnQueue.length) {
-    S.spawnTimer -= dt;
-    if (S.spawnTimer <= 0) { const s = S.spawnQueue.shift(); S.enemies.push(makeEnemy(s.type, S.wave)); S.spawnTimer = s.delay; }
+  const newest = S.streams[S.streams.length-1];
+  if (newest && newest.queue !== S.spawnQueue) newest.queue = S.spawnQueue;   // a tool or test replaced the newest queue
+  for (const st of S.streams) if (st.queue.length) {
+    st.timer -= dt;
+    if (st.timer <= 0) { const s = st.queue.shift(); S.spawnedThisWave = st.spawned; const e = makeEnemy(s.type, st.wave); st.spawned = S.spawnedThisWave;
+      e.wave = st.wave; S.enemies.push(e); st.timer = s.delay; }
   }
   const infantryBrown = power().brown;
   updateInfantry(dt, infantryBrown);
@@ -888,6 +922,10 @@ function stepSimulation(dt) {
       if (sh.prime) sh.prime.incoming = Math.max(0, sh.prime.incoming - sh.dmg);   // ledger settles on impact
       for (const e of S.enemies) if (!e.dead && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg, sh.tower);
       S.fx.push({kind:'boom', x:sh.tx, y:sh.ty, r:sh.splash, life:0.35, max:0.35, color:'#ffae42'});
+      if (sh.cluster) for (let j = 0; j < 3; j++) {                 // three fragments per bomblet strike inside its blast area
+        const a = sh.cluster.i * 1.3 + j * 2.094, rr = sh.splash * (0.3 + 0.25 * j);
+        S.fx.push({kind:'frag', x:sh.tx + Math.cos(a)*rr, y:sh.ty + Math.sin(a)*rr, r:3, life:0.3, max:0.3, color:'#ffd27f'});
+      }
       presentationBursts.push({kind:'impactDust', x:sh.tx, y:sh.ty, at:presentationTime, life:0.34});
       if (presentationBursts.length > 18) presentationBursts.shift();
       playCue('impact', 118, 0.12, 'triangle');
@@ -897,7 +935,16 @@ function stepSimulation(dt) {
   S.enemies = S.enemies.filter(e => !e.dead);
 
   if (S.gate <= 0) { S.gate = 0; S.phase = 'over'; S.win = false; return; }
-  if (!S.spawnQueue.length && !S.enemies.length) { S.feast = 0; endWave(); }   // feast ends with the wave
+  // A wave is complete when its stream has spawned everything and none of its bodies is alive (untagged bodies, placed
+  // by tools or tests, hold every wave open). The field is clear when no stream and no body remains.
+  for (const st of [...S.streams]) if (!st.queue.length && !S.enemies.some(e => e.wave === undefined || e.wave === st.wave)) {
+    S.streams = S.streams.filter(x => x !== st);
+    const fieldClear = !S.streams.length && !S.enemies.length;
+    if (fieldClear) S.feast = 0;                                 // feast ends with the field
+    endWave(st.wave, fieldClear);
+    if (S.phase !== 'wave') return;
+  }
+  if (S.phase === 'wave' && !S.streams.length && !S.enemies.length && !S.spawnQueue.length) { S.feast = 0; endWave(S.wave, true); }
 }
 
 // ---------------------------------------------------------------- drawing
@@ -1729,10 +1776,20 @@ function draw() {
     }
     ctx.strokeStyle = s.blocked ? '#ff9f43' : '#ffffff'; ctx.lineWidth = s.blocked ? 2.5 : 1.5;
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
-  for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower); const x = start.x + (sh.tx-start.x)*k, y = start.y + (sh.ty-start.y)*k - Math.sin(k*Math.PI)*70;
+  for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower);
+    if (sh.cluster) {                                             // one carrier flies to the burst point, then five bomblets fan out
+      const BURST = 0.68, c = sh.cluster, arc = q => ({x:start.x + (c.cx-start.x)*q, y:start.y + (c.cy-start.y)*q - Math.sin(q*Math.PI)*70});
+      if (k < BURST) { if (c.i === 0) { const q = arc(k); ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, Math.PI*2); ctx.fill(); } continue; }
+      const b = arc(BURST), k2 = (k - BURST) / (1 - BURST), x = b.x + (sh.tx-b.x)*k2, y = b.y + (sh.ty-b.y)*k2;
+      if (c.i === 0 && k2 < 0.25) { ctx.strokeStyle = 'rgba(255,210,127,' + (1 - k2*4) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, 6 + k2*40, 0, Math.PI*2); ctx.stroke(); }
+      ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI*2); ctx.fill(); continue;
+    }
+    const x = start.x + (sh.tx-start.x)*k, y = start.y + (sh.ty-start.y)*k - Math.sin(k*Math.PI)*70;
     ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(255,174,66,0.25)'; ctx.beginPath(); ctx.arc(sh.tx, sh.ty, 6, 0, Math.PI*2); ctx.fill(); }
   for (const f of S.fx) { const k = f.life / f.max; ctx.globalAlpha = k; ctx.strokeStyle = f.color; ctx.lineWidth = 2;
+    if (f.kind === 'frag') { ctx.beginPath(); ctx.moveTo(f.x, f.y - 22*k); ctx.lineTo(f.x, f.y); ctx.stroke();   // a fragment streaks down
+      ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(f.x, f.y, f.r*(1.6-k), 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; continue; }
     ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (f.kind === 'boom' ? 1 : (1.6 - k)), 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
 
   // brownout overlay
@@ -1769,7 +1826,11 @@ function draw() {
   text('Wave ' + S.wave + '/' + WAVES, 560, HUD/2, 14, '#e8ecf2', 'center', '700');
   if (BALANCE_PRESET) text('BALANCE: ' + BALANCE_PRESET.label, 560, HUD + 12, 11, '#ffb454', 'center', '700');
   if(['playing','verified','error'].includes(replay.mode)) btn(640,7,130,26,'Exit replay',()=>reset(),true,true);
-  else if (S.phase === 'build') btn(640, 7, 130, 26, 'Send wave (' + Math.ceil(S.buildTimer) + ')', () => performPlayerAction({kind:'wave'}), true, true);
+  else if (S.phase === 'build') btn(640, 7, 130, 26, 'Send ' + Math.ceil(S.buildTimer) + 's  +' + Math.round(EARLY_CALL_BONUS*Math.max(0,S.buildTimer)), () => performPlayerAction({kind:'wave'}), true, true);
+  else if (S.phase === 'wave' && S.wave < WAVES && replay.mode !== 'playing') {
+    btn(640, 7, 130, 26, 'Next wave  +' + Math.round(EARLY_CALL_BONUS*BUILD_PAUSE), () => performPlayerAction({kind:'wave'}), true, !S.rushMutation);
+    if (!S.rushMutation) text('rush: swarm gains a mutation', 705, HUD + 10, 9, '#ffb454', 'center', '600');
+  }
   if ((S.phase === 'build' || S.phase === 'wave')&&replay.mode!=='playing'&&replay.mode!=='verified') btn(786, 7, 60, 26, '×' + S.speed, () => performPlayerAction({kind:'speed',value:S.speed===1?2:1}));
   text('Gate ' + S.gate, 954, HUD/2, 14, S.gate > 6 ? '#7cffb2' : '#ff6b6b', 'right', '700');
   if (INFANTRY_TRIAL && S.phase !== 'menu') {

@@ -30,7 +30,7 @@ function readAndInstrument() {
   const source = match[1];
   const checks = [
     ['fixed simulation step', 'const SIM_STEP = 1 / 60;'],
-    ['Dispersal delay mutation', 'if (S.mutations.includes(\'dispersal\')) for (const s of S.spawnQueue) s.delay *= DISPERSAL_SPACING;'],
+    ['Dispersal delay mutation', 'if (S.mutations.includes(\'dispersal\')) for (const s of stream.queue) s.delay *= DISPERSAL_SPACING;'],
     ['Forager herd clamp', "if (e.type === 'forager') for (const c of S.enemies)"],
     ['splash collision predicate', 'Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5'],
     ['shell impact site', 'sh.done = true;']
