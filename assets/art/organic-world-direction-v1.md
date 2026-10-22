@@ -43,3 +43,5 @@ Limitations for review: these are generated concepts, not runtime captures or pl
 Implement the location as terrain, raised platforms and separately placed architecture aligned to actual route/build coordinates, rather than baking the concept's towers and enemies into a background. Check building projection on the actual game scene. Keep the approved source-based Forager. Leech and Carapacid need their own source-and-motion review before replacing the current game sprites.
 
 Construction/readiness rules affect simulation and replay compatibility; terrain, Gate, platforms and pause animation are presentation work. Do not silently re-stamp old replays as compatible with new construction rules. PR #28 remains a visual checkpoint until executable changes are added and tested.
+
+Follow-up: [world presentation implementation](organic-world-runtime-v1.md), including both zone palettes, raised platforms, projected ancient architecture and pause poses. Construction readiness and the two remaining castes are tracked there as remaining packages.
