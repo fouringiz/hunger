@@ -8,6 +8,7 @@ User asked to save progress because usage is running out. Stop implementation at
 
 - The current procedural Gate is rejected: coarse stone blocks, an oblique segmented hoop and a flat cyan grid do not match the agreed monumental ancient portal.
 - The pathway is dull/blurry compared with the approved concept. It needs vivid, detailed, glossy fluid sludge, folds and wet glints, rather than a broad darkened band over the ground tile.
+- Concrete platforms also fail to match the approved sketch: correct their rendered appearance to the reference, including material, volume and contact with the mire. Keep the already approved platform height and actual tower anchors; this is a visual correction, not a request to change their height or placement. Added at the user's request before stopping (4% usage remaining).
 - Keep the approved whole-map texture density, raised platforms and green–umber–brown palette. Red–yellow remains an alternate zone palette, not a discarded direction.
 - Preserve approved Forager appearance and mire animation. Do not replace it with the different creatures depicted in environment concept art.
 
