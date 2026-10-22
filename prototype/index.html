@@ -882,92 +882,6 @@ function groundActorMetrics(type) {
   const width=type==='carapacid'?58:type==='leech'?43:34;
   return {index,r,width,height:r[3]/r[2]*width};
 }
-// Opt-in presentation study. None of these caches or poses belong to simulation state.
-const FORAGER_WAVE_STUDY = typeof location!=='undefined' && new URLSearchParams(location.search).get('foragerWave')==='1';
-const foragerWaveArt = FORAGER_WAVE_STUDY && typeof Image!=='undefined' ? new Image() : null;
-if(foragerWaveArt)foragerWaveArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/hunger-forager-wave-v1.webp';
-let foragerTextures=null,foragerGroundScene=null,foragerGroundSeen=new WeakMap(),foragerGroundMarks=[];
-function foragerPathPoint(e,d) {
-  const head=posAt(e.d),p=d<0?{x:PATH[0][0]+d,y:PATH[0][1]}:posAt(d);
-  return {x:p.x+e.x-head.x,y:p.y+e.y-head.y};
-}
-function foragerSpine(e,lag) {
-  const center=foragerPathPoint(e,e.d-lag),a=foragerPathPoint(e,e.d-lag-4),b=foragerPathPoint(e,e.d-lag+4);
-  const p={x:(a.x+center.x*6+b.x)/8,y:(a.y+center.y*6+b.y)/8};
-  const length=Math.max(.001,Math.hypot(b.x-a.x,b.y-a.y)),ux=(b.x-a.x)/length,uy=(b.y-a.y)/length;
-  const wave=Math.sin(e.d*Math.PI*2/18-lag*.2)*Math.min(1,lag/8)*.95;
-  return {x:p.x-uy*wave,y:p.y+ux*wave*.56,ux,uy};
-}
-function foragerWavePose(e) {
-  const length=36,pieces=7,step=length/pieces,segments=[],legs=[];
-  for(let i=0;i<pieces;i++)segments.push({...foragerSpine(e,length-(i+.5)*step),slice:i});
-  // A stance foot uses the path position at the start of its cycle, so it stays planted.
-  const cycleLength=11,duty=.7;
-  for(let i=0;i<6;i++)for(const side of [-1,1]){
-    const lag=7+i*4.4,offset=-i*.16+(side>0?.5:0),cycle=e.d/cycleLength+offset;
-    const phase=cycle-Math.floor(cycle),start=(Math.floor(cycle)-offset)*cycleLength;
-    const contact=(distance)=>{
-      const p=foragerPathPoint(e,distance-lag+cycleLength*duty*.5),a=foragerPathPoint(e,distance-lag-1),b=foragerPathPoint(e,distance-lag+1);
-      const L=Math.max(.001,Math.hypot(b.x-a.x,b.y-a.y));
-      return {x:p.x-(b.y-a.y)/L*side*9,y:p.y+(b.x-a.x)/L*side*9*.56};
-    };
-    const foot=contact(start),stance=phase<duty;
-    if(!stance){const next=contact(start+cycleLength),u=(phase-duty)/(1-duty),k=u*u*(3-2*u);foot.x+=(next.x-foot.x)*k;foot.y+=(next.y-foot.y)*k-Math.sin(u*Math.PI)*.8;}
-    const root=foragerSpine(e,lag),knee={x:(root.x+foot.x)*.5-root.uy*side*2.3,y:(root.y+foot.y)*.5+root.ux*side*1.3-1};
-    legs.push({root:{x:root.x-root.uy*side*1.4,y:root.y+root.ux*side*.8-1.5},knee,foot,stance,phase,side});
-  }
-  return {segments,legs};
-}
-function ensureForagerTextures() {
-  if(foragerTextures)return foragerTextures;
-  if(!foragerWaveArt||!foragerWaveArt.complete||!foragerWaveArt.naturalWidth)return null;
-  const body=document.createElement('canvas');body.width=280;body.height=80;const b=body.getContext('2d');
-  b.drawImage(foragerWaveArt,0,0,280,80);
-  // Feather the belly once, never filter a creature during a frame.
-  const feather=b.createLinearGradient(0,0,0,80);feather.addColorStop(0,'#fff');feather.addColorStop(.65,'#fff');feather.addColorStop(1,'#ffffff00');
-  b.globalCompositeOperation='destination-in';b.fillStyle=feather;b.fillRect(0,0,280,80);
-  const contact=document.createElement('canvas');contact.width=96;contact.height=64;const g=contact.getContext('2d');
-  const wet=g.createRadialGradient(48,32,3,48,32,31);wet.addColorStop(0,'#291f23aa');wet.addColorStop(.5,'#4e303866');wet.addColorStop(1,'#41493e00');g.fillStyle=wet;g.fillRect(0,0,96,64);
-  let seed=913;const rnd=()=>((seed=Math.imul(seed,1664525)+1013904223>>>0)/4294967296);
-  g.lineWidth=.8;
-  for(let i=0;i<14;i++){const a=rnd()*Math.PI*2,r=8+rnd()*19,x=48+Math.cos(a)*r,y=32+Math.sin(a)*r*.7;g.strokeStyle=i%3?'#74494b55':'#b28d7555';g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*7,y+Math.sin(a)*5);g.lineTo(x+Math.cos(a+.4)*12,y+Math.sin(a+.4)*8);g.stroke();}
-  foragerTextures={body,contact};return foragerTextures;
-}
-function drawForagerGround() {
-  if(!FORAGER_WAVE_STUDY)return;
-  if(foragerGroundScene!==S){foragerGroundScene=S;foragerGroundSeen=new WeakMap();foragerGroundMarks=[];}
-  const textures=ensureForagerTextures();if(!textures)return;
-  for(const e of S.enemies)if(e.type==='forager'&&!e.dead){
-    const previous=foragerGroundSeen.get(e);
-    if(previous===undefined||Math.abs(e.d-previous)>=6){const p=foragerSpine(e,18);foragerGroundMarks.push({x:p.x,y:p.y,angle:Math.atan2(p.uy,p.ux),at:S.time});foragerGroundSeen.set(e,e.d);}
-  }
-  foragerGroundMarks=foragerGroundMarks.filter(p=>S.time-p.at<1).slice(-256);
-  ctx.save();
-  for(const p of foragerGroundMarks){ctx.globalAlpha=Math.max(0,1-(S.time-p.at));ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.angle);ctx.drawImage(textures.contact,-12,-7,24,14);ctx.restore();}
-  ctx.restore();
-}
-function drawForagerWave(e) {
-  if(!FORAGER_WAVE_STUDY||e.type!=='forager')return false;
-  const textures=ensureForagerTextures();if(!textures)return false;
-  const pose=foragerWavePose(e);
-  ctx.save();
-  // Local tissue contact replaces the hard detached shadow.
-  for(const p of pose.segments){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(Math.atan2(p.uy,p.ux));ctx.globalAlpha=.38;ctx.drawImage(textures.contact,-5,-4,10,8);ctx.restore();}
-  ctx.lineJoin='round';ctx.lineCap='round';ctx.lineWidth=1.5;ctx.strokeStyle='#331c24';ctx.beginPath();
-  for(const l of pose.legs){ctx.moveTo(l.root.x,l.root.y);ctx.lineTo(l.knee.x,l.knee.y);ctx.lineTo(l.foot.x,l.foot.y);}ctx.stroke();
-  ctx.lineWidth=1.05;ctx.strokeStyle='#a14b3b';ctx.beginPath();
-  for(const l of pose.legs){ctx.moveTo(l.root.x,l.root.y);ctx.lineTo(l.knee.x,l.knee.y);ctx.lineTo(l.foot.x,l.foot.y);}ctx.stroke();
-  ctx.lineWidth=.5;ctx.strokeStyle='#c3a37e';ctx.beginPath();
-  for(const l of pose.legs){ctx.moveTo(l.knee.x,l.knee.y);ctx.lineTo(l.foot.x,l.foot.y);}ctx.stroke();
-  for(const p of pose.segments){
-    const sw=280/7,scale=36/280;
-    ctx.save();ctx.transform(p.ux,p.uy,-p.uy*.8,p.ux*.8,p.x,p.y-1.8);
-    ctx.drawImage(textures.body,Math.max(0,p.slice*sw-1),0,sw+(p.slice===0||p.slice===6?1:2),80,-sw*scale/2-.25,-40*scale,sw*scale+.5,80*scale);
-    ctx.restore();
-  }
-  ctx.restore();return true;
-}
-
 function enemyHeading(e) {
   const p=posAt(e.d+4),q=posAt(e.d);let angle=Math.atan2(p.y-q.y,p.x-q.x);
   if((e.state==='seek'||e.state==='attached')&&e.gen)angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
@@ -1364,7 +1278,6 @@ function drawTowerBody(t) {
     ctx.restore();
 }
 function enemyArt(e) {
-  if(drawForagerWave(e))return;
   const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
@@ -1665,7 +1578,6 @@ function draw() {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
-  drawForagerGround();
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(enemy=>({y:enemy.y,enemy}))];
   if (INFANTRY_TRIAL) {
