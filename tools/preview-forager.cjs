@@ -21,8 +21,8 @@ a{margin-left:auto}output{font-variant-numeric:tabular-nums;color:#a7a38e;font-s
 <nav><button id="toggle" type="button">Pause</button>
 <label>Speed <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label>
 <output id="status">Loading…</output><a href="../../assets/art/previews/forager-sludge-cycle-v3.mp4">Open video</a></nav>
-<p class="note">Eight drawn poses at eight frames per second. Motion and material study; game integration pending.</p>
-<p class="note"><a href="forager-puppet-study.html">Original anatomy / source-layer alignment</a></p>
+<p class="note">Earlier painted eight-pose reference. The prototype now uses the source-based Forager crawl.</p>
+<p class="note"><a href="forager-puppet-study.html">View the current in-game crawl</a></p>
 </main><script>
 'use strict';
 const canvas=document.getElementById('study'),ctx=canvas.getContext('2d');
