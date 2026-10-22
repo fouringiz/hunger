@@ -1230,25 +1230,6 @@ function sprite(cell, x, y, size, angle = 0) {
   ctx.drawImage(unitArt, cell % 3 * sw, Math.floor(cell / 3) * sh, sw, sh, -size/2, -size/2, size, size);
   ctx.restore(); return true;
 }
-function circleLaneInterval(segment,x,y,radius) {
-  const length=Math.min(segment.L,GATE_D-segment.start);if(length<=0)return null;
-  const ux=(segment.x2-segment.x1)/segment.L,uy=(segment.y2-segment.y1)/segment.L;
-  const dx=segment.x1-x,dy=segment.y1-y,along=dx*ux+dy*uy;
-  const square=radius*radius-(dx*dx+dy*dy-along*along);if(square<0)return null;
-  const half=Math.sqrt(Math.max(0,square)),lo=Math.max(0,-along-half),hi=Math.min(length,-along+half);
-  return hi>lo?{lo,hi,ux,uy}:null;
-}
-function laneCoverage(x,y,range,minRange=0) {
-  const covered=[],blind=[];
-  for(const segment of SEG){
-    const outer=circleLaneInterval(segment,x,y,range);if(!outer)continue;
-    const inner=minRange>0?circleLaneInterval(segment,x,y,minRange):null;
-    const push=(list,lo,hi)=>{if(hi>lo)list.push({x1:segment.x1+outer.ux*lo,y1:segment.y1+outer.uy*lo,x2:segment.x1+outer.ux*hi,y2:segment.y1+outer.uy*hi,length:hi-lo});};
-    if(inner){push(blind,inner.lo,inner.hi);push(covered,outer.lo,Math.min(outer.hi,inner.lo));push(covered,Math.max(outer.lo,inner.hi),outer.hi);}
-    else push(covered,outer.lo,outer.hi);
-  }
-  return {covered,blind,length:covered.reduce((n,p)=>n+p.length,0)};
-}
 function firingLaneSelection() {
   if(!S.selected||!['build','wave'].includes(S.phase))return null;
   let t;
@@ -1259,18 +1240,10 @@ function firingLaneSelection() {
 }
 function drawFiringLane() {
   const selection=firingLaneSelection();if(!selection)return;
-  const {tower:t,stats:st}=selection,coverage=laneCoverage(t.x,t.y,st.range,t.T.minRange||0);
-  ctx.save();ctx.lineCap='round';
-  for(const [parts,color,dashed] of [[coverage.covered,'#8dffba',false],[coverage.blind,'#f5a168',true]]){
-    ctx.setLineDash(dashed?[4,5]:[]);ctx.lineWidth=dashed?5:7;ctx.strokeStyle=color;ctx.globalAlpha=.8;
-    for(const part of parts){ctx.beginPath();ctx.moveTo(part.x1,part.y1);ctx.lineTo(part.x2,part.y2);ctx.stroke();}
-  }
-  ctx.globalAlpha=.7;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.strokeStyle='#8dffba';ctx.beginPath();ctx.arc(t.x,t.y,st.range,0,Math.PI*2);ctx.stroke();
+  const {tower:t,stats:st}=selection;
+  ctx.save();ctx.globalAlpha=.7;ctx.setLineDash([4,4]);ctx.lineWidth=1;
+  ctx.strokeStyle='#8dffba';ctx.beginPath();ctx.arc(t.x,t.y,st.range,0,Math.PI*2);ctx.stroke();
   if(t.T.minRange){ctx.strokeStyle='#f5a168';ctx.beginPath();ctx.arc(t.x,t.y,t.T.minRange,0,Math.PI*2);ctx.stroke();}
-  ctx.setLineDash([]);ctx.globalAlpha=1;
-  const label=t.T.name.toUpperCase()+' · '+(t.type==='voltaic'?'FIRST STRIKE':'FIRING LANE')+' · '+Math.round(coverage.length/GATE_D*100)+'% ROUTE';
-  text(label,W-14,HUD+14,9,'#c3f3cf','right','700');
-  if(t.T.minRange)text('ORANGE: DEAD ZONE',W-14,HUD+26,9,'#f5a168','right');
   ctx.restore();
 }
 function laneStroke(c) {
