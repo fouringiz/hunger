@@ -79,7 +79,9 @@ function runCounterfactual(data, overrides={}, opts={}) {
     while(S.phase!=='over' && tick<${TICK_LIMIT}){
       while(i<__events.length && __events[i].tick<=tick){
         const e=__events[i];
-        if(performPlayerAction(e,true)){ if(tick>e.tick){deferred++; lateTicks+=tick-e.tick;} i++; continue; }
+        // a recorded wave call over a live wave is replayed as one; a call made in a pause waits for a pause
+        const fits=!(e.kind==='wave'&&!e.stacked&&S.phase!=='build');
+        if(fits&&performPlayerAction(e,true)){ if(tick>e.tick){deferred++; lateTicks+=tick-e.tick;} i++; continue; }
         if(tick-e.tick>${DEFER_LIMIT}){ dropped++; i++; continue; }
         break;                                   // keep order: wait for this action before trying the next
       }
