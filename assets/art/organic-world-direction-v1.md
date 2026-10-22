@@ -6,15 +6,15 @@ Status: **art-direction preview for player review**. No runtime changes in this 
 
 - All new buildings must finish their 1.65-second deployment before becoming operational. Weapons cannot fire, generators cannot supply power, and Barracks cannot release soldiers during construction. The duration follows simulation time, including pause and speed controls. Upgrades do not restart initial construction. Existing resume warm-up remains separate.
 - Pause should have visible machinery animation: retract/fold weapon barrels; extinguish or retract the upper Tesla assembly. This communicates the existing paused state.
-- Buildings stand on modestly raised concrete platforms. The platform's lower edge sinks into the mire; the actual gun does not.
-- Make the entire location an organic swamp, with saturated olive/brown peat, burgundy tissue, amber/yellow-green slime and clear wet highlights. The terrain should be brighter and more readable than the current dark lane.
+- Buildings stand on raised concrete platforms. The player explicitly chose the full platform height in concept v1; do not lower it as in v2. The platform's lower edge sinks into the mire; the actual gun does not.
+- Make the entire location an organic swamp. The player chose concept v1's amount and density of texture, but requested a green–umber–brown environment instead of red/yellow. Preserve bright wet highlights, pores and slime density. Creature colors remain distinct from the ground.
 - Enemies remain immersed: slime covers lower limbs and bellies, stretches between them and the terrain, and closes behind them.
 - Use the supplied worm silhouette as the new Leech form and the broad armored organism as the new Carapacid form. Reference lettering supplies no game mechanics or lore.
 - Preserve the approved Forager anatomy.
-- Make the ancient Gate monumental. Explore placing its mass deeper in the scene rather than moving the path or build slots. Exact placement must be resolved against the game geometry.
+- Make the ancient Gate monumental and move its aperture onto the final lane endpoint so the path enters it. Surrounding architecture should look ancient and stand upright in the map's projection; it must not look laid flat on the terrain. Exact placement must preserve build slots and the route.
 - The new swamp creature photograph is a general reference for environment/creature symbiosis, submerged contact and hanging slime. It does not request a new spider unit or human remains.
 
-These are implementation decisions from the player; the images below have **not** yet been approved as the final visual treatment.
+The player selected **v1 as the preferred base**, explicitly approving its platform height and texture density. The requested palette and portal changes are shown in v3 for review; v3 has not yet received a final visual verdict.
 
 ## Original user references
 
@@ -32,10 +32,11 @@ Generated with the built-in imagegen tool from the current native-rendered game 
 
 - [First concept](studies/organic-world-direction-v1.png), [exact prompt](organic-world-direction-v1.prompt.txt).
 - [Revised concept](studies/organic-world-direction-v2.png), [exact revision prompt](organic-world-direction-v2.prompt.txt).
+- [Green–umber–brown revision of the preferred first concept](studies/organic-world-direction-v3.png), [exact prompt](organic-world-direction-v3.prompt.txt).
 
-The first draft over-raised the pads and duplicated the old Gate. The revision lowers platforms, removes the obsolete two-post gate and shifts terrain toward ochre/olive slime.
+V2 lowered platforms based on the assistant's judgment. The player preferred v1 and explicitly retained its height and dense texture, superseding that judgment. V3 edits v1 directly: greener/browner terrain, a single portal whose threshold meets the final approach, and upright weathered architecture.
 
-Limitations for review: this is a generated concept, not a runtime capture or a placement blueprint. The revision alters machinery near the exit, keeps a dense terrain pattern and does not reliably align the portal aperture to the final lane. The final implementation must preserve real build slots, tower identity and route endpoint; it must also keep units and combat effects readable at phone scale. The concept contains no animation proof.
+Limitations for review: these are generated concepts, not runtime captures or placement blueprints. V3 visually brings the approach into the portal, but its enlarged ruins obscure/replace some right-hand platforms and machinery. The final implementation must preserve real build slots, tower identity and route endpoint, arranging the architecture around them. Dense texture and height are intentional player choices; units and combat effects still need a readability check at phone scale. The concepts contain no animation proof.
 
 ## Next implementation boundary
 
