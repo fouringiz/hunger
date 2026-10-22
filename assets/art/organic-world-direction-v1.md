@@ -7,14 +7,14 @@ Status: **art-direction preview for player review**. No runtime changes in this 
 - All new buildings must finish their 1.65-second deployment before becoming operational. Weapons cannot fire, generators cannot supply power, and Barracks cannot release soldiers during construction. The duration follows simulation time, including pause and speed controls. Upgrades do not restart initial construction. Existing resume warm-up remains separate.
 - Pause should have visible machinery animation: retract/fold weapon barrels; extinguish or retract the upper Tesla assembly. This communicates the existing paused state.
 - Buildings stand on raised concrete platforms. The player explicitly chose the full platform height in concept v1; do not lower it as in v2. The platform's lower edge sinks into the mire; the actual gun does not.
-- Make the entire location an organic swamp. The player chose concept v1's amount and density of texture, but requested a green–umber–brown environment instead of red/yellow. Preserve bright wet highlights, pores and slime density. Creature colors remain distinct from the ground.
+- Make the entire location an organic swamp. The player chose concept v1's amount and density of texture and approved the green–umber–brown treatment in v3. **Palette is zone-dependent, not a fixed global value.** Preserve both green–umber–brown and red–yellow treatments as valid future zone directions. Preserve bright wet highlights, pores and slime density. Creature colors remain distinct from the ground in each zone.
 - Enemies remain immersed: slime covers lower limbs and bellies, stretches between them and the terrain, and closes behind them.
 - Use the supplied worm silhouette as the new Leech form and the broad armored organism as the new Carapacid form. Reference lettering supplies no game mechanics or lore.
-- Preserve the approved Forager anatomy.
+- Preserve the approved Forager anatomy and the actual source-based runtime artwork. Generated specimens in the location concepts differ from the master and are **not** approved replacement designs. Do not extract a new Forager from a world concept.
 - Make the ancient Gate monumental and move its aperture onto the final lane endpoint so the path enters it. Surrounding architecture should look ancient and stand upright in the map's projection; it must not look laid flat on the terrain. Exact placement must preserve build slots and the route.
 - The new swamp creature photograph is a general reference for environment/creature symbiosis, submerged contact and hanging slime. It does not request a new spider unit or human remains.
 
-The player selected **v1 as the preferred base**, explicitly approving its platform height and texture density. The requested palette and portal changes are shown in v3 for review; v3 has not yet received a final visual verdict.
+The player selected **v1 as the preferred base**, explicitly approving its platform height and texture density, then approved v3's environmental palette while retaining red–yellow for other zones. **Building perspective remains unresolved:** structures must read as upright volumes under the overhead camera, with visible top surfaces and grounded vertical sides. Repeating v3's facade-heavy architectural treatment is not an approved implementation.
 
 ## Original user references
 
@@ -40,4 +40,6 @@ Limitations for review: these are generated concepts, not runtime captures or pl
 
 ## Next implementation boundary
 
-Review overall brightness, material balance and creature silhouettes first. Then separate construction/readiness rules (simulation and replay compatibility) from terrain, Gate, platforms, pause animation and creature art (presentation). Do not silently re-stamp old replays as compatible with new construction rules.
+Implement the location as terrain, raised platforms and separately placed architecture aligned to actual route/build coordinates, rather than baking the concept's towers and enemies into a background. Check building projection on the actual game scene. Keep the approved source-based Forager. Leech and Carapacid need their own source-and-motion review before replacing the current game sprites.
+
+Construction/readiness rules affect simulation and replay compatibility; terrain, Gate, platforms and pause animation are presentation work. Do not silently re-stamp old replays as compatible with new construction rules. PR #28 remains a visual checkpoint until executable changes are added and tested.
