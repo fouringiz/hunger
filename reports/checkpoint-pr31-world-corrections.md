@@ -4,6 +4,17 @@
 
 This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platform corrections are now implemented in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). See `assets/art/organic-world-runtime-v1.md` for the current implementation, actual renderer previews and verification. The diagnosis and verdicts below preserve the original handoff; they are not new pending work. Visual acceptance by the user remains open.
 
+## Latest correction, 2026-10-23
+
+- The previous v3 result was rejected again: the lane disappeared into terrain microtexture, the visible threshold missed the incoming lane, and the ruined silhouette had been shortened too far.
+- Current correction: a broad brown fluid core with recessed banks; v4 cyan entrance anchored at the real leak point; an additional tall ruined-citadel layer kept visible above slot 15; separate flat threshold/vertical masonry layers; duplicate Gate plaque removed.
+- All actual slots and the leak point remain unchanged. The alternative designer blockout with an x=890 presentation entrance, fading enemies and a relocated slot 15 remains an unadopted separate experiment. Its old-replay success would not prove the new slot layout gameplay-neutral.
+- Native captures cover both palettes and the 964px-wide empty scene. All 16 full-height tower footprints remain clear of opaque architecture, and the visible cyan threshold is sampled at (930,420). Core regression: 29 pass; replay sweep: 6 groups, all 8 human fixtures exact. Focused world, buildup, sale/range and Forager tests pass.
+- Work continues in the attached `ancient-gate-review` worktree because the primary checkout is being used for v0.8 mechanics. Earlier in-progress edits were preserved in `wip/ancient-gate-v4`; they were not lost.
+- User visual acceptance remains pending. See `assets/art/previews/organic-world-mire-gameplay-v2.webp` for the actual game-sized result.
+
+## Earlier checkpoint and diagnosis
+
 ## User verdicts
 
 - The current procedural Gate is rejected: coarse stone blocks, an oblique segmented hoop and a flat cyan grid do not match the agreed monumental ancient portal.
@@ -20,7 +31,7 @@ This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platfor
 - Source for the integrated wet-path material: `assets/art/studies/organic-lane-material-v1.png`.
 - Exact candidate prompt: `assets/art/organic-lane-material-v1.prompt.txt`.
 
-The lane source was produced with built-in imagegen before stopping and has now been integrated and inspected at gameplay scale. New Gate sources are `assets/art/studies/ancient-gate-runtime-v2.png` (first pass) and `ancient-gate-runtime-v3.png` (final silhouette); platform source is `concrete-platform-runtime-v2.png`. Exact prompts and packaging instructions are linked in the runtime document. User approval of the new in-game appearance remains pending.
+The lane source was produced with built-in imagegen before stopping and has now been integrated and inspected at gameplay scale. New Gate sources are `assets/art/studies/ancient-gate-runtime-v2.png` (first pass) and `ancient-gate-runtime-v3.png` (subsequently rejected silhouette); platform source is `concrete-platform-runtime-v2.png`. Exact prompts and packaging instructions are linked in the runtime document. User approval of the new in-game appearance remains pending.
 
 ## Diagnosis and next work
 

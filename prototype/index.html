@@ -981,7 +981,7 @@ function worldMaterial(file){
   image.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/'+file;return image;
 }
 const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');
-const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial('hunger-ancient-gate-v3.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
+const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial('hunger-ancient-gate-v4.webp'),gateRuinsArt=worldMaterial('hunger-ancient-gate-ruins-v1.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
 let worldTileArt=null,worldPulseArt=null,gateStoneCache=null,platformWallArt=null;
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
 const FORAGER_MIRE={cell:192,frames:13,directions:16,scale:.4/1.5,stride:280*.07*.4,duty:.72};
@@ -1390,20 +1390,23 @@ function terrain() {
       c.beginPath();c.ellipse(x,y,r,r*.45,rnd()*Math.PI,0,Math.PI*2);c.stroke();
     }
     c.globalAlpha=1;c.lineCap='round';c.lineJoin='round';
-    // Liquid channel: the wet material retains its own folds and glints, not a dark wash over raised tissue.
-    const liquid=worldPattern(c,worldLaneArt,192,WORLD_ZONE==='ember'?'#a46326':null);
-    if(liquid){
-      c.strokeStyle=liquid;
-      for(const [width,alpha]of [[53,.2],[49,.45],[45,.8],[41,1]]){c.globalAlpha=alpha;c.lineWidth=width;laneStroke(c);}
-    }else{
-      c.strokeStyle=WORLD.shade;c.globalAlpha=.3;c.lineWidth=49;laneStroke(c);
-      c.strokeStyle=WORLD.wet;c.globalAlpha=.1;c.lineWidth=39;laneStroke(c);
-    }
-    c.globalAlpha=1;
-    for(let d=0;d<TOTAL;d+=9){
+    // The clear liquid core and contact creases stay visible in a small viewport.
+    // Raised tissue borders the channel instead of intruding into its navigable center.
+    const liquid=worldPattern(c,worldLaneArt,320,WORLD_ZONE==='ember'?'#a7672d':'#805526');
+    c.strokeStyle=WORLD.shade;c.globalAlpha=.65;c.lineWidth=76;laneStroke(c);
+    c.strokeStyle=worldTileArt||WORLD.slime;c.globalAlpha=1;c.lineWidth=69;laneStroke(c);
+    c.strokeStyle='#211b0f';c.globalAlpha=.8;c.lineWidth=63;laneStroke(c);
+    c.strokeStyle=liquid||(WORLD_ZONE==='ember'?'#985c28':'#80602b');
+    c.globalAlpha=1;c.lineWidth=57;laneStroke(c);
+    for(let d=0;d<TOTAL;d+=7){
       const p=posAt(d),q=posAt(Math.min(TOTAL,d+1)),a=Math.atan2(q.y-p.y,q.x-p.x)+Math.PI/2;
-      for(const side of [-1,1]){const reach=20+rnd()*7,x=p.x+Math.cos(a)*reach*side,y=p.y+Math.sin(a)*reach*side;
-        c.fillStyle=worldTileArt||WORLD.slime;c.globalAlpha=.6+rnd()*.4;c.beginPath();c.ellipse(x,y,3+rnd()*5,1+rnd()*2,a,0,Math.PI*2);c.fill();}
+      for(const side of [-1,1]){
+        const reach=33+rnd()*4,x=p.x+Math.cos(a)*reach*side,y=p.y+Math.sin(a)*reach*side;
+        c.fillStyle=worldTileArt||WORLD.slime;c.globalAlpha=1;
+        c.beginPath();c.ellipse(x,y,3+rnd()*3,2+rnd()*3,a,0,Math.PI*2);c.fill();
+        c.strokeStyle=WORLD.wet;c.globalAlpha=.3;c.lineWidth=.7;
+        c.beginPath();c.ellipse(x,y-1,2+rnd()*2,1,a,Math.PI*.2,Math.PI*1.1);c.stroke();
+      }
     }
     c.globalAlpha=1;c.lineWidth=1;
     const concrete=worldPattern(c,ancientStoneArt,90);
@@ -1658,8 +1661,14 @@ const GATE_MOUTH_DEPTH=16;
 function gatePoint(across,height,depth=0){return [GATE.x-GATE_MOUTH_DEPTH+across*.70+depth,GATE.y-GATE_MOUTH_DEPTH*.08-across*.55-height*.58+depth*.08];}
 const GATE_REAR={x:GATE.x-GATE_MOUTH_DEPTH+60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08-60*.55};
 const GATE_FRONT={x:GATE.x-GATE_MOUTH_DEPTH-60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08+60*.55};
-const GATE_DETAIL_BOX={x:GATE.x-64,y:GATE.y-166,width:160,height:240};
-const GATE_ART_BOX={x:GATE.x-102,y:GATE.y-185,width:208,height:264};
+// The threshold is measured in the source art; anchor that visible feature to the real exit.
+const GATE_DETAIL_ANCHOR={u:.56,v:.87};
+const GATE_DETAIL_BOX={x:GATE.x-GATE_DETAIL_ANCHOR.u*200,y:GATE.y-GATE_DETAIL_ANCHOR.v*260,width:200,height:260};
+// A separate ruined wall keeps the monumental silhouette in view above the neighboring pad.
+const GATE_RUINS_BOX={x:GATE.x-135,y:43,width:205,height:190};
+const GATE_ART_BOX={x:GATE.x-140,y:40,width:240,height:452};
+const GATE_FLOOR=[[0,.85],[.55,.85],[.64,.9],[.64,1],[0,1]];
+function gateDetailPath(c,points){const b=GATE_DETAIL_BOX;points.forEach(([u,v],i)=>i?c.lineTo(b.x+u*b.width,b.y+v*b.height):c.moveTo(b.x+u*b.width,b.y+v*b.height));c.closePath();}
 function gatePolygon(points,fill,stroke){worldPolygon(ctx,points,fill,stroke);}
 function stoneFace(c,points,tint,pattern){
   worldPolygon(c,points,'#8b8b73');
@@ -1678,11 +1687,13 @@ function gateBlock(c,u,width,height,depth,pattern){
 function buildGateStone(front){
   const canvas=document.createElement('canvas');canvas.width=GATE_ART_BOX.width*WORLD_RASTER_SCALE;canvas.height=GATE_ART_BOX.height*WORLD_RASTER_SCALE;
   const c=canvas.getContext('2d');c.scale(WORLD_RASTER_SCALE,WORLD_RASTER_SCALE);c.translate(-GATE_ART_BOX.x,-GATE_ART_BOX.y);
+  if(!front&&worldImageReady(gateRuinsArt)){const r=GATE_RUINS_BOX;c.drawImage(gateRuinsArt,r.x,r.y,r.width,r.height);}
   if(worldImageReady(gateDetailArt)){
     const b=GATE_DETAIL_BOX;
     // The near buttress/foundation occludes actors; the arch and vortex sit behind them.
-    const near=[[0,.59],[.35,.59],[.45,1],[0,1]].map(([u,v])=>[b.x+u*b.width,b.y+v*b.height]);
-    c.save();c.beginPath();
+    const near=[[0,.71],[.43,.71],[.44,1],[0,1]].map(([u,v])=>[b.x+u*b.width,b.y+v*b.height]);
+    c.save();c.beginPath();c.rect(GATE_ART_BOX.x,GATE_ART_BOX.y,GATE_ART_BOX.width,GATE_ART_BOX.height);
+    gateDetailPath(c,GATE_FLOOR);c.clip('evenodd');c.beginPath();
     if(!front)c.rect(GATE_ART_BOX.x,GATE_ART_BOX.y,GATE_ART_BOX.width,GATE_ART_BOX.height);
     near.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.clip('evenodd');
     c.drawImage(gateDetailArt,b.x,b.y,b.width,b.height);c.restore();return canvas;
@@ -1707,7 +1718,11 @@ function buildGateStone(front){
 }
 function gateStone(){if(!gateStoneCache)gateStoneCache={rear:buildGateStone(false),front:buildGateStone(true)};return gateStoneCache;}
 function drawGateApproach(){
-  if(worldImageReady(gateDetailArt))return; // The detailed art contains its grounded stone threshold.
+  if(worldImageReady(gateDetailArt)){
+    // The flat threshold belongs below actors, unlike the upright near buttress.
+    const b=GATE_DETAIL_BOX;ctx.save();ctx.beginPath();gateDetailPath(ctx,GATE_FLOOR);ctx.clip();
+    ctx.drawImage(gateDetailArt,b.x,b.y,b.width,b.height);ctx.restore();return;
+  }
   ctx.save();
   worldPolygon(ctx,[gatePoint(-76,0,-22),gatePoint(76,0,-22),gatePoint(76,0,48),gatePoint(-76,0,48)],'#18251c70');
   worldPolygon(ctx,[gatePoint(-68,0,-12),gatePoint(68,0,-12),gatePoint(68,0,34),gatePoint(-68,0,34)],'#636954','#9b9c7c');
@@ -1724,14 +1739,14 @@ function drawGateField(){
   if(worldImageReady(gateDetailArt)){
     const b=GATE_DETAIL_BOX;
     ctx.save();ctx.beginPath();
-    for(const [i,[u,v]]of [[.39,.37],[.54,.32],[.63,.45],[.62,.68],[.56,.75],[.36,.75],[.35,.55]].entries()){
+    for(const [i,[u,v]]of [[.47,.58],[.57,.58],[.65,.68],[.65,.85],[.57,.89],[.45,.88],[.44,.72]].entries()){
       const x=b.x+u*b.width,y=b.y+v*b.height;i?ctx.lineTo(x,y):ctx.moveTo(x,y);
     }
     ctx.closePath();ctx.clip();
     if(S.gate<=6){ctx.globalAlpha=.35;ctx.fillStyle='#dd6b22';ctx.fillRect(b.x,b.y,b.width,b.height);}
     ctx.globalAlpha=.12+.07*Math.sin(presentationTime*1.7);ctx.strokeStyle='#d3ffff';ctx.lineWidth=.7;
     for(let j=0;j<3;j++){
-      const x=b.x+( .43+j*.065)*b.width,y=b.y+(.51+Math.sin(presentationTime+j)*.025)*b.height;
+      const x=b.x+( .49+j*.045)*b.width,y=b.y+(.72+Math.sin(presentationTime+j)*.025)*b.height;
       ctx.beginPath();ctx.moveTo(x-5,y-12);ctx.bezierCurveTo(x+11,y-5,x-12,y+12,x+3,y+28);ctx.stroke();
     }
     ctx.restore();return;
@@ -1749,12 +1764,6 @@ function drawGateField(){
   ctx.globalAlpha=.3;ctx.strokeStyle=healthy?'#abffff':'#ffd0a0';ctx.lineWidth=1;
   for(let i=0;i<4;i++){const z=28+i*32+Math.sin(presentationTime+i)*3;ctx.beginPath();ctx.moveTo(...gatePoint(-44,z,GATE_MOUTH_DEPTH));ctx.lineTo(...gatePoint(44,z+10,GATE_MOUTH_DEPTH));ctx.stroke();}
   ctx.restore();
-}
-function drawGateLabel(){
-  ctx.fillStyle='#10241ff0';roundRect(GATE.x-37,GATE_FRONT.y+21,59,29,3);ctx.fill();
-  ctx.strokeStyle='#76816a';ctx.lineWidth=1;ctx.stroke();
-  text('THE GATE',GATE.x-7,GATE_FRONT.y+29,6,'#dce1bb','center','700');
-  text(S.gate+' / '+GATE_MAX,GATE.x-7,GATE_FRONT.y+41,10,S.gate>6?'#b0ffe0':'#ff8360','center','700');
 }
 
 function draw() {
@@ -1843,7 +1852,6 @@ function draw() {
     if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-groundActorMetrics(e.type).height-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
-  drawGateLabel();
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
     for (const e of S.enemies) {
