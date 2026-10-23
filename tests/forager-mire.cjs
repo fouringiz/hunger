@@ -1,8 +1,8 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8'),source=html.match(/<script>([\s\S]*?)<\/script>/)[1];
-function boot(search=''){
- const draws=[],images=[];class Image{constructor(){this.complete=true;images.push(this);}set src(value){this.url=value;this.naturalWidth=value.includes('forager-mire')?2496:256;this.naturalHeight=value.includes('forager-mire')?3072:256;}get src(){return this.url;}}
+function boot(search='',missing=[]){   // missing: asset name fragments that fail to load, to exercise fallbacks
+ const draws=[],images=[];class Image{constructor(){this.complete=true;images.push(this);}set src(value){this.url=value;this.naturalWidth=missing.some(m=>value.includes(m))?0:value.includes('forager-mire')?2496:256;this.naturalHeight=value.includes('forager-mire')?3072:256;}get src(){return this.url;}}
  const strokes=[];
  const drawing=new Proxy({globalAlpha:1},{get(o,k){if(k==='drawImage')return (...args)=>draws.push(args);if(k==='strokeRect')return (...args)=>strokes.push({args,width:o.lineWidth});if(k==='createLinearGradient')return ()=>({addColorStop(){}});if(k==='createPattern')return image=>({image});if(k==='measureText')return value=>({width:String(value).length*6});return o[k]??(o[k]=()=>{});}});
  const canvas={getContext:()=>drawing,style:{},addEventListener(){}};
@@ -32,5 +32,6 @@ console.log('PASS the gait follows real Sprinter travel');
 const f=boot();f.run("reset();foragerMireArt.complete=false;enemyArt(makeEnemy('forager',1))");assert.ok(f.draws.some(d=>d[0].src.endsWith('hunger-ground-actors-v3.png')),'missing new art retains the old grounded sprite');
 f.run('groundActorArt.complete=false;infantryArt.complete=false;');assert.doesNotThrow(()=>f.run("enemyArt(makeEnemy('forager',1))"));
 console.log('PASS asynchronous/failed image fallback');
-const terrain=boot();terrain.run('terrain()');assert.ok(terrain.strokes.length>0);assert.ok(terrain.strokes.every(s=>s.width===1),'organic lane stroke widths must not leak into build-slot outlines');
+const terrain=boot('',['concrete-platform']);terrain.run('terrain()');assert.ok(terrain.strokes.length>0,'without platform art the slots fall back to drawn outlines');assert.ok(terrain.strokes.every(s=>s.width===1),'organic lane stroke widths must not leak into build-slot outlines');
+const platforms=boot();platforms.run('terrain()');const slotCount=platforms.run('SLOTS.length');assert.equal(platforms.draws.filter(a=>String(a[0]&&a[0].url).includes('concrete-platform')).length,slotCount,'with platform art every slot is drawn from it');
 console.log('PASS cached organic lane preserves build-slot outlines');
