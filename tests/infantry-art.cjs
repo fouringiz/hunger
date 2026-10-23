@@ -26,7 +26,7 @@ const snapshot=loaded.run(serialize);loaded.run('draw()');
 assert.equal(loaded.draws.filter(d=>d[0]===art).length,3,'all three soldiers render in normal build view without an evolution card');
 assert.equal(loaded.run(serialize),snapshot,'drawing preserves the simulation');
 loaded.run("S.selected={kind:'slot',slot:SLOTS[1]};draw()");
-assert.equal(loaded.run("buttons.filter(b=>b.w===92 && b.y===SLOTS[1].y+26).length"),5,'trial exposes all five build choices');
+assert.equal(loaded.run("buttons.filter(b=>b.w===92 && b.y===SLOTS[1].y+26).length"),6,'trial exposes all six build choices');
 for(const withImage of [false,true]){
   const fallback=scene(withImage);
   if(withImage)fallback.images[2].complete=true; // failed image: naturalWidth stays zero
