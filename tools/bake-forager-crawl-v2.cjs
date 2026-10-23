@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require(process.env.FORAGER_CANVAS_MODULE||'@napi-rs/canvas');
 const ROOT=path.join(__dirname,'..'),CELL=192,FRAMES=9,DIRECTIONS=16,BASE=130,DEPTH=.42;
+const {ROWS,loadLimbs,drawLimbs,torso}=require('./forager-vertical-legs.cjs');
 async function extract(file,baselineMode=false){
   const source=await loadImage(path.join(ROOT,file));
   const scan=createCanvas(source.width,source.height),g=scan.getContext('2d');g.drawImage(source,0,0);
@@ -76,22 +77,24 @@ function triangle(c,texture,src,dst){
   c.transform(A,B,C,D,a[0]-A*p[0]-C*p[1],a[1]-B*p[0]-D*p[1]);c.drawImage(texture,0,0);c.restore();
 }
 async function bake(){
-  const poses=await extract('assets/art/studies/forager-low-crawl-v2.png');
   const views=await extract('assets/art/studies/forager-low-crawl-directions-v2.png',true);
-  const atlas=createCanvas(CELL*FRAMES,CELL*DIRECTIONS),a=atlas.getContext('2d'),contacts=[];
+  const limbs=await loadLimbs(ROOT),output=path.join(ROOT,'assets/hunger-forager-mire-v2.webp');
+  const atlas=createCanvas(CELL*FRAMES,CELL*DIRECTIONS),a=atlas.getContext('2d');
+  a.drawImage(await loadImage(output),0,0);
+  const contactsPath=path.join(ROOT,'assets/art/studies/forager-low-crawl-v2.contacts.json');
+  const contacts=JSON.parse(fs.readFileSync(contactsPath,'utf8'));
   const sheet=createCanvas(768,768),s=sheet.getContext('2d');s.fillStyle='#25291d';s.fillRect(0,0,768,768);
   for(let direction=0;direction<DIRECTIONS;direction++){
-    const base=Math.round(direction/2)%8,delta=(direction-(Math.round(direction/2)) *2)*Math.PI/8;
+    if(!ROWS.includes(direction))continue;
+    const base=direction<8?2:6,delta=(direction-base*2)*Math.PI/8;
     const ca=Math.cos(delta),sa=Math.sin(delta),A=ca,C=-.45*sa,B=DEPTH*sa,D=1+.45*DEPTH*(ca-1),heading=base*Math.PI/4;
     const row=[];
     for(let frame=0;frame<FRAMES;frame++){
-      const authored=base===0||base===4,pose=frame===0?0:frame-1;
-      const texture=authored?poses.normalized[pose]:views.normalized[base];
-      const rawFeet=authored?poses.contacts[pose]:views.contacts[base];
+      const texture=torso(views.normalized[base],base===6);
       const phase=frame===0?0:(frame-1)/8*Math.PI*2;
       function point(x,y){
         if(base===4)x=CELL-x;
-        if(!authored&&frame!==0){
+        if(frame!==0){
           const low=Math.max(0,Math.min(1,(y-50)/135)),wave=Math.sin(phase+(x-96)*.035);
           x+=Math.cos(heading)*wave*3.5*low;
           y+=Math.sin(heading)*wave*2*low+Math.sin(phase+Math.PI*.4)*.8*(1-low);
@@ -99,25 +102,31 @@ async function bake(){
         const u=x-96,v=y-BASE;return [96+A*u+C*v,BASE+B*u+D*v];
       }
       const cell=createCanvas(CELL,CELL),c=cell.getContext('2d');
+      const feet=drawLimbs(c,limbs,{frame,heading,point,triangle});
       for(let j=0;j<12;j++)for(let i=0;i<12;i++){
         const x=i*16,y=j*16,p=[[x,y],[x+16,y],[x+16,y+16],[x,y+16]],d=p.map(v=>point(...v));
         triangle(c,texture,[p[0],p[1],p[2]],[d[0],d[1],d[2]]);triangle(c,texture,[p[0],p[2],p[3]],[d[0],d[2],d[3]]);
       }
-      row.push(rawFeet.map(p=>point(...p).map(v=>+v.toFixed(3))));
-      a.drawImage(cell,frame*CELL,direction*CELL);
+      row.push(feet);
+      // Flush native mesh commands before reusing source textures for the next cell.
+      a.putImageData(c.getImageData(0,0,CELL,CELL),frame*CELL,direction*CELL);
       if(direction%2===0&&frame===3){const k=direction/2;s.drawImage(cell,k%4*192,Math.floor(k/4)*384+30);s.fillStyle='#e8dcc0';s.font='15px sans-serif';s.fillText(direction*22.5+'°',k%4*192+8,Math.floor(k/4)*384+240);}
     }
-    contacts.push(row);
+    contacts[direction]=row;
   }
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-forager-mire-v2.webp'),await atlas.encode('webp',94));
-  fs.writeFileSync(path.join(ROOT,'assets/art/studies/forager-low-crawl-v2.contacts.json'),JSON.stringify(contacts));
+  const os=require('node:os'),{execFileSync}=require('node:child_process'),tmp=fs.mkdtempSync(path.join(os.tmpdir(),'forager-vertical-'));
+  try{
+    const patch=path.join(tmp,'patch.png');fs.writeFileSync(patch,atlas.toBuffer('image/png'));
+    execFileSync(process.env.FORAGER_PYTHON||'python3',[path.join(__dirname,'encode-forager-patch.py'),output,patch,output,JSON.stringify(ROWS)],{stdio:'inherit'});
+  }finally{fs.rmSync(tmp,{recursive:true,force:true});}
+  fs.writeFileSync(contactsPath,JSON.stringify(contacts));
   const htmlPath=path.join(ROOT,'prototype/index.html'),html=fs.readFileSync(htmlPath,'utf8'),pattern=/const FORAGER_MIRE_CONTACTS=[^\n]+;/;
   if(!pattern.test(html))throw new Error('Forager runtime contact declaration is missing');
   fs.writeFileSync(htmlPath,html.replace(pattern,'const FORAGER_MIRE_CONTACTS='+JSON.stringify(contacts)+';'));
   fs.mkdirSync(path.join(ROOT,'reports/generated'),{recursive:true});
   fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-v2-directions.png'),sheet.toBuffer('image/png'));
   fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-v2-atlas.png'),atlas.toBuffer('image/png'));
-  console.log('Packed eight authored side poses and eight volumetric heading masters into sixteen upright headings.');
+  console.log('Rebaked articulated vertical rows '+ROWS.join(',')+'; all other rows retained exactly.');
 }
 if(require.main===module)bake().catch(e=>{console.error(e);process.exitCode=1;});
 module.exports={bake};
