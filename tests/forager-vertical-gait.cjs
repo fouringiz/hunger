@@ -11,9 +11,17 @@ function difference(row){
  }
  return sum/(8*192*192*3);
 }
+function supportSilhouette(row){
+ const changed=[0,0],width=192*9;
+ for(let y=60;y<184;y++)for(let x=0;x<192;x++)if(x<70||x>122){
+  const a=(y*width+192+x)*4+3,b=(y*width+5*192+x)*4+3;
+  if((row[a]>128)!==(row[b]>128))changed[x<70?0:1]++;
+ }
+ return changed;
+}
 async function inspect(file){
  const im=await loadImage(file),c=createCanvas(im.width,im.height),g=c.getContext('2d');g.drawImage(im,0,0);
- return Array.from({length:16},(_,d)=>{const rgba=g.getImageData(0,d*192,192*9,192).data;return {row:d,mad:difference(rgba),sha256:crypto.createHash('sha256').update(rgba).digest('hex')};});
+ return Array.from({length:16},(_,d)=>{const rgba=g.getImageData(0,d*192,192*9,192).data;return {row:d,mad:difference(rgba),supportSilhouette:supportSilhouette(rgba),sha256:crypto.createHash('sha256').update(rgba).digest('hex')};});
 }
 async function main(){
  const rows=await inspect(path.join(root,'assets/hunger-forager-mire-v2.webp'));
@@ -21,6 +29,7 @@ async function main(){
  for(const row of rows){
   if(baseline.rows.includes(row.row))assert.ok(row.mad>=horizontal,'row '+row.row+': visible RGB MAD '+row.mad.toFixed(3)+' must match side-row '+horizontal.toFixed(3));
   else assert.equal(row.sha256,baseline.decodedCanvasSHA256[row.row],'untouched row '+row.row+' must remain byte-identical');
+  if([4,12].includes(row.row))assert.ok(row.supportSilhouette.every(n=>n>=256),'both outer leg silhouettes must change between opposing poses, not only their texture: row '+row.row);
  }
  console.log('PASS vertical gait: visible differences >= side rows; all other decoded rows byte-identical.');
  console.log(JSON.stringify(rows.map(r=>({row:r.row,mad:+r.mad.toFixed(3)}))));
