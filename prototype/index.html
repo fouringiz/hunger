@@ -1063,9 +1063,6 @@ let worldTileArt=null,worldPulseArt=null,worldLiveArt=null,worldPlatformArt=null
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
 // Gait is driven by distance travelled: one full leg cycle per FORAGER_CYCLE_PX of lane. 40 px at the Forager's 52 px/s is
 // 1.3 cycles a second — a slow crawl through sludge (it started at 17.7 px, almost three cycles a second).
-// The atlas rows for near-vertical headings show the body from behind or in front, where the legs' alternation barely
-// reads, so for those headings the body itself carries the step rhythm: a sideways sway and a small roll, two footfalls
-// per cycle. Horizontal headings, where the atlas shows the legs, are left to the atlas. Proper fix: rebake those rows.
 const FORAGER_CYCLE_PX=40;
 // scale: the side pose is 168 cell px wide; .325/1.5 draws it 36 px wide on a 46 px lane (it had grown to 73 px).
 const FORAGER_MIRE={cell:192,frames:9,directions:16,scale:.325/1.5,duty:.72,stride:FORAGER_CYCLE_PX*.72};
@@ -1087,20 +1084,10 @@ function foragerMirePose(e,heading){
   const phase=(p.distance+(p.offset||0))/(FORAGER_MIRE.stride/FORAGER_MIRE.duty);
   return {frame:p.distance>0?1+Math.floor((phase%1)*(FORAGER_MIRE.frames-1)):0,direction:Math.round(a)%FORAGER_MIRE.directions,distance:p.distance,offset:p.offset||0,heading:p.heading};
 }
-// Step rhythm for near-vertical headings: weight w is 0 for a horizontal heading and 1 for a vertical one.
-function verticalStep(p){
-  const w=Math.pow(Math.abs(Math.sin(p.heading)),2);
-  if(p.distance<=0||w<0.05) return {w:0,sway:0,roll:0};
-  const phase=((p.distance+(p.offset||0))/(FORAGER_MIRE.stride/FORAGER_MIRE.duty))*Math.PI*2;
-  return {w, sway:Math.sin(phase)*2.4*w, roll:Math.sin(phase)*0.07*w};   // two footfalls per cycle: left push, right push
-}
 function foragerMireSprite(e,heading){
   if(e.type!=='forager'||!foragerMireReady())return false;
   const p=foragerMirePose(e,heading),c=FORAGER_MIRE.cell,s=FORAGER_MIRE.scale;
-  const step=verticalStep(p);
-  if(step.w>0){ ctx.save(); ctx.translate(step.sway,0); ctx.rotate(step.roll); }
   ctx.drawImage(foragerMireArt,p.frame*c,p.direction*c,c,c,-c*.5*s,-130*s,c*s,c*s);
-  if(step.w>0) ctx.restore();
   drawForagerBurial(e,p);
   return true;
 }
