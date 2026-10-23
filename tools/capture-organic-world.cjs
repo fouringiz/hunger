@@ -1,6 +1,6 @@
 'use strict';
 // Native offscreen capture of the actual inline game renderer. This is not a browser or a balance playthrough.
-// WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/capture-organic-world.cjs [--ember] [--frames] [--viewport] [--empty] [--legacy]
+// WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/capture-organic-world.cjs [--ember] [--frames] [--viewport] [--empty] [--legacy] [--motion]
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
 const legacy=process.argv.includes('--legacy'),motion=process.argv.includes('--motion');

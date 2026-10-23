@@ -1,12 +1,12 @@
-# Organic world in the game — v1
+# Organic world in the game — current presentation
 
 World presentation from the merged art checkpoint #28 is implemented over prototype v0.7. The dense organic material treatment is retained; on 2026-10-23 the user requested slightly taller concrete pedestals. Palette is a zone property: default `mire` is green–umber–brown; `?zone=ember` is the retained red–yellow alternative. No new game menu is added.
 
-- Entire terrain uses a cached wet organic material and a single slowly pulsing vein layer. The liquid lane follows uneven sampled banks around the unchanged simulation path, with a roughly 60-unit warm-brown liquid core, wet glints and narrow contact shadows. Organic ground forms use a larger 512-unit texture repeat, closer to the approved reference. The lane stays distinct from the olive terrain in a 964px-wide game capture. Patterns retain detail at the 2× terrain-cache resolution instead of first reducing the source to a low-resolution tile. The ember zone warms the lane material while preserving its luminance detail.
+- Entire terrain uses a cached wet organic material and a single slowly pulsing vein layer. The liquid lane follows uneven sampled banks around the unchanged simulation path, with a roughly 60-unit warm-brown liquid core, wet glints and narrow contact shadows. Organic ground forms use a larger 512-unit texture repeat, closer to the approved reference. A 20% dark glaze quiets the lane highlights so the maroon/ivory Foragers separate from it. The lane stays distinct from the olive terrain in a 964px-wide game capture. Patterns retain detail at the 2× terrain-cache resolution instead of first reducing the source to a low-resolution tile. The ember zone warms the lane material while preserving its luminance detail.
 - Concrete tops retain actual tower anchors. Detailed chipped rims, metal mounting surfaces, yellow corner markers, cracks, roots and wet wall stains replace the simple material rectangles. Front walls increase from 16 to 22 presentation units, with unchanged platform tops and tower anchors, and participate in actor depth order; the platform top and front use separate regions of one compact sprite.
-- A single connected Gate/ruin sprite replaces the detached upper citadel and small arch in the campaign. A tall layered stone arch, deep cyan vortex, slime and attached ruin towers follow `studies/organic-world-direction-v3.png`. The cyan threshold remains at the actual exit (930,420); its shallow floor draws below actors, with separate rear/front architectural layers. All sixteen building footprints remain clear. On 2026-10-23 the user approved moving the nearest slot (index 15) from (890,300) to (820,240). Historical balance presets retain the former slot geometry and v4 Gate/ruin art so existing recordings stay verifiable and playable. Stone geometry remains the missing-image fallback. Health remains in the HUD.
+- A single connected Gate/ruin sprite replaces the detached upper citadel and small arch in the campaign. A tall layered stone arch, deep cyan vortex, slime and attached ruin towers follow `studies/organic-world-direction-v3.png`. The user accepted the Gate art; its campaign projection is now 330×430 to receive the full channel. The cyan threshold remains at the actual exit (930,420); its shallow floor draws below actors, with separate rear/front architectural layers. All sixteen building footprints remain clear. On 2026-10-23 the user authorized further redistribution near the Gate: campaign slots 12, 13 and 15 now sit at (770,260), (540,460) and (800,160). The route and exit stay fixed. Historical balance presets retain the former slot geometry and v4 Gate/ruin art so existing recordings stay verifiable and playable. Stone geometry remains the missing-image fallback. Health remains in the HUD.
 - Pausing retracts Turret/Cannon barrels and the Tesla upper section over 0.5 presentation seconds; resuming reverses the pose. Pause, warm-up and firing rules are unchanged.
-- Forager master, runtime atlas and gait are unchanged. Location-concept specimens are not used as replacement creatures.
+- Forager uses the new maroon/ivory low-crawl atlas and authored directional masters; see [living mire runtime v2](living-mire-runtime-v2.md). Other creature skins stay unchanged. The ground now deforms physically in presentation, with fixed platform tops, transient traffic marks, texture displacement, crisp body/foot occlusion and slime strands.
 
 ## Materials and provenance
 
@@ -27,9 +27,9 @@ Only the active ground palette loads; both alternatives are preserved in Git. Op
 
 ## Verification and viewing
 
-- [964px-wide game capture](previews/organic-world-mire-gameplay-v6.webp).
-- [Actual green-zone renderer capture](previews/organic-world-mire-v6.webp).
-- [Actual red-zone renderer capture](previews/organic-world-ember-gameplay-v6.webp).
+- [964px-wide game capture](previews/organic-world-mire-gameplay-v7.webp).
+- [Actual green-zone renderer capture](previews/organic-world-mire-v7.webp).
+- [Actual red-zone renderer capture](previews/organic-world-ember-gameplay-v7.webp).
 - The older v1 pause/resume clip remains historical; v6 native captures exercise the same pause/resume behavior.
 - `node tests/organic-world.cjs` checks palette-independent simulation, caching, vertical projection, exact barrier/lane intersection, reversible pause poses and loading/failure fallback.
 - `tools/capture-organic-world.cjs` uses native Canvas to run 90 frames from the real inline renderer per palette, including pause/resume. It checks read-only drawing and tests native Gate-layer alpha against all sixteen full-height building footprints, allowing only a faint generated light fringe (at most 16/255 alpha). The scene uses extra credits and durable placed Foragers for visual inspection; it is not a balance playthrough. Both final palettes were captured and inspected after the Gate/path/platform corrections. `--legacy --viewport --empty` also checks the historical layout and former Gate. `--viewport --empty` captures the real 964×631 viewport configuration (the game canvas itself fits to 964×542). A native cyan-pixel assertion at the actual Gate leak point catches artwork-anchor drift; the old fallback-projection assertion alone could not catch that error. Browser/device performance remains unmeasured.
@@ -38,3 +38,7 @@ Only the active ground palette loads; both alternatives are preserved in Git. Op
 ## Remaining packages from the checkpoint
 
 Real 1.65-second construction readiness is still pending as a simulation/replay change. Current construction retains its prior combat activation behavior. Leech and Carapacid need separate source-art and motion review before their sprites are replaced. These are not implemented by the world-presentation pass.
+
+## Current living-ground update
+
+The surface is cached separately from platform tops and deformed on a 10×6 grid with shared boundaries; all per-frame canvases are reused. Traffic tracks are presentation-only, capped at 128, and close after 1.35 seconds. Native empty captures verify breathing pixels, fixed slab tops (with at most 3 RGB levels of source-alpha background bleed), and cyan portal coverage across the full incoming y ±33 channel section. Native recordings and limits: [living-mire-runtime-v2.md](living-mire-runtime-v2.md).

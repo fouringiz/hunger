@@ -1,3 +1,7 @@
+# Historical v6 checkpoint
+
+The user accepted the v6 Gate appearance, then requested a wider entry and living creature/ground contact. Current implementation: [living mire runtime v2](../assets/art/living-mire-runtime-v2.md); current checkpoint: [ACTIVE-WORK-CHECKPOINT.md](ACTIVE-WORK-CHECKPOINT.md). The v6 notes below describe the earlier state.
+
 # Organic world reference v6 — Gate accepted, pedestals raised
 
 User approved moving the nearest build pad for the monumental Gate on 2026-10-23. Campaign slot index 15 moves from (890,300) to (820,240). All other slots, path, leak point, creature art and combat functions remain unchanged. Historical balance presets retain the original slot and v4 Gate art; all eight committed human recordings still verify.

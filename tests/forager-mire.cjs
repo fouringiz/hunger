@@ -35,3 +35,7 @@ console.log('PASS asynchronous/failed image fallback');
 const terrain=boot('',['concrete-platform']);terrain.run('terrain()');assert.ok(terrain.strokes.length>0,'without platform art the slots fall back to drawn outlines');assert.ok(terrain.strokes.every(s=>s.width===1),'organic lane stroke widths must not leak into build-slot outlines');
 const platforms=boot();platforms.run('terrain()');const slotCount=platforms.run('SLOTS.length');assert.equal(platforms.draws.filter(a=>String(a[0]&&a[0].url).includes('concrete-platform')).length,slotCount,'with platform art every slot is drawn from it');
 console.log('PASS cached organic lane preserves build-slot outlines');
+
+const bakedContacts=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/art/studies/forager-low-crawl-v2.contacts.json'),'utf8'));
+assert.deepEqual(JSON.parse(r.run('JSON.stringify(FORAGER_MIRE_CONTACTS)')),bakedContacts,'runtime foot contacts match the baked poses exactly');
+console.log('PASS baked/runtime foot-contact synchronization');

@@ -1,3 +1,7 @@
+# Historical v1 implementation
+
+The campaign now uses [living mire runtime v2](living-mire-runtime-v2.md). The material below documents the former source-skinned v1 atlas and is retained for provenance.
+
 # Forager mire runtime v1
 
 ## Shipped in the prototype

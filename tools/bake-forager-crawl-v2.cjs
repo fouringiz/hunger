@@ -111,6 +111,9 @@ async function bake(){
   }
   fs.writeFileSync(path.join(ROOT,'assets/hunger-forager-mire-v2.webp'),await atlas.encode('webp',94));
   fs.writeFileSync(path.join(ROOT,'assets/art/studies/forager-low-crawl-v2.contacts.json'),JSON.stringify(contacts));
+  const htmlPath=path.join(ROOT,'prototype/index.html'),html=fs.readFileSync(htmlPath,'utf8'),pattern=/const FORAGER_MIRE_CONTACTS=[^\n]+;/;
+  if(!pattern.test(html))throw new Error('Forager runtime contact declaration is missing');
+  fs.writeFileSync(htmlPath,html.replace(pattern,'const FORAGER_MIRE_CONTACTS='+JSON.stringify(contacts)+';'));
   fs.mkdirSync(path.join(ROOT,'reports/generated'),{recursive:true});
   fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-v2-directions.png'),sheet.toBuffer('image/png'));
   fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-v2-atlas.png'),atlas.toBuffer('image/png'));

@@ -90,7 +90,7 @@ function posAt(d) {
 // ---------------------------------------------------------------- build slots
 // Approved 2026-10-23: clear the monumental Gate; historical presets retain their replay geometry.
 const SLOTS = [[110,160],[250,160],[350,200],[350,340],[250,340],[490,190],[490,330],[590,70],
-  [590,200],[590,350],[730,200],[730,340],BALANCE_PRESET?[820,340]:[770,260],BALANCE_PRESET?[820,490]:[740,480],[350,70],BALANCE_PRESET?[890,300]:[800,160]]
+  [590,200],[590,350],[730,200],[730,340],BALANCE_PRESET?[820,340]:[770,260],BALANCE_PRESET?[820,490]:[540,460],[350,70],BALANCE_PRESET?[890,300]:[800,160]]
   .map(([x,y]) => ({x, y, tower: null}));
 
 // ---------------------------------------------------------------- data
@@ -1637,7 +1637,7 @@ function enemyArt(e) {
 }
 function rosterSpecimen(cell,x,y,size) {
   ctx.save();ctx.translate(x,y+size*.35);let drawn=false;
-  const type=cell===0?'forager':cell===1?'carapacid':'leech',normal=groundActorMetrics(type).width;ctx.scale(size/normal,size/normal);drawn=groundActorSprite({type,d:0,state:'lane'},0) || (cell===0?infantrySprite(2,0,0,normal):crawlerSprite({type,d:0},0));
+  const type=cell===0?'forager':cell===1?'carapacid':'leech',normal=type==='forager'&&foragerMireReady()?156*FORAGER_MIRE.scale:groundActorMetrics(type).width;ctx.scale(size/normal,size/normal);drawn=groundActorSprite({type,d:0,state:'lane'},0) || (cell===0?infantrySprite(2,0,0,normal):crawlerSprite({type,d:0},0));
   ctx.restore();return drawn;
 }
 function evolutionBody(cell, x, y, mutation) {
@@ -1963,7 +1963,7 @@ function draw() {
     }
     if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-groundActorMetrics(e.type).height-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
+    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-(e.type==='forager'&&foragerMireReady()?44:groundActorMetrics(e.type).height)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
   if (DEBUG_HIT_BOUNDS) {

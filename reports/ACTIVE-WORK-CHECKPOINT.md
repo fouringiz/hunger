@@ -1,6 +1,6 @@
 # Active visual work — checkpoint, 2026-10-23
 
-IN PROGRESS. Continue this work; this checkpoint is not a claim of user visual acceptance.
+IMPLEMENTED AND NATIVELY VALIDATED. User art/motion acceptance is still pending. Intermediate recovery commit: dea6f70; final media/validation checkpoint follows it on the same PR branch.
 
 ## Where
 
@@ -19,26 +19,22 @@ IN PROGRESS. Continue this work; this checkpoint is not a claim of user visual a
 ## Implemented at this checkpoint
 
 - Same v6 Gate art, now 330 by 430 presentation units with threshold anchor (.56,.87); exit stays (930,420).
-- Campaign slots (zero based): 12 now (770,260), 13 now (740,480), 15 now (800,160). All other slots and path unchanged. Legacy presets keep old grid and v4 Gate.
+- Campaign slots (zero based): 12 now (770,260), 13 now (540,460), 15 now (800,160). All other slots and path unchanged. Legacy presets keep old grid and v4 Gate.
 - Cached ground and static platform tops are separate. A shared-boundary 10 by 6 surface deformation makes the map breathe; contact texture displacements, wet ridges, temporary crawling tracks, crisp lower-body/foot occlusion and slime strands connect creatures to the ground. Tracks are presentation-only, capped at 128 and expire after 1.35 seconds.
 - New Forager: eight authored side crawl poses plus eight heading masters from built-in imagegen; exact prompts and source PNGs are in assets/art/. Native normalization packs 16 headings by 9 cells (rest plus 8 gait poses) into hunger-forager-mire-v2.webp. Front/back are real source views, replacing the rejected thin-card attempt. Intermediate views/gaits are inferred; human approval still pending.
 - The attached reference is RGBA-identical to references/enemies/forager/forager-approved-v1.webp. New generated poses preserve its color/identity direction but are not pixel-identical original anatomy.
-- Runtime uses matching foot-contact data copied from forager-low-crawl-v2.contacts.json into FORAGER_MIRE_CONTACTS. If rebuilding the atlas changes contacts, update the inline constant too.
+- Runtime uses matching foot-contact data copied from forager-low-crawl-v2.contacts.json into FORAGER_MIRE_CONTACTS. The bake tool now updates the inline constant automatically; a focused test checks synchronization.
 
-## Evidence already obtained
+## Final validation
 
-- Latest atlas: all 144 cells pass clear-margin, maroon/ivory visibility and volumetric north/south checks (tests/forager-crawl-atlas.cjs).
-- Latest populated native capture: 180 actual renderer frames, drawing leaves replay state unchanged, all 16 full-height pad footprints clear, actual exit cyan.
-- Both palettes and historical layout passed 90-frame native captures; empty campaign captures check the entire channel section (y +/-33 at exit), visible unoccupied ground deformation, and fixed platform tops (allow <=3 RGB levels from translucent source pixels).
-- 29 combat scenarios and 6 replay-sweep groups/all 8 historical recordings passed before the final art-only heading replacement. Simulation functions have not changed since. Focused buildup and sale/range checks passed too.
-- Forager travel-cycle test was updated for the larger authored cycle; rerun the final version with all current views.
+- All 144 atlas cells pass clear-margin, maroon/ivory visibility and volumetric north/south checks.
+- Current Forager tests pass every authored pose, stop/travel/Sprinter behavior, heading turns, fallback, combat-state invariance and exact baked/runtime contact synchronization.
+- 29 core scenarios, 4 balance-preset scenarios, 6 replay-sweep groups/all 8 historical games, focused world/buildup/sale/range/coherent-art tests pass after final slot/art changes.
+- Current native captures: 180 populated frames and 90 empty frames for each campaign palette and the historical grid. These check read-only rendering, all building footprints, cyan coverage across the full incoming channel, breathing unoccupied ground and fixed pedestal tops.
+- Media: assets/art/previews/living-mire-runtime-v2.mp4 (whole map), forager-living-mire-runtime-v2.mp4 and .gif (close crop from actual game frames), and v7 WebP stills. These are native Canvas captures, not browser screenshots.
 
-## Next, in order
+## Resume from here
 
-1. Review latest actual game/close captures, especially north/south views and planted/lifted feet. Do not claim fully simulated fluid or real recovered 3D anatomy.
-2. Run final focused suites and native captures from the real working copy. Optional native Canvas module is /private/tmp/hunger-canvas/node_modules/@napi-rs/canvas. Use WORLD_CANVAS_MODULE for capture and FORAGER_CANVAS_MODULE for atlas rebuild/tests.
-3. Generate current 6-second full-map and close motion media: capture-organic-world.cjs --motion --frames writes PNGs under reports/generated/organic-world-mire-motion and close/. Encode with ffmpeg. Existing living-mire-runtime-v2.mp4 in scratch is obsolete: do not deliver it.
-4. Update art provenance/runtime docs and PR description around the final result; no claim of final browser/device QA. Prior file URL policy denial must not be bypassed.
-5. Commit final checkpoint/update the same PR #31, show actual motion media, and clearly state what was tested.
+The requested implementation and native validation are complete. Next work should follow the user's visual feedback, not invent another iteration or merge PR #31. Browser/mobile performance and final subjective motion quality are not established by native checks. No fluid solver or recovered 3D model is claimed; non-side gaits and halfway headings are bounded interpolations from the eight generated heading masters.
 
-Native captures are not browser screenshots. Current v7 viewport stills predate the final heading replacement but contain the same Gate/terrain; refresh before final delivery. No fluid simulation or gameplay mutation is intended beyond the explicitly allowed slot redistribution.
+Source/provenance/rebuild details: assets/art/living-mire-runtime-v2.md. Rebuild assets with FORAGER_CANVAS_MODULE=/private/tmp/hunger-canvas/node_modules/@napi-rs/canvas node tools/bake-forager-crawl-v2.cjs. Native capture uses WORLD_CANVAS_MODULE with the same module path. Prior browser file URL policy denial must not be bypassed. Do not bulk-copy scratch: it contains rejected geometry-only experiments and an obsolete early MP4.
