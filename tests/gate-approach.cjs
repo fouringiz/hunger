@@ -14,13 +14,14 @@ function inspectApproach(scene,{path=null,exitD=null}={}){
   const points=path||JSON.parse(run('JSON.stringify(PATH)'));
   const limit=exitD===null?run('GATE_D'):exitD;
   const seg=[];let total=0;for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],length=Math.hypot(b[0]-a[0],b[1]-a[1]);seg.push({a,b,length,start:total});total+=length;}
+  // 33.9 units of lane half-width plus up to 2.4 units of surface breathing.
   const hits=[];
   for(const s of seg){
     const nx=-(s.b[1]-s.a[1])/s.length,ny=(s.b[0]-s.a[0])/s.length;
     for(let along=0;along<=s.length&&s.start+along<=limit;along+=2){
       const t=along/s.length,x=s.a[0]+(s.b[0]-s.a[0])*t,y=s.a[1]+(s.b[1]-s.a[1])*t;
       if(x<box.x-36||y<box.y-36)continue;
-      for(let offset=-33;offset<=33;offset+=2){
+      for(let offset=-36;offset<=36;offset+=2){
         const px=x+nx*offset,py=y+ny*offset;let covered=0;
         for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(stone(px+dx,py+dy))covered++;
         if(covered>=7)hits.push({x:+px.toFixed(1),y:+py.toFixed(1),d:+(s.start+along).toFixed(1),offset});

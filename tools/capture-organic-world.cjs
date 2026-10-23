@@ -75,7 +75,7 @@ async function main(){
   if(!legacy&&process.argv.includes('--empty')){
     const before=JSON.parse(run('JSON.stringify(posAt(GATE_D-2))')),length=Math.hypot(exit.x-before.x,exit.y-before.y);
     const nx=-(exit.y-before.y)/length,ny=(exit.x-before.x)/length;
-    for(let offset=-33;offset<=33;offset++){
+    for(let offset=-36;offset<=36;offset++){
       let cyan=false;
       for(let dx=-2;dx<=2;dx++){
         const p=canvas.getContext('2d').getImageData(Math.round((exit.x+nx*offset+dx)*canvas.width/960),Math.round((exit.y+ny*offset)*canvas.height/540),1,1).data;
