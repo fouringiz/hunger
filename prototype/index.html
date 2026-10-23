@@ -981,7 +981,9 @@ function worldMaterial(file){
   image.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/'+file;return image;
 }
 const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');
-const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial('hunger-ancient-gate-v3.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
+const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
+// Gate v4 is rendered from tools/blender/build-gate-v4.py through gatePoint(): separate rear and front layers.
+const gateRearArt=worldMaterial('hunger-ancient-gate-v4-rear.webp'),gateFrontArt=worldMaterial('hunger-ancient-gate-v4-front.webp');
 let worldTileArt=null,worldPulseArt=null,gateStoneCache=null,platformWallArt=null;
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
 const FORAGER_MIRE={cell:192,frames:13,directions:16,scale:.4/1.5,stride:280*.07*.4,duty:.72};
@@ -1658,7 +1660,10 @@ const GATE_MOUTH_DEPTH=16;
 function gatePoint(across,height,depth=0){return [GATE.x-GATE_MOUTH_DEPTH+across*.70+depth,GATE.y-GATE_MOUTH_DEPTH*.08-across*.55-height*.58+depth*.08];}
 const GATE_REAR={x:GATE.x-GATE_MOUTH_DEPTH+60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08-60*.55};
 const GATE_FRONT={x:GATE.x-GATE_MOUTH_DEPTH-60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08+60*.55};
-const GATE_DETAIL_BOX={x:GATE.x-64,y:GATE.y-166,width:160,height:240};
+// Must match RING, GATE and the rendered box in tools/blender/build-gate-v4.py.
+const GATE_RING={center:78,inner:[40,76]};
+const GATE_V4_BOX={x:848,y:310,width:153,height:157};
+function gateArtReady(){return worldImageReady(gateRearArt)&&worldImageReady(gateFrontArt);}
 const GATE_ART_BOX={x:GATE.x-102,y:GATE.y-185,width:208,height:264};
 function gatePolygon(points,fill,stroke){worldPolygon(ctx,points,fill,stroke);}
 function stoneFace(c,points,tint,pattern){
@@ -1678,14 +1683,9 @@ function gateBlock(c,u,width,height,depth,pattern){
 function buildGateStone(front){
   const canvas=document.createElement('canvas');canvas.width=GATE_ART_BOX.width*WORLD_RASTER_SCALE;canvas.height=GATE_ART_BOX.height*WORLD_RASTER_SCALE;
   const c=canvas.getContext('2d');c.scale(WORLD_RASTER_SCALE,WORLD_RASTER_SCALE);c.translate(-GATE_ART_BOX.x,-GATE_ART_BOX.y);
-  if(worldImageReady(gateDetailArt)){
-    const b=GATE_DETAIL_BOX;
-    // The near buttress/foundation occludes actors; the arch and vortex sit behind them.
-    const near=[[0,.59],[.35,.59],[.45,1],[0,1]].map(([u,v])=>[b.x+u*b.width,b.y+v*b.height]);
-    c.save();c.beginPath();
-    if(!front)c.rect(GATE_ART_BOX.x,GATE_ART_BOX.y,GATE_ART_BOX.width,GATE_ART_BOX.height);
-    near.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.clip('evenodd');
-    c.drawImage(gateDetailArt,b.x,b.y,b.width,b.height);c.restore();return canvas;
+  if(gateArtReady()){
+    // The near half of the ring and its buttress occlude creatures in the mouth; the rest stays behind them.
+    const b=GATE_V4_BOX;c.drawImage(front?gateFrontArt:gateRearArt,b.x,b.y,b.width,b.height);return canvas;
   }
   const pattern=worldPattern(c,ancientStoneArt,64),side=front?-1:1;
   // Stepped, eroded buttresses extend away from the passage, leaving the real building pads free.
@@ -1707,7 +1707,7 @@ function buildGateStone(front){
 }
 function gateStone(){if(!gateStoneCache)gateStoneCache={rear:buildGateStone(false),front:buildGateStone(true)};return gateStoneCache;}
 function drawGateApproach(){
-  if(worldImageReady(gateDetailArt))return; // The detailed art contains its grounded stone threshold.
+  if(gateArtReady())return; // The rendered art contains its grounded stone threshold.
   ctx.save();
   worldPolygon(ctx,[gatePoint(-76,0,-22),gatePoint(76,0,-22),gatePoint(76,0,48),gatePoint(-76,0,48)],'#18251c70');
   worldPolygon(ctx,[gatePoint(-68,0,-12),gatePoint(68,0,-12),gatePoint(68,0,34),gatePoint(-68,0,34)],'#636954','#9b9c7c');
@@ -1721,18 +1721,18 @@ function drawGateJamb(p,front){
 }
 function drawGateField(){
   if(S.gate<=0)return;
-  if(worldImageReady(gateDetailArt)){
-    const b=GATE_DETAIL_BOX;
-    ctx.save();ctx.beginPath();
-    for(const [i,[u,v]]of [[.39,.37],[.54,.32],[.63,.45],[.62,.68],[.56,.75],[.36,.75],[.35,.55]].entries()){
-      const x=b.x+u*b.width,y=b.y+v*b.height;i?ctx.lineTo(x,y):ctx.moveTo(x,y);
-    }
-    ctx.closePath();ctx.clip();
-    if(S.gate<=6){ctx.globalAlpha=.35;ctx.fillStyle='#dd6b22';ctx.fillRect(b.x,b.y,b.width,b.height);}
-    ctx.globalAlpha=.12+.07*Math.sin(presentationTime*1.7);ctx.strokeStyle='#d3ffff';ctx.lineWidth=.7;
-    for(let j=0;j<3;j++){
-      const x=b.x+( .43+j*.065)*b.width,y=b.y+(.51+Math.sin(presentationTime+j)*.025)*b.height;
-      ctx.beginPath();ctx.moveTo(x-5,y-12);ctx.bezierCurveTo(x+11,y-5,x-12,y+12,x+3,y+28);ctx.stroke();
+  if(gateArtReady()){
+    // The opening is the projected inner ring, so the overlay follows the rendered art exactly.
+    const [ru,rh]=GATE_RING.inner,mouth=[];
+    for(let i=0;i<64;i++){const a=i/64*Math.PI*2;mouth.push(gatePoint(ru*Math.cos(a),GATE_RING.center+rh*Math.sin(a),GATE_MOUTH_DEPTH));}
+    ctx.save();ctx.beginPath();mouth.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.clip();
+    if(S.gate<=6){ctx.globalAlpha=.32+.08*Math.sin(presentationTime*3);ctx.fillStyle='#d4602a';ctx.fill();}
+    ctx.strokeStyle=S.gate>6?'#c8ffff':'#ffc58c';ctx.lineWidth=1.1;
+    for(let j=0;j<4;j++){
+      const r=.25+((j*.19+presentationTime*.07)%.75),turn=presentationTime*.6+j*1.7;
+      ctx.globalAlpha=(.16+.08*Math.sin(presentationTime*1.6+j))*(1-r*.6);ctx.beginPath();
+      for(let i=0;i<=40;i++){const a=turn+i/40*Math.PI*1.4,p=gatePoint(ru*r*Math.cos(a),GATE_RING.center+rh*r*Math.sin(a),GATE_MOUTH_DEPTH);i?ctx.lineTo(...p):ctx.moveTo(...p);}
+      ctx.stroke();
     }
     ctx.restore();return;
   }

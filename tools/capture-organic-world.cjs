@@ -12,10 +12,13 @@ async function main(){
     images[name]=await loadImage(path.join(root,'assets',file));
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }
-  for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',gateDetailArt:'hunger-ancient-gate-v3.webp',platformDetailArt:'hunger-concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
-  const details="const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial('hunger-ancient-gate-v3.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');";
+  for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',platformDetailArt:'hunger-concrete-platform-v2.webp',gateRearArt:'hunger-ancient-gate-v4-rear.webp',gateFrontArt:'hunger-ancient-gate-v4-front.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
+  const details="const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');";
+  const gateLayers="const gateRearArt=worldMaterial('hunger-ancient-gate-v4-rear.webp'),gateFrontArt=worldMaterial('hunger-ancient-gate-v4-front.webp');";
+  assert.ok(source.includes(gateLayers),'Gate layer declaration is still present');
+  source=source.replace(gateLayers,'const gateRearArt=images.gateRearArt,gateFrontArt=images.gateFrontArt;');
   assert.ok(source.includes(details),'detail material declaration is still present');
-  source=source.replace(details,'const worldLaneArt=images.worldLaneArt,gateDetailArt=images.gateDetailArt,platformDetailArt=images.platformDetailArt;');
+  source=source.replace(details,'const worldLaneArt=images.worldLaneArt,platformDetailArt=images.platformDetailArt;');
   const materials="const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');";
   assert.ok(source.includes(materials),'world material declaration is still present');
   source=source.replace(materials,'const worldGroundArt=images.worldGroundArt,ancientStoneArt=images.ancientStoneArt;');

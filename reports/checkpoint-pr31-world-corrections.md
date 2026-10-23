@@ -4,6 +4,13 @@
 
 This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platform corrections are now implemented in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). See `assets/art/organic-world-runtime-v1.md` for the current implementation, actual renderer previews and verification. The diagnosis and verdicts below preserve the original handoff; they are not new pending work. Visual acceptance by the user remains open.
 
+## Gate v4 (2026-10-23)
+
+- Imagegen Gate v3 is **rejected**: a gothic castle arch instead of the reference ring, a single flat sprite without rear/front layers, and cropped by the map edge. See `assets/art/references/world/gate/notes.md`.
+- Gate v4 is built procedurally in Blender (`tools/blender/build-gate-v4.py`) through the exact `gatePoint()` projection and rendered as separate rear and front layers. All test scripts pass except `tests/forager-mire.cjs`, whose terrain-stroke assertion already fails at `c973850` and `c17e2d9` without these changes. Native captures pass the build-footprint alpha check in both palettes. User acceptance of v4 is pending.
+- The ring's right side necessarily extends past x=960: the Gate exit is fixed at (930,420) by the simulation.
+- Uncommitted Codex lane-readability work from before Gate v4 was stashed locally, not committed: `codex: lane readability WIP`.
+
 ## User verdicts
 
 - The current procedural Gate is rejected: coarse stone blocks, an oblique segmented hoop and a flat cyan grid do not match the agreed monumental ancient portal.
