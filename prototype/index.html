@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.7.1</title>
+<title>Ultimate TD — core loop prototype v0.8</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,9 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.8: Flamethrower line — a sweeping jet of burning fuel (quarter circle); bodies it touches burn on; a Carapacid
+// in the jet passes only part of the fire. Level 4: Plasma (burning pools on the lane) or Cryojet (slowing coolant).
+// Mirror Chitin answers fire dominance.
 // v0.7.1: a scheduled evolution can no longer be skipped by rushing: calling a wave over a live scheduled wave resolves
 // that wave's evolution at the call. Exports are tagged prototype-v0.7.
 // v0.7: overlapping waves — the next wave can be called at any time, even during a wave; calling early pays credits
@@ -111,6 +114,8 @@ const TOWER = {
               upg:[0,80,140], desc:'Arcing splash. Ignores shadow. Dead zone up close.'},
   voltaic:   {name:'Voltaic',   cost:95,  power:18,  range:120, dmg:17, hops:3, hopRange:70, hopFalloff:0.7, interval:0.6, kind:'electro', color:'#9df7ff',
               upg:[0,70,120], desc:'Chain lightning. The bolt jumps to nearby bodies; a Carapacid in the way takes it first; lightning rods end the chain.'},
+  flamer:    {name:'Flamethrower', cost:85, power:15, range:95, dmg:3, burnDps:9, burnTime:2.5, sweep:Math.PI/4, interval:0.2, kind:'fire', color:'#ff8a3d',
+              upg:[0,60,100], desc:'A sweeping jet of burning fuel: everything it touches keeps burning.'},
   generator: {name:'Generator', cost:90,  power:-40, kind:'gen', color:'#ffe66d',
               upg:[0,55,85],  desc:'+40/+60/+85 power. Leeches feed on it.'}
 };
@@ -123,6 +128,8 @@ const BRANCHES = {
             B:{name:'Rifle',       cost:150, intervalMul:2.5, dmgMul:4, rangeAdd:40, pierce:true}},
   voltaic: {A:{name:'Tesla',       cost:170, hopsAdd:2, falloff:0.8},
             B:{name:'Prism',       cost:170, dmgMul:3, noChain:true}},
+  flamer:  {A:{name:'Plasma',      cost:160, pools:3, poolDps:14, poolTime:3, poolR:18},
+            B:{name:'Cryojet',     cost:160, dmgMul:0.4, noBurn:true, slow:0.45, slowTime:1.5}},
   cannon:  {A:{name:'Howitzer',    cost:200, dmgMul:2.2, intervalMul:1.4},
             B:{name:'Cluster',     cost:200, bomblets:5, bombletDmgMul:0.35, bombletSplash:26, ring:60}}   // covers ~86 px against a plain shell's 48, with gaps
 };
@@ -148,13 +155,16 @@ const MUT = {
              effect:'New specimens accelerate at shell-whistle.', cause:'your artillery dominance'},
   dispersal: {name:'Dispersal', vs:'arc',
              effect:'New specimens keep their distance from each other; fewer bodies share a blast.', cause:'your artillery dominance'},
+  mirror: {name:'Mirror Chitin', vs:'fire',
+             effect:'New specimens grow a mirrored chitin; fire, burning fuel and plasma deal 30% less.', cause:'your fire dominance'},
   grounding: {name:'Grounding', vs:'electro',
              effect:'Lightning-rod specimens with conductive skeletons intercept the discharge; the chain ends on them.', cause:'your voltaic dominance'}
 };
 // Counters per weapon line, in the order the incubators try them. The dominant line gets its next unused counter;
 // only when that line has nothing left does the swarm fall back to another line (reported as a replacement).
-const COUNTERS = {flat:['keratin'], arc:['sprinter','dispersal'], electro:['grounding']};
-const LEDGER_ORDER = ['flat', 'arc', 'electro'];      // tie-break: kinetic first, then artillery, then voltaic
+const COUNTERS = {flat:['keratin'], arc:['sprinter','dispersal'], electro:['grounding'], fire:['mirror']};
+const LEDGER_ORDER = ['flat', 'arc', 'electro', 'fire'];      // tie-break: kinetic first, then artillery, then voltaic
+const FLAME_SHADOW_PASS = 0.35;                      // a Carapacid in the jet lets this share of the fire through (draft)
 const ROD_EVERY = 3;                                   // Grounding: every third spawn of a grounded wave is a rod; every Carapacid is
 const DISPERSAL_SPACING = 1.5;                         // EXPERIMENTAL: Dispersal stretches spawn intervals; speed untouched. Measure wave duration.
 // The report separates what changed (effect) from why (cause). A replacement is explained as such:
@@ -175,7 +185,7 @@ function reset() {
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
-       spawnQueue:[], spawnTimer:0, streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
+       spawnQueue:[], spawnTimer:0, pools:[], streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        meleeDamage:0, infantryCasualties:0, infantryBlockedSeconds:0,
        toast:'', toastT:0, accumulator:0};
@@ -302,7 +312,8 @@ function tstats(t) {
   const T = t.T, lv = Math.min(t.level, 3);
   const st = {dmg: T.dmg * Math.pow(1.35, lv-1), range: T.range + 15*(lv-1),
           interval: T.interval * (lv === 3 ? 0.85 : 1), power: T.power + 5*(t.level-1),
-          hops: (T.hops || 0) + (lv === 3 ? 1 : 0)};
+          hops: (T.hops || 0) + (lv === 3 ? 1 : 0),
+          burnDps: (T.burnDps || 0) * Math.pow(1.35, lv-1), burnTime: T.burnTime || 0};
   const b = t.branch && BRANCHES[t.type] && BRANCHES[t.type][t.branch];
   if (b) {                                                        // level 4: the branch reshapes level-3 stats
     if (b.dmgMul) st.dmg *= b.dmgMul;
@@ -312,6 +323,9 @@ function tstats(t) {
     if (b.falloff) st.falloff = b.falloff;
     if (b.noChain) st.hops = 0;
     if (b.pierce) st.pierce = true;
+    if (b.noBurn) st.burnDps = 0;
+    if (b.slow) { st.slow = b.slow; st.slowTime = b.slowTime; }
+    if (b.pools) { st.pools = b.pools; st.poolDps = b.poolDps * Math.pow(1.35, 2); st.poolTime = b.poolTime; st.poolR = b.poolR; }
     if (b.bomblets) { st.bomblets = b.bomblets; st.bombletDmg = st.dmg * b.bombletDmgMul; st.bombletSplash = b.bombletSplash; st.ring = b.ring; }
   }
   return st;
@@ -449,6 +463,7 @@ function laneEffectiveSpeed(e, feastMul) {
   if (e.type === 'forager') for (const c of S.enemies)
     if (!c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
   if (e.dash > 0) sp *= SPRINTER_DASH_MULT;
+  if (e.slowUntil > S.time) sp *= e.slowMul;                    // Cryojet coolant
   return sp * feastMul;
 }
 function releaseBarracks(t, withdraw = false) {
@@ -540,7 +555,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS};
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -551,7 +566,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -606,7 +621,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -667,7 +682,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.7',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.8',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -683,6 +698,7 @@ function damage(e, amt, tower, source = 'tower') {
   const wasFeeding = !!(e.gen && isDrained(e.gen));
   const raw = amt;                                                                  // the ledger reads fire before resistances
   if (tower && tower.T.kind === 'flat' && e.muts.includes('keratin')) amt *= 0.7;   // Keratinization: −30% kinetic
+  if (tower && tower.T.kind === 'fire' && e.muts.includes('mirror')) amt *= 0.7;    // Mirror Chitin: −30% fire
   const dealt = Math.min(amt, Math.max(0, e.hp));                                   // overkill is not evolution pressure
   e.hp -= amt;
   if (source === 'melee') S.meleeDamage += dealt;
@@ -810,6 +826,34 @@ function fireElectro(t, st, target) {
   }
   return struck;
 }
+// The Flamethrower sweeps a jet of burning fuel across a quarter circle (±45° around its target). Every body the jet touches
+// takes a little contact damage and keeps burning; a Carapacid in the jet lets only FLAME_SHADOW_PASS of the fire through
+// to the bodies behind it. Plasma also drops burning pools on the lane; Cryojet sprays coolant that slows instead of burning.
+function fireFlame(t, st, target) {
+  const aim = Math.atan2(target.y - t.y, target.x - t.x);
+  const a = aim + T_SWEEP(t) * Math.sin(S.time * 3.2 + SLOTS.indexOf(t.slot));
+  t.angle = a; t.jetAt = S.time;                                // presentation: the drawn jet follows the sweep
+  const tx = t.x + Math.cos(a) * st.range, ty = t.y + Math.sin(a) * st.range;
+  const hits = [];
+  for (const e of S.enemies) { if (e.dead) continue; const u = segHitsCircle(t.x, t.y, tx, ty, e.x, e.y, 10 + e.r * 0.5); if (u >= 0) hits.push([u, e]); }
+  hits.sort((p, q) => p[0] - q[0]);
+  let shield = false;
+  for (const [, e] of hits) {
+    const pass = shield && e.type !== 'carapacid' ? FLAME_SHADOW_PASS : 1;
+    damage(e, st.dmg * pass, t);
+    if (st.burnDps > 0) { e.burnUntil = S.time + st.burnTime; e.burnDps = Math.max(e.burnUntil > S.time && e.burnTower === t ? e.burnDps : 0, st.burnDps * pass); e.burnTower = t; }
+    if (st.slow) { e.slowUntil = S.time + st.slowTime; e.slowMul = 1 - st.slow * pass; }
+    if (e.type === 'carapacid') shield = true;
+  }
+  if (st.pools) {                                               // fuel that misses keeps burning where it lands: on the lane under the target
+    const p = posAt(target.d), pools = S.pools.filter(q => q.tower === t);
+    if (!pools.some(q => Math.hypot(q.x - p.x, q.y - p.y) < st.poolR)) {
+      if (pools.length >= st.pools) S.pools = S.pools.filter(q => q !== pools[0]);
+      S.pools.push({x:p.x, y:p.y, r:st.poolR, dps:st.poolDps, until:S.time + st.poolTime, tower:t});
+    }
+  }
+}
+function T_SWEEP(t) { return t.T.sweep || 0; }
 
 // ---------------------------------------------------------------- update
 function update(dt) {
@@ -921,8 +965,14 @@ function stepSimulation(dt) {
     t.cd -= dt * (pw.brown ? BROWNOUT_MULT : 1) * (1 + 0.1 * rank(t));
     if (t.cd <= 0) {
       const tg = pickTarget(t, st);
-      if (tg) { t.cd = st.interval; if (t.T.kind === 'flat') fireFlat(t, st, tg); else if (t.T.kind === 'electro') fireElectro(t, st, tg); else fireArc(t, st, tg); }
+      if (tg) { t.cd = st.interval; if (t.T.kind === 'flat') fireFlat(t, st, tg); else if (t.T.kind === 'electro') fireElectro(t, st, tg); else if (t.T.kind === 'fire') fireFlame(t, st, tg); else fireArc(t, st, tg); }
     }
+  }
+  // burning fuel and plasma pools
+  for (const e of S.enemies) if (!e.dead && e.burnUntil > S.time) damage(e, e.burnDps * dt, e.burnTower);
+  if (S.pools.length) {
+    S.pools = S.pools.filter(q => q.until > S.time);
+    for (const q of S.pools) for (const e of S.enemies) if (!e.dead && Math.hypot(e.x - q.x, e.y - q.y) <= q.r + e.r * 0.5) damage(e, q.dps * dt, q.tower);
   }
   // shells
   for (const sh of S.shells) {
@@ -1047,6 +1097,7 @@ function weaponProjection(angle) {
 }
 function weaponMuzzle(t,angle=t.angle) {
   if(t.type==='voltaic')return {x:t.x,y:t.y-58};
+  if(t.type==='flamer'){const m=weaponProjection(angle);return {x:t.x+m.a*22,y:t.y-14+m.b*22};}
   const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
   return {x:t.x+m.a*length,y:t.y-14+m.b*length};
 }
@@ -1390,7 +1441,11 @@ function drawTowerBody(t) {
     const buildProgress=constructionProgress(t);
     const deploying=drawBuildingDeployment(t,saleProgress===null?buildProgress:saleProgress);
     if(!deploying){
-    if (t.type === 'voltaic') {
+    if (t.type === 'flamer') {                                   // no atlas cell yet: vector tank and nozzle in the atlas' idiom
+      ctx.fillStyle='#2b2a22';roundRect(-20,-18,40,36,5);ctx.fill();ctx.strokeStyle='#6b6450';ctx.lineWidth=1.5;roundRect(-20,-18,40,36,5);ctx.stroke();
+      ctx.fillStyle='#7a3a1c';roundRect(-13,-14,10,26,4);ctx.fill();ctx.fillStyle='#8a4a22';roundRect(1,-14,10,26,4);ctx.fill();
+      ctx.save();ctx.rotate(t.angle);ctx.fillStyle='#4a4a40';ctx.fillRect(0,-3,22,6);ctx.fillStyle=t.branch==='B'?'#9df7ff':'#ff8a3d';ctx.fillRect(20,-2,4,4);ctx.restore();
+    } else if (t.type === 'voltaic') {
       let drawn = lowBuildingSprite(4,-22,-62,44,76);
       const capY=drawn?-58:-28;
       if (!drawn && voltaicArt && voltaicArt.complete && voltaicArt.naturalWidth) {
@@ -1735,6 +1790,11 @@ function draw() {
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
+    if (e.burnUntil > S.time) { const f = 0.5 + 0.5 * Math.sin(S.time * 22 + e.d);        // burning fuel on the body
+      ctx.fillStyle = 'rgba(255,' + (120 + 60 * f | 0) + ',40,0.75)'; ctx.beginPath(); ctx.moveTo(e.x - e.r*0.5, e.y - e.r*0.2);
+      ctx.quadraticCurveTo(e.x, e.y - e.r - 8 - 4*f, e.x + e.r*0.5, e.y - e.r*0.2); ctx.fill(); }
+    if (e.slowUntil > S.time) { ctx.strokeStyle = 'rgba(157,247,255,0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, Math.PI*2); ctx.stroke(); }
+    if (e.muts.includes('mirror')) { ctx.strokeStyle = 'rgba(220,230,240,0.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 1, -2.4, -0.7); ctx.stroke(); }   // mirrored sheen
     if (e.muts.includes('keratin')) { ctx.strokeStyle = '#9aa3b5'; ctx.lineWidth = 2;    // matte plating marker
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 2, 0, Math.PI*2); ctx.stroke(); }
     if (e.muts.includes('sprinter')) {                                                   // motion streak marker
@@ -1787,6 +1847,14 @@ function draw() {
     }
     ctx.strokeStyle = s.blocked ? '#ff9f43' : '#ffffff'; ctx.lineWidth = s.blocked ? 2.5 : 1.5;
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
+  for (const q of S.pools) { const k = Math.max(0, Math.min(1, (q.until - S.time) / 3)), f = 0.6 + 0.4 * Math.sin(S.time * 9 + q.x);   // plasma pools
+    ctx.globalAlpha = 0.35 + 0.35 * k; ctx.fillStyle = '#ff7a2a'; ctx.beginPath(); ctx.ellipse(q.x, q.y, q.r * f + 4, q.r * 0.55 * f + 2, 0, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
+  for (const t of S.towers) if (t.type === 'flamer' && t.jetAt !== undefined && S.time - t.jetAt < 0.16) {           // the jet follows its sweep
+    const m = weaponMuzzle(t), st = tstats(t), cryo = t.branch === 'B';
+    for (let i = 0; i < 3; i++) { const w = 7 - i * 2, a = t.angle + Math.sin(S.time * 30 + i) * 0.03;
+      ctx.strokeStyle = cryo ? (i ? '#d8fbff' : '#7fe3f0') : (i === 2 ? '#fff1a0' : i ? '#ffb347' : '#ff6a1a'); ctx.globalAlpha = 0.55 + i * 0.15; ctx.lineWidth = w;
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(t.x + Math.cos(a) * st.range, t.y + Math.sin(a) * st.range); ctx.stroke(); }
+    ctx.globalAlpha = 1; }
   for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower);
     if (sh.cluster) {                                             // one carrier flies to the burst point, then five bomblets fan out
       const BURST = 0.68, c = sh.cluster, arc = q => ({x:start.x + (c.cx-start.x)*q, y:start.y + (c.cy-start.y)*q - Math.sin(q*Math.PI)*70});
@@ -1891,7 +1959,7 @@ function draw() {
   // selection menus
   if (S.selected && !pendingPlacement && (S.phase === 'build' || S.phase === 'wave')) {
     if (S.selected.kind === 'slot') {
-      const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'generator'];
+      const s = S.selected.slot; const items = ['turret', 'cannon', 'voltaic', 'flamer', 'generator'];
       if (INFANTRY_TRIAL) items.push('barracks');
       let x0 = Math.max(6, Math.min(W - 6 - items.length*98, s.x - items.length*49)); const y0 = s.y > H/2 ? s.y - 74 : s.y + 26;
       menuPanel(x0,y0,items.length);

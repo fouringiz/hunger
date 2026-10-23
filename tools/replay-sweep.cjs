@@ -45,7 +45,7 @@ function runCounterfactual(data, overrides={}, opts={}) {
         if(ov.growth!==undefined) m*=(1+ov.growth*(n-1))/(1+0.08*(n-1));
         e.hp*=m; e.maxHp*=m; return e; };
     }
-    const M={dmg:{flat:0,arc:0,electro:0}, bolts:0, hops:0, rodBreaks:0, rodBreaksAfterRodDied:0, deniedHops:0, deniedDmg:0,
+    const M={dmg:{flat:0,arc:0,electro:0,fire:0}, bolts:0, hops:0, rodBreaks:0, rodBreaksAfterRodDied:0, deniedHops:0, deniedDmg:0,
       shellsResolved:0, arcHits:0, perWave:{}, brownoutTicks:0, pausedTowerTicks:0, waveTicks:0, mutationTicks:[]};
     if(__instrument){
       const baseDamage=damage;
@@ -101,7 +101,7 @@ function loadFixtures(dir=FIXTURE_DIR, preset='v04') {   // the v0.4 reference g
   return all.filter(x=>(x.data.balancePreset??null)===preset);
 }
 function loadPresetFixtures(preset){ return loadFixtures(PRESET_FIXTURE_DIRS[preset],preset); }
-function shares(d){ const tot=d.flat+d.arc+d.electro||1; return [d.flat,d.arc,d.electro].map(v=>Math.round(100*v/tot)); }
+function shares(d){ const tot=d.flat+d.arc+d.electro+(d.fire||0)||1; return [d.flat,d.arc,d.electro,d.fire||0].map(v=>Math.round(100*v/tot)); }
 function measureRow(set,name,data,evolution){
   const r=runCounterfactual(data,{evolution},{instrument:true}), m=r.measures, sh=shares(m.dmg);
   const f=[r.deferred?'d'+r.deferred:'',r.dropped?'x'+r.dropped:'',r.unreached?'u'+r.unreached:''].filter(Boolean).join('/');
@@ -113,7 +113,7 @@ function measureRow(set,name,data,evolution){
 function measure(){
   const rows=[], sets=[['baseline',loadFixtures()],['parityA',loadPresetFixtures('parityA')]];
   for(const [set,fixtures] of sets){ baselineCheck(fixtures); for(const {name,data} of fixtures) for(const evo of [true,false]) rows.push(measureRow(set,name,data,evo)); }
-  const md=['| set | timeline | evolution | outcome | ticks | damage share K/A/V % | bolts | rod breaks (rod already dead) | voltaic dmg dealt / est. denied (hops) | bodies per shell (shells) | brownout s / wave s | paused tower·s | mutations |',
+  const md=['| set | timeline | evolution | outcome | ticks | damage share K/A/V/F % | bolts | rod breaks (rod already dead) | voltaic dmg dealt / est. denied (hops) | bodies per shell (shells) | brownout s / wave s | paused tower·s | mutations |',
             '|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for(const r of rows) md.push(`| ${r.set} | ${r.name} | ${r.evolution?'on':'off'} | ${r.win?'W':'L'} g${r.gate} w${r.wave}${r.fidelity?' ('+r.fidelity+')':''} | ${r.ticks} | ${r.shares.join('/')} | ${r.bolts} | ${r.rodBreaks} (${r.rodBreaksAfterRodDied}) | ${r.electroDmg} / ${r.deniedDmg} (${r.deniedHops}) | ${r.bodiesPerShell??'—'} (${r.shells}) | ${r.brownoutS} / ${r.waveS} | ${r.pausedTowerS} | ${r.mutations||'—'} |`);
   md.push('','Bodies damaged per resolved shell, by wave (evolution on / off). Mutations apply from the wave after they appear.','',
