@@ -10,6 +10,11 @@ function boot(search=''){
   vm.runInContext(source,c);return {run:s=>vm.runInContext(s,c),images,draws,canvases:()=>canvases};
 }
 const a=boot(),b=boot('?zone=ember'),invalid=boot('?zone=__proto__');
+const legacy=boot('?balance=v04');
+assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[820,240]','approved slot relocation leaves room for the Gate');
+assert.equal(legacy.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[890,300]','historical replay geometry stays intact');
+assert.ok(a.images.some(i=>i.src.endsWith('hunger-ancient-gate-v6.webp')));
+assert.ok(legacy.images.some(i=>i.src.endsWith('hunger-ancient-gate-v4.webp')),'historical layout uses the non-obstructing former Gate');
 assert.equal(a.run('WORLD_ZONE'),'mire');assert.equal(b.run('WORLD_ZONE'),'ember');assert.equal(invalid.run('WORLD_ZONE'),'mire');
 assert.ok(a.images.some(i=>i.src.endsWith('hunger-world-mire-v1.webp')));assert.ok(b.images.some(i=>i.src.endsWith('hunger-world-ember-v1.webp')));
 assert.equal(a.run('replayRulesFingerprint()'),b.run('replayRulesFingerprint()'));assert.equal(a.run('replaySourceFingerprint()'),b.run('replaySourceFingerprint()'));

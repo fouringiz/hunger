@@ -1,8 +1,9 @@
 'use strict';
 // Native offscreen capture of the actual inline game renderer. This is not a browser or a balance playthrough.
-// WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/capture-organic-world.cjs [--ember] [--frames] [--viewport] [--empty]
+// WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/capture-organic-world.cjs [--ember] [--frames] [--viewport] [--empty] [--legacy]
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
+const legacy=process.argv.includes('--legacy');
 const root=path.join(__dirname,'..'),zone=process.argv.includes('--ember')?'ember':'mire';
 async function main(){
   let source=fs.readFileSync(path.join(root,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -12,21 +13,21 @@ async function main(){
     images[name]=await loadImage(path.join(root,'assets',file));
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }
-  for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',gateDetailArt:'hunger-ancient-gate-v4.webp',gateRuinsArt:'hunger-ancient-gate-ruins-v1.webp',platformDetailArt:'hunger-concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
-  const details="const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial('hunger-ancient-gate-v4.webp'),gateRuinsArt=worldMaterial('hunger-ancient-gate-ruins-v1.webp'),platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');";
+  for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',gateDetailArt:legacy?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp',...(legacy?{gateRuinsArt:'hunger-ancient-gate-ruins-v1.webp'}:{}),platformDetailArt:'hunger-concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
+  const details="const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('hunger-ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');";
   assert.ok(source.includes(details),'detail material declaration is still present');
-  source=source.replace(details,'const worldLaneArt=images.worldLaneArt,gateDetailArt=images.gateDetailArt,gateRuinsArt=images.gateRuinsArt,platformDetailArt=images.platformDetailArt;');
+  source=source.replace(details,'const worldLaneArt=images.worldLaneArt,gateDetailArt=images.gateDetailArt,gateRuinsArt=images.gateRuinsArt||null,platformDetailArt=images.platformDetailArt;');
   const materials="const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');";
   assert.ok(source.includes(materials),'world material declaration is still present');
   source=source.replace(materials,'const worldGroundArt=images.worldGroundArt,ancientStoneArt=images.ancientStoneArt;');
   const viewport=process.argv.includes('--viewport')?[964,631]:[1920,1080];
   const canvas=createCanvas(...viewport);canvas.style={};canvas.addEventListener=()=>{};
   const c=vm.createContext({images,document:{getElementById:()=>canvas,createElement:()=>createCanvas(1,1)},window:{devicePixelRatio:1},innerWidth:viewport[0],innerHeight:viewport[1],
-    location:{pathname:'/prototype/index.html',search:'?zone='+zone},URLSearchParams,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
+    location:{pathname:'/prototype/index.html',search:'?zone='+zone+(legacy?'&balance=v04':'')},URLSearchParams,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
   vm.runInContext(source,c);const run=code=>vm.runInContext(code,c);
   run("reset();S.phase='build';S.credits=10000;S.buildTimer=999;build(SLOTS[0],'turret');build(SLOTS[1],'cannon');build(SLOTS[5],'voltaic');build(SLOTS[15],'generator');S.selected=null;observeConstruction();presentationTime=2;observeConstruction();S.wave=5;S.phase='wave';S.spawnQueue=[];S.enemies=Array.from({length:18},(_,i)=>{const e=makeEnemy('forager',1);e.d=40+i*79;Object.assign(e,posAt(e.d));e.hp=e.maxHp=10000;return e;});");
   if(process.argv.includes('--empty'))run("reset();S.phase='build';S.buildTimer=999;");
-  const dir=path.join(root,'reports/generated/organic-world-'+zone+(process.argv.includes('--viewport')?'-viewport':'')+(process.argv.includes('--empty')?'-empty':''));fs.mkdirSync(dir,{recursive:true});
+  const dir=path.join(root,'reports/generated/organic-world-'+zone+(legacy?'-legacy':'')+(process.argv.includes('--viewport')?'-viewport':'')+(process.argv.includes('--empty')?'-empty':''));fs.mkdirSync(dir,{recursive:true});
   const preview=createCanvas(960,540),p=preview.getContext('2d');
   for(let frame=0;frame<90;frame++){
     if(!process.argv.includes('--empty')&&(frame===18||frame===48))run('togglePause(S.towers[0]);togglePause(S.towers[2]);');
@@ -36,8 +37,8 @@ async function main(){
     if(process.argv.includes('--frames'))fs.writeFileSync(path.join(dir,String(frame).padStart(3,'0')+'.png'),preview.toBuffer('image/png'));
     if(frame===12){
       fs.writeFileSync(path.join(dir,'scene.png'),canvas.toBuffer('image/png'));
-      if(process.argv.includes('--viewport')&&process.argv.includes('--empty'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-gameplay-v2.webp'),canvas.encodeSync('webp',90));
-      if(!process.argv.includes('--viewport'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-v1.webp'),canvas.encodeSync('webp',90));
+      if(!legacy&&process.argv.includes('--viewport')&&process.argv.includes('--empty'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-gameplay-v6.webp'),canvas.encodeSync('webp',90));
+      if(!legacy&&!process.argv.includes('--viewport'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-v6.webp'),canvas.encodeSync('webp',90));
     }
   }
   // Native alpha checks catch architectural obstruction of a full-height tower at every actual build pad.

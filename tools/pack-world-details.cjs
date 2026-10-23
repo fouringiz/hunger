@@ -13,6 +13,7 @@ async function pack(input,output,width,height,crop){
 (async()=>{
   await pack('assets/art/studies/organic-lane-material-v1.png','assets/hunger-organic-lane-v1.webp',768,768);
   await pack('assets/art/studies/ancient-gate-ruins-v1.png','assets/hunger-ancient-gate-ruins-v1.webp',384,384);
+  await pack('assets/art/studies/ancient-gate-runtime-v6.png','assets/hunger-ancient-gate-v6.webp',768,1152);
   await pack('assets/art/studies/ancient-gate-runtime-v4.png','assets/hunger-ancient-gate-v4.webp',512,768);
   await pack('assets/art/studies/concrete-platform-runtime-v2.png','assets/hunger-concrete-platform-v2.webp',192,224,[150,80,960,1100]);
 })().catch(e=>{console.error(e);process.exitCode=1;});
