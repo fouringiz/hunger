@@ -73,6 +73,18 @@ const cases={
     const before=replaySourceFingerprint(); const keep=rushEvolution; rushEvolution=function(){ keep(); S.credits+=1; };
     assert.notEqual(replaySourceFingerprint(),before,'changing rushEvolution changes the fingerprint'); rushEvolution=keep;
   `,
+  'rushing past a scheduled wave does not skip its evolution: it resolves at the call and only once': `
+    reset(); beginReplayRecording(); S.wave=EVOLUTION_WAVES[1]-1; S.phase='build'; S.mutations=['keratin']; S.rushMutation='keratin';
+    performPlayerAction({kind:'wave'}); for(let i=0;i<60;i++) update(SIM_STEP);
+    S.dmg={flat:0,arc:500,electro:0};
+    const before=S.mutations.length; assert.ok(performPlayerAction({kind:'wave'}),'wave '+(EVOLUTION_WAVES[1]+1)+' called over the scheduled wave');
+    assert.equal(S.mutations.length,before+1,'the scheduled evolution resolved at the call'); assert.equal(S.mutations.at(-1),'sprinter','by the ledger at that moment');
+    assert.ok(S.evolvedWaves.includes(EVOLUTION_WAVES[1]));
+    for(let i=0;i<200;i++) update(SIM_STEP);
+    assert.ok(S.enemies.some(e=>e.wave===EVOLUTION_WAVES[1]+1&&e.muts.includes('sprinter')),'the called wave carries it');
+    let k=0; while(S.phase==='wave'&&k++<300000){ for(const e of S.enemies) e.dead=true; update(SIM_STEP); }
+    assert.equal(S.mutations.length,before+1,'no second evolution when the scheduled wave completes');
+  `,
   'legacy rule presets pay no early-call bonus': ``,
   'Cluster bomblets carry an airburst hint and strike three fragments each inside their blast': `
     reset(); S.credits=9000; build(SLOTS[5],'cannon'); const t=S.towers[0]; upgrade(t); upgrade(t); upgrade(t,'B');
@@ -90,7 +102,7 @@ const rec=JSON.parse(vm.runInContext(`(() => { reset(); beginReplayRecording(); 
   performPlayerAction({kind:'wave'}); for(let i=0;i<200;i++) update(SIM_STEP); performPlayerAction({kind:'wave'});
   let k=0; while(replay.mode==='recording'&&k++<600000){ if(S.phase==='build') performPlayerAction({kind:'wave'}); update(SIM_STEP); }
   return JSON.stringify(exportReplay()); })()`,c));
-assert.ok(rec.events.some(e=>e.stacked),'the overlapping call is recorded'); assert.ok(verifyParty(rec).verified,'an overlapping game verifies');
+assert.ok(rec.events.some(e=>e.stacked),'the overlapping call is recorded'); assert.equal(rec.gameVersion,'prototype-v0.7','exports carry the v0.7 version'); assert.ok(verifyParty(rec).verified,'an overlapping game verifies');
 console.log('PASS an overlapping game is recorded and verifies'); n++;
 const stub=new Proxy({},{get(o,k){if(k==='createLinearGradient'||k==='createRadialGradient'||k==='createPattern')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=()=>{});}});
 class StubImage{constructor(){this.complete=true;this.naturalWidth=768;}}
