@@ -12,7 +12,7 @@ function boot(search='',missing=[]){   // missing: asset name fragments that fai
 for(const search of ['', '?infantry=1']){
  const r=boot(search);r.run("reset();const e=makeEnemy('forager',1);e.x=200;e.y=90;e.d=100;e.state='lane';");
  const before=r.run('JSON.stringify(e)'),signature=r.run('replaySignature()');r.run('enemyArt(e)');
- const atlas=r.images.find(im=>im.src.endsWith('hunger-forager-mire-v1.webp'));
+ const atlas=r.images.find(im=>im.src.endsWith('hunger-forager-mire-v2.webp'));
  assert.equal(r.draws.filter(d=>d[0]===atlas).length,1,'the campaign/trial use exactly one new Forager atlas draw');
  assert.equal(r.run('JSON.stringify(e)'),before);assert.equal(r.run('replaySignature()'),signature,'rendering never writes combat state');
  for(const type of ['carapacid','leech']){r.draws.length=0;r.run(`enemyArt(makeEnemy('${type}',1))`);assert.ok(!r.draws.some(d=>d[0]===atlas),'other castes keep their existing art');}
@@ -21,7 +21,7 @@ console.log('PASS default campaign/trial Forager integration, one atlas draw, ot
 const r=boot();r.run("reset();const e=makeEnemy('forager',1);e.x=e.y=e.d=0;e.state='lane';");
 const pose=angle=>JSON.parse(r.run(`JSON.stringify(foragerMirePose(e,${angle}))`));
 const still=pose(0);assert.equal(still.frame,0);r.run('S.time+=100');assert.deepEqual(pose(0),still,'stopping freezes gait and yaw regardless of elapsed time');
-const frames=new Set();for(let i=0;i<120;i++){r.run('e.d+=.1;e.x+=.1');frames.add(pose(0).frame);}assert.ok(frames.size>=10,'travel cycles the drawn poses');
+const frames=new Set();for(let i=0;i<120;i++){r.run('e.d+=.25;e.x+=.25');frames.add(pose(0).frame);}assert.equal(frames.size,r.run('FORAGER_MIRE.frames-1'),'travel cycles every authored crawl pose');
 const stopped=pose(0);r.run('S.time+=20');assert.deepEqual(pose(Math.PI/2),stopped,'a stopped actor does not turn or walk by itself');
 r.run('e.d+=1;e.x+=1');const moved=pose(Math.PI/2);assert.ok(moved.heading>stopped.heading&&moved.heading<Math.PI/2,'corners turn progressively as the body advances');
 const headings=new Set();for(let i=0;i<32;i++){r.run(`const sample${i}=makeEnemy('forager',1)`);headings.add(r.run(`foragerMirePose(sample${i},${i*Math.PI*2/32}).direction`));}assert.equal(headings.size,16,'yaw has sixteen upright projected views');

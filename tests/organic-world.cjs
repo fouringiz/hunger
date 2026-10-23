@@ -11,7 +11,7 @@ function boot(search=''){
 }
 const a=boot(),b=boot('?zone=ember'),invalid=boot('?zone=__proto__');
 const legacy=boot('?balance=v04');
-assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[820,240]','approved slot relocation leaves room for the Gate');
+assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[800,160]','approved slot relocation leaves room for the Gate');
 assert.equal(legacy.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[890,300]','historical replay geometry stays intact');
 assert.ok(a.images.some(i=>i.src.endsWith('hunger-ancient-gate-v6.webp')));
 assert.ok(legacy.images.some(i=>i.src.endsWith('hunger-ancient-gate-v4.webp')),'historical layout uses the non-obstructing former Gate');
@@ -46,3 +46,16 @@ assert.doesNotThrow(()=>failed.run("reset();S.phase='build';S.credits=1000;build
 const loaded=boot();loaded.run('draw()');const ground=loaded.images.find(i=>i.src.includes('hunger-world-mire'));
 ground.onload();assert.equal(loaded.run('terrainArt'),null,'late material load invalidates the fallback');assert.doesNotThrow(()=>loaded.run('draw()'));
 console.log('PASS missing-image fallback and asynchronous cache refresh');
+
+const living=boot();
+living.run("reset();S.phase='wave';S.enemies=[makeEnemy('forager',1)];S.enemies[0].x=200;S.enemies[0].y=270;presentationTime=10;observeMireTraffic();");
+assert.equal(living.run('mireTraffic.length'),0,'stationary creatures do not leave crawling tracks');
+const state=living.run('replaySignature()');
+living.run('S.enemies[0].x+=5;observeMireTraffic();');
+assert.equal(living.run('mireTraffic.length'),1,'actual travel disturbs the contact ground');
+living.run('for(let i=0;i<200;i++){S.enemies[0].x+=5;observeMireTraffic();}');
+assert.equal(living.run('mireTraffic.length'),128,'traffic memory is bounded');
+living.run('presentationTime+=2;observeMireTraffic();');
+assert.equal(living.run('mireTraffic.length'),0,'soft mud tracks close again');
+living.run('reset();observeMireTraffic();');assert.equal(living.run('mireTraffic.length'),0,'a new mission clears old tracks');
+console.log('PASS motion-driven mud contacts, bounded tracks, surface recovery and scene reset');
