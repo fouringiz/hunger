@@ -22,5 +22,13 @@ vm.runInContext(`
   reset(); S.wave=7; startWave(); for(let i=0;i<900;i++) stepSimulation(SIM_STEP); const before=replaySignature();
   for(const e of S.enemies) { visualEnemy(e); foragerMirePose(e,0); } assert.equal(replaySignature(),before,'reading visual positions changes no simulation state');
 `,c);
+vm.runInContext(`
+  reset(); S.wave=7; startWave(); for(let i=0;i<900;i++) stepSimulation(SIM_STEP);
+  const e=S.enemies.find(x=>!x.dead&&x.type==='forager'&&Math.abs(visualEnemy(x).y-x.y)>3,0); assert.ok(e,'a visibly offset body');
+  const alive=tracerPoint(e); e.dead=true; e.hp=0; const dead=tracerPoint(e);
+  assert.deepEqual(dead,alive,'the tracer end stays on the drawn body after the body dies');
+  assert.ok(Math.hypot(dead.x-e.x,dead.y-e.y)>3,'and does not snap back to the lane axis');
+`,c);
+console.log('PASS a killing shot is drawn to the body it killed, not to the lane axis');
 console.log('PASS bodies spread across the lane with their own size and gait phase, deterministically, without touching the simulation');
-console.log('1 enemy-stagger scenario, 0 failures');
+console.log('2 enemy-stagger scenarios, 0 failures');
