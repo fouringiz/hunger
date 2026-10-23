@@ -1,4 +1,4 @@
-# Portal teleport checkpoint — 2026-10-23
+# Portal teleport checkpoint — 2026-10-24
 
 Work in /Users/home/github/game, branch codex/portal-teleport from fresh main9298dd2. Previous Forager atlas work is already in main. Existing untracked reports/NEW-CHAT-HANDOFF.md belongs to the user; leave it alone.
 
@@ -15,3 +15,9 @@ Implemented: path threshold GATE_D-18; independent retained-reference observer i
 Updated portal tests pass: opaque approach, distance-only trigger, exact one-shot, stretch/hard removal, expiry/reset, after-leak continuation, a body removed between render frames, three events/voices, off-lane exclusions and exact source/rules fingerprints. First full npm test passed. Native capture tool generated single-body stages and three-body timeline with normal damage.
 
 Visual refinement: original red leak ring remained visible over the new blue echo. Suppressed that old ring only in rendering; S.fx leak data, GATE_D and damage remain untouched. Increased trailing center-ray thickness for readability. Must recapture and inspect refined stages, then get second visual review and run final npm test. No completion claim yet.
+
+## Delivery checkpoint — user runs final checks
+
+Refined native stages, full-map view, single/multiple MP4 cycles and offline cue sample are saved in reports/portal-teleport; README.md lists evidence and commands. Second visual review accepted the captured appearance, but reproduced teleport of a body killed before GATE_D. Final presentation fix excludes those bodies and cancels their active snapshots; true leaked bodies retain their effect. Added regression cases and an actual renderer opacity spy. Generic warp rendering now draws only the body without stretching its ground shadow.
+
+Last full npm test passed before the combat-death fix and new tests. At the user's request, do not repeat full verification or publish remotely: deliver a binary git-am patch and let the user run final checks/create the PR. Final changes are untested; visual captures precede the combat-death fix. No PR created, no push, no merge. Base is 9298dd2; checkpoint commits 146d319 and a8769aa plus final delivery commit. Patch will be reports/generated/portal-teleport.patch (ignored delivery artifact).

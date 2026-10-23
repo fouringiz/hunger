@@ -5,9 +5,11 @@ const baseline=require('../reports/portal-teleport/baseline.json');
 function boot(){
  const voices=[];
  class Audio{constructor(){this.state='running';this.currentTime=0;this.destination={};}createOscillator(){const v={frequency:{setValueAtTime(n){v.startPitch=n;},exponentialRampToValueAtTime(n){v.endPitch=n;}},connect(){},disconnect(){},start(){},stop(){}};voices.push(v);return v;}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}}
- const canvas={getContext:()=>({}),style:{},addEventListener(){}};
+ const fills=[],stack=[],drawing={globalAlpha:1,fillStyle:'',save(){stack.push({globalAlpha:this.globalAlpha,fillStyle:this.fillStyle});},restore(){Object.assign(this,stack.pop());},fill(){fills.push({alpha:this.globalAlpha,color:this.fillStyle});}};
+ const ctx=new Proxy(drawing,{get:(obj,key)=>key in obj?obj[key]:()=>{}});
+ const canvas={getContext:()=>ctx,style:{},addEventListener(){}};
  const c=vm.createContext({document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1,AudioContext:Audio},location:{pathname:'/prototype/index.html',search:''},URLSearchParams,structuredClone,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0},assert,baseline});
- vm.runInContext(src,c);return {run:s=>vm.runInContext(s,c),voices};
+ vm.runInContext(src,c);return {run:s=>vm.runInContext(s,c),voices,fills};
 }
 const a=boot();a.run(`
  assert.equal(replayRulesFingerprint(),baseline.rules,'all map/balance rules stay exact');
@@ -31,6 +33,12 @@ const a=boot();a.run(`
  reset();observePortalEntries();assert.equal(portalSequence,0,'new scene clears presentation state');
 `);
 console.log('PASS opaque approach, held heading, path threshold, one-shot event, 3.8x stretch and hard flash removal');
+const rendered=boot();rendered.run("reset();const body=makeEnemy('forager',1);body.d=GATE_D-30;Object.assign(body,posAt(body.d));enemyArt(body);");
+const bodyColor=rendered.run('body.T.color');assert.ok(rendered.fills.some(f=>f.color===bodyColor));assert.ok(rendered.fills.filter(f=>f.color===bodyColor).every(f=>f.alpha===1),'actual renderer must not fade approaching bodies');
+for(const alreadyStarted of [false,true]){
+ const killed=boot();killed.run(`reset();const body=makeEnemy('forager',1);body.d=PORTAL_ENTRY_D-${alreadyStarted?0:1};S.enemies=[body];observePortalEntries();body.d=PORTAL_ENTRY_D+1;damage(body,body.hp+1,null);S.enemies=S.enemies.filter(e=>!e.dead);presentationTime+=.05;observePortalEntries();assert.equal(S.kills,1);assert.equal(S.waveLeaked,0);assert.equal(portalEntries.length,0,'combat death before the gate cancels or prevents teleport');assert.equal(portalSequence,${alreadyStarted?1:0});`);
+}
+console.log('PASS actual rendered approach opacity and pre-gate combat-death exclusions');
 const fast=boot(),control=boot();
 for(const r of [fast,control])r.run("reset();S.phase='wave';S.wave=1;S.spawnQueue=[];const e=makeEnemy('forager',1);e.d=PORTAL_ENTRY_D-1;e.dash=1;Object.assign(e,posAt(e.d));S.enemies=[e];");
 fast.run('observePortalEntries();');
