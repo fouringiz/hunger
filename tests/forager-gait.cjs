@@ -7,7 +7,7 @@ const c=vm.createContext({document:{getElementById:()=>({getContext:()=>({}),sty
 vm.runInContext(src,c);
 vm.runInContext(`
   const cycle=FORAGER_MIRE.stride/FORAGER_MIRE.duty;
-  assert.ok(cycle>=25&&cycle<=30,'one leg cycle per 25-30 px of lane, got '+cycle.toFixed(1));
+  assert.ok(cycle>=36&&cycle<=44,'one leg cycle per 36-44 px of lane, got '+cycle.toFixed(1));
   assert.ok(ENEMY.forager.speed/cycle<2,'under two cycles a second at walking speed');
   reset(); const e=makeEnemy('forager',1); e.state='lane'; e.d=300; Object.assign(e,posAt(e.d));
   let prev=foragerMirePose(e,0).frame, jumps=0, steps=0;
