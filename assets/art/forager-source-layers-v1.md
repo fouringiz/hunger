@@ -2,7 +2,7 @@
 
 > Historical static checkpoint. These preliminary regions remain an alignment artifact; the later runtime uses a refined matte and new leg masks. See `forager-mire-runtime-v1.md`. The existing viewer command now opens the runtime preview.
 
-The anatomy master is `references/forager-approved-v1.webp`. It was compared against the player's latest attached reference and has identical decoded RGBA pixels. No new creature was generated for this revision.
+The anatomy master is `references/enemies/forager/forager-approved-v1.webp`. It was compared against the player's latest attached reference and has identical decoded RGBA pixels. No new creature was generated for this revision.
 
 `studies/forager-source-layers-v1.webp` packs six non-overlapping regions cut directly from that master: ground, torso, three visible leg regions and front mud/contact. Source/atlas rectangles are in the adjacent JSON manifest. The atlas is lossless WebP with alpha. At rest, compositing every region at its original position reconstructs the complete master exactly, including the original mud/slime occlusion; decoded RGBA equality was checked with native offscreen Canvas after WebP encoding.
 

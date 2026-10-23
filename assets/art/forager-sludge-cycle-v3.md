@@ -4,8 +4,8 @@ One Forager art/motion study, before game integration. The player selected a det
 
 ## Approved masters
 
-- `assets/art/references/forager-approved-v1.webp`: supplied full creature image, for identity, anatomy, shell/flesh detail and mucus.
-- `assets/art/references/mire-palette-approved-v1.webp`: soil color/wetness only; its animals and glowing shapes are not this Forager's design.
+- `assets/art/references/enemies/forager/forager-approved-v1.webp`: supplied full creature image, for identity, anatomy, shell/flesh detail and mucus.
+- `assets/art/references/style/mire-palette-approved-v1.webp`: soil color/wetness only; its animals and glowing shapes are not this Forager's design.
 
 Both are lossless WebP conversions, with decoded RGBA pixels verified identical to the supplied images. They are not game-loaded assets. Animated poses remain generated interpretations, not pixel-identical copies of the creature reference.
 

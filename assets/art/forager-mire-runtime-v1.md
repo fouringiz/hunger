@@ -1,3 +1,7 @@
+# Historical v1 implementation
+
+The campaign now uses [living mire runtime v2](living-mire-runtime-v2.md). The material below documents the former source-skinned v1 atlas and is retained for provenance.
+
 # Forager mire runtime v1
 
 ## Shipped in the prototype
@@ -9,7 +13,7 @@
 
 ## Identity and movement
 
-The visible body and three exposed near-side limbs use RGB from `references/forager-approved-v1.webp`, separated by `sources/forager-matte-v1.png` and measured limb masks in the bake tool. Image generation produced only a grayscale extraction matte; it did not paint replacement anatomy or materials. Normalization uses a shared scale and mip filtering to prevent source pores aliasing at game size. Bone, folds, face, claws and slime are sampled from the supplied master, not regenerated parts from the rejected puppet.
+The visible body and three exposed near-side limbs use RGB from `references/enemies/forager/forager-approved-v1.webp`, separated by `sources/forager-matte-v1.png` and measured limb masks in the bake tool. Image generation produced only a grayscale extraction matte; it did not paint replacement anatomy or materials. Normalization uses a shared scale and mip filtering to prevent source pores aliasing at game size. Bone, folds, face, claws and slime are sampled from the supplied master, not regenerated parts from the rejected puppet.
 
 Offline skinning moves the separate limb regions while their roots stay on the body, with slight longitudinal contraction. Stance/transfer phases follow observed game travel, including Sprinter acceleration; stopped actors freeze. Pose sampling is discrete, not an exact continuous collision model. A presentation WeakMap observes enemies without writing their state.
 

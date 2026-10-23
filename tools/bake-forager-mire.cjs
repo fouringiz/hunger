@@ -48,7 +48,7 @@ async function bake(){
    fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-directions.png'),sheet.toBuffer('image/png'));
    console.log(`Packed ${DIRECTIONS} directions × ${FRAMES} poses from original source pixels.`);return;
  }
- const source=await loadImage(path.join(ROOT,'assets/art/references/forager-approved-v1.webp'));
+ const source=await loadImage(path.join(ROOT,'assets/art/references/enemies/forager/forager-approved-v1.webp'));
  const matte=await loadImage(path.join(ROOT,'assets/art/sources/forager-matte-v1.png'));
  const W=source.width,H=source.height;const src=createCanvas(W,H),sc=src.getContext('2d');sc.drawImage(source,0,0);
  const pixels=sc.getImageData(0,0,W,H),mc=createCanvas(W,H),mx=mc.getContext('2d');mx.drawImage(matte,0,0,W,H);const mask=mx.getImageData(0,0,W,H).data;
