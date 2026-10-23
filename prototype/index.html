@@ -1119,6 +1119,9 @@ function visualEnemy(e) {
     x += -(a.y - b.y) / L * v.off; y += (a.x - b.x) / L * v.off; }
   return Object.assign(Object.create(e), {x, y, __sim:e, __k:v.k});
 }
+// Where a tracer meets a body: the drawn position, dead or alive. The killing shot must land on the drawn body too,
+// so a body's death never snaps its tracer back to the lane axis.
+function tracerPoint(e) { const v = visualEnemy(e); return {x:v.x, y:v.y}; }
 // Presentation only. The lane bends up into the portal for its last pixels; with the Gate drawn front-on, a body turned
 // to face up the screen reads as rearing onto its tail. Until the Gate is redrawn from the map's camera, bodies keep the
 // heading they arrived with over PORTAL_APPROACH and fade into the portal light.
@@ -2107,8 +2110,8 @@ function draw() {
   for (const original of S.shots) {
     const tower=S.towers.find(t=>t.x===original.x1&&t.y===original.y1),origin=tower?weaponMuzzle(tower):{x:original.x1,y:original.y1-8};
     const s={...original,x1:origin.x,y1:origin.y,y2:original.y2-8};
-    if (original.to && !original.to.dead) { const v = visualEnemy(original.to); s.x2 = v.x; s.y2 = v.y - 8; }
-    if (original.from && !original.from.dead) { const v = visualEnemy(original.from); s.x1 = v.x; s.y1 = v.y - 8; }
+    if (original.to) { const v = tracerPoint(original.to); s.x2 = v.x; s.y2 = v.y - 8; }
+    if (original.from) { const v = tracerPoint(original.from); s.x1 = v.x; s.y1 = v.y - 8; }
     if (s.electro) {                                             // jagged bolt: presentation-only jitter from time and endpoints
       ctx.strokeStyle = s.blocked ? '#ff9f43' : '#9df7ff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, s.life / 0.12);
       const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
