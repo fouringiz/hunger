@@ -44,3 +44,9 @@ Source/provenance/rebuild details: assets/art/living-mire-runtime-v2.md. Rebuild
 ## Gate correction — red regression checkpoint
 
 Current task: fix the blocked approach, not change Forager art. tests/gate-approach.cjs samples the full incoming ribbon against the actual upright Gate layers. It must fail on the existing left-jamb obstruction before placement/path changes. tools/capture-organic-world.cjs now exports loadWorld for the same native renderer harness. No Gate/path correction has been applied at this checkpoint.
+
+## Gate correction — geometry checkpoint
+
+Campaign route now rounds the lower approach (70-unit and 50-unit bends) and enters northward at (900,420), instead of crossing the left jamb eastward. The original accepted v6 artwork remains; its box is 420×409 with threshold anchor (.51,.92). Campaign slots 12 and 15 move to (740,260) and (780,100). Preset route, gate and slots remain historical.
+
+Verified: zero masonry intersections along the complete incoming ribbon; the same test rejects the b7b620a route/placement with 1091 hits. The actual leak position equals the rendered threshold. Empty native frames verify cyan across the incoming normal and all 16 tower footprints clear of Gate layers. Whole-map native frame inspected. Pending: actual creature traversal capture, game/replay regression checks and final visual review. Do not claim completion yet.

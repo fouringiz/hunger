@@ -32,7 +32,16 @@ function inspectApproach(scene,{path=null,exitD=null}={}){
 async function main(){
   const scene=await loadWorld();const result=inspectApproach(scene);
   assert.equal(result.hits.length,0,'upright Gate masonry intersects the full-width incoming channel: '+JSON.stringify(result.hits.slice(0,8)));
+  const endpoint=JSON.parse(scene.run('JSON.stringify(posAt(GATE_D))'));
+  const gate=JSON.parse(scene.run('JSON.stringify(GATE)'));
+  assert.ok(Math.hypot(endpoint.x-gate.x,endpoint.y-gate.y)<1e-6,'the simulated leak is the rendered threshold');
   console.log('PASS unobstructed full-width channel through the complete Gate approach');
+  // Restore the known bad b7b620a placement and route: this check must still reject
+  // the left-jamb collision even though the old endpoint itself was entirely cyan.
+  scene.run('Object.assign(GATE,{x:930,y:420});Object.assign(GATE_DETAIL_BOX,{x:745.2,y:45.9,width:330,height:430});Object.assign(GATE_ART_BOX,GATE_DETAIL_BOX);gateStoneCache=null;');
+  const bad=inspectApproach(scene,{path:[[-30,90],[180,90],[180,270],[420,270],[420,120],[660,120],[660,420],[900,420],[1000,420]],exitD:1590});
+  assert.ok(bad.hits.length>100,'known obstructed approach must fail the same clearance check');
+  console.log('PASS known blocked approach rejected ('+bad.hits.length+' masonry samples)');
 }
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=1;});
 module.exports={inspectApproach};

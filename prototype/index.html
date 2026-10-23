@@ -68,7 +68,18 @@ addEventListener('resize', resize);
 resize();
 
 // ---------------------------------------------------------------- path
-const PATH = [[-30,90],[180,90],[180,270],[420,270],[420,120],[660,120],[660,420],[900,420],[1000,420]];
+// Campaign approach bends below the near jamb, then enters the opening from its footing.
+// Presets retain the recorded route and therefore their historical rules fingerprints.
+const PATH = BALANCE_PRESET
+  ? [[-30,90],[180,90],[180,270],[420,270],[420,120],[660,120],[660,420],[900,420],[1000,420]]
+  : (()=>{
+    const points=[[-30,90],[180,90],[180,270],[420,270],[420,120],[660,120],[660,400]];
+    for(let i=1;i<=12;i++){const a=Math.PI-i*Math.PI/24;points.push([730+70*Math.cos(a),400+70*Math.sin(a)]);}
+    points.push([850,470]);
+    for(let i=1;i<=12;i++){const a=Math.PI/2-i*Math.PI/24;points.push([850+50*Math.cos(a),420+50*Math.sin(a)]);}
+    points.push([900,350]); // 70 units beyond the actual threshold, as on the historical route.
+    return points;
+  })();
 const SEG = []; let TOTAL = 0;
 for (let i = 0; i < PATH.length - 1; i++) {
   const [x1,y1] = PATH[i], [x2,y2] = PATH[i+1];
@@ -77,7 +88,7 @@ for (let i = 0; i < PATH.length - 1; i++) {
   TOTAL += L;
 }
 const GATE_D = TOTAL - 70;               // enemies leak when they reach the Gate
-const GATE = {x: 930, y: 420};
+const GATE = {x: BALANCE_PRESET?930:900, y: 420};
 function posAt(d) {
   if (d <= 0) return {x: PATH[0][0], y: PATH[0][1]};
   for (const s of SEG) if (d <= s.start + s.L) {
@@ -90,7 +101,7 @@ function posAt(d) {
 // ---------------------------------------------------------------- build slots
 // Approved 2026-10-23: clear the monumental Gate; historical presets retain their replay geometry.
 const SLOTS = [[110,160],[250,160],[350,200],[350,340],[250,340],[490,190],[490,330],[590,70],
-  [590,200],[590,350],[730,200],[730,340],BALANCE_PRESET?[820,340]:[770,260],BALANCE_PRESET?[820,490]:[540,460],[350,70],BALANCE_PRESET?[890,300]:[800,160]]
+  [590,200],[590,350],[730,200],[730,340],BALANCE_PRESET?[820,340]:[740,260],BALANCE_PRESET?[820,490]:[540,460],[350,70],BALANCE_PRESET?[890,300]:[780,100]]
   .map(([x,y]) => ({x, y, tower: null}));
 
 // ---------------------------------------------------------------- data
@@ -1775,8 +1786,8 @@ function gatePoint(across,height,depth=0){return [GATE.x-GATE_MOUTH_DEPTH+across
 const GATE_REAR={x:GATE.x-GATE_MOUTH_DEPTH+60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08-60*.55};
 const GATE_FRONT={x:GATE.x-GATE_MOUTH_DEPTH-60*.70,y:GATE.y-GATE_MOUTH_DEPTH*.08+60*.55};
 // One connected gate/ruin sprite; the shallow cyan footing meets the simulation exit.
-const GATE_DETAIL_ANCHOR={u:.56,v:.87};
-const GATE_DETAIL_WIDTH=LEGACY_GATE_ART?200:330,GATE_DETAIL_HEIGHT=LEGACY_GATE_ART?260:430;
+const GATE_DETAIL_ANCHOR=LEGACY_GATE_ART?{u:.56,v:.87}:{u:.51,v:.92};
+const GATE_DETAIL_WIDTH=LEGACY_GATE_ART?200:420,GATE_DETAIL_HEIGHT=LEGACY_GATE_ART?260:409;
 const GATE_DETAIL_BOX={x:GATE.x-GATE_DETAIL_ANCHOR.u*GATE_DETAIL_WIDTH,y:GATE.y-GATE_DETAIL_ANCHOR.v*GATE_DETAIL_HEIGHT,width:GATE_DETAIL_WIDTH,height:GATE_DETAIL_HEIGHT};
 const GATE_ART_BOX=LEGACY_GATE_ART?{x:GATE.x-140,y:40,width:240,height:452}:{...GATE_DETAIL_BOX};
 const GATE_FLOOR=LEGACY_GATE_ART?[[0,.85],[.55,.85],[.64,.9],[.64,1],[0,1]]:[[.29,.94],[.55,.92],[.68,.95],[.65,1],[.25,1]];

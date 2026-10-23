@@ -11,7 +11,7 @@ function boot(search=''){
 }
 const a=boot(),b=boot('?zone=ember'),invalid=boot('?zone=__proto__');
 const legacy=boot('?balance=v04');
-assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[800,160]','approved slot relocation leaves room for the Gate');
+assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[780,100]','approved slot relocation leaves room for the Gate');
 assert.equal(legacy.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[890,300]','historical replay geometry stays intact');
 assert.ok(a.images.some(i=>i.src.endsWith('hunger-ancient-gate-v6.webp')));
 assert.ok(legacy.images.some(i=>i.src.endsWith('hunger-ancient-gate-v4.webp')),'historical layout uses the non-obstructing former Gate');

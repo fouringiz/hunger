@@ -73,13 +73,15 @@ async function main(){
   const pixel=canvas.getContext('2d').getImageData(Math.round(exit.x*canvas.width/960),Math.round(exit.y*canvas.height/540),1,1).data;
   assert.ok(pixel[1]>pixel[0]*1.3&&pixel[2]>pixel[0]*1.3,'the visible cyan threshold intersects the actual leak point');
   if(!legacy&&process.argv.includes('--empty')){
-    for(let dy=-33;dy<=33;dy++){
+    const before=JSON.parse(run('JSON.stringify(posAt(GATE_D-2))')),length=Math.hypot(exit.x-before.x,exit.y-before.y);
+    const nx=-(exit.y-before.y)/length,ny=(exit.x-before.x)/length;
+    for(let offset=-33;offset<=33;offset++){
       let cyan=false;
       for(let dx=-2;dx<=2;dx++){
-        const p=canvas.getContext('2d').getImageData(Math.round((exit.x+dx)*canvas.width/960),Math.round((exit.y+dy)*canvas.height/540),1,1).data;
+        const p=canvas.getContext('2d').getImageData(Math.round((exit.x+nx*offset+dx)*canvas.width/960),Math.round((exit.y+ny*offset)*canvas.height/540),1,1).data;
         if(p[1]>p[0]*1.3&&p[2]>p[0]*1.3)cyan=true;
       }
-      assert.ok(cyan,'the portal receives the full liquid channel at y offset '+dy);
+      assert.ok(cyan,'the portal receives the full liquid channel at incoming normal offset '+offset);
     }
   }
   console.log('PASS '+zone+': '+(motion?180:90)+' actual renderer frames, pause/resume and no stone obstruction of build slots. '+path.join(dir,'scene.png'));
