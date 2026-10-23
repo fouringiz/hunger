@@ -1057,7 +1057,10 @@ const LEGACY_GATE_ART=!!BALANCE_PRESET;
 const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('hunger-ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
 let worldTileArt=null,worldPulseArt=null,worldLiveArt=null,worldPlatformArt=null,gateStoneCache=null,platformWallArt=null;
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
-const FORAGER_MIRE={cell:192,frames:9,directions:16,scale:.65/1.5,stride:280*.07*.65,duty:.72};
+// Gait is driven by distance travelled: one full leg cycle per FORAGER_CYCLE_PX of lane. 28 px at the Forager's 52 px/s is
+// under two cycles a second — a crawl through sludge, not a scuttle (it was 17.7 px, almost three cycles a second).
+const FORAGER_CYCLE_PX=28;
+const FORAGER_MIRE={cell:192,frames:9,directions:16,scale:.65/1.5,duty:.72,stride:FORAGER_CYCLE_PX*.72};
 let foragerMireScene=null,foragerMireMotion=new WeakMap();
 function foragerMireReady(){return !!(foragerMireArt&&foragerMireArt.complete&&foragerMireArt.naturalWidth>=FORAGER_MIRE.cell*FORAGER_MIRE.frames&&foragerMireArt.naturalHeight>=FORAGER_MIRE.cell*FORAGER_MIRE.directions);}
 function foragerMirePose(e,heading){
