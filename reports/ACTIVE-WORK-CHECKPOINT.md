@@ -1,6 +1,6 @@
 # Active visual work — checkpoint, 2026-10-23
 
-IMPLEMENTED AND NATIVELY VALIDATED. User art/motion acceptance is still pending. Intermediate recovery commit: dea6f70; final media/validation checkpoint follows it on the same PR branch.
+VISUAL DEFECT CONFIRMED BY USER; WORK NOT COMPLETE. The technical checks below passed but did not establish a clear approach into the Gate. Recovery commits: dea6f70 and 8e2d03f.
 
 ## Where
 
@@ -35,6 +35,8 @@ IMPLEMENTED AND NATIVELY VALIDATED. User art/motion acceptance is still pending.
 
 ## Resume from here
 
-The requested implementation and native validation are complete. Next work should follow the user's visual feedback, not invent another iteration or merge PR #31. Browser/mobile performance and final subjective motion quality are not established by native checks. No fluid solver or recovered 3D model is claimed; non-side gaits and halfway headings are bounded interpolations from the eight generated heading masters.
+The user showed that the liquid channel still meets the left stone jamb before reaching the portal; the opening lies farther right and lower than the approach. This remains unfixed. The cyan-pixel test at the exit, even across the channel section there, does not check the intervening approach through the masonry. The previous completion claim was incorrect.
+
+Next implementation task, when requested: align the actual approach and portal so the entire channel enters through an unobstructed opening. First add a regression that fails on this known bad layout, covering the full approach width and architectural depth; then inspect the actual rendered traversal. This documentation commit does not fix the Gate. Follow the root AGENTS.md verification rules and do not merge PR #31. Browser/mobile performance and final subjective motion quality are not established by native checks. No fluid solver or recovered 3D model is claimed; non-side gaits and halfway headings are bounded interpolations from the eight generated heading masters.
 
 Source/provenance/rebuild details: assets/art/living-mire-runtime-v2.md. Rebuild assets with FORAGER_CANVAS_MODULE=/private/tmp/hunger-canvas/node_modules/@napi-rs/canvas node tools/bake-forager-crawl-v2.cjs. Native capture uses WORLD_CANVAS_MODULE with the same module path. Prior browser file URL policy denial must not be bypassed. Do not bulk-copy scratch: it contains rejected geometry-only experiments and an obsolete early MP4.
