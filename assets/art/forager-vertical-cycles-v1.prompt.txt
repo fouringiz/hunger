@@ -29,4 +29,3 @@ Cells read left to right, then top to bottom. Cell0 all feet grounded rest. Cell
 7: B fully back planted, A reaches forward lifted.
 8: A lands forward, B back begins lift, natural return to1.
 Every gait pose must have substantial, clearly DIFFERENT joint and foot positions while keeping torso identity, position and size constant. Real readable stepping from behind, not ripples on one frozen image. Transparent background.
-
