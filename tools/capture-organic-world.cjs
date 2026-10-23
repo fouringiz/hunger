@@ -50,8 +50,8 @@ async function main(){
       if(frame===30)fs.writeFileSync(path.join(root,'assets/art/previews/forager-living-mire-close-v2.webp'),close.encodeSync('webp',94));
     }
     if(process.argv.includes('--empty')){
-      if(frame===0){initialSurface=Buffer.from(patch(50,400));initialPlatform=Buffer.from(patch(104,148));}
-      if(frame===60){assert.notDeepEqual(Buffer.from(patch(50,400)),initialSurface,'unoccupied organic ground visibly breathes');const slab=patch(104,148);const drift=Math.max(...slab.map((v,i)=>Math.abs(v-initialPlatform[i])));assert.ok(drift<=3,'platform tops remain fixed; only translucent source pixels can pick up <=3 RGB levels from the living ground, got '+drift);}
+      if(frame===0){initialSurface=Buffer.from(patch(400,90));initialPlatform=Buffer.from(patch(104,148));}
+      if(frame===60){assert.deepEqual(Buffer.from(patch(400,90)),initialSurface,'ground outside local activity stays pixel-identical');assert.deepEqual(Buffer.from(patch(104,148)),initialPlatform,'platform tops and supporting ground stay fixed');}
     }
     if(frame===12){
       fs.writeFileSync(path.join(dir,'scene.png'),canvas.toBuffer('image/png'));
