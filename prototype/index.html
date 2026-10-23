@@ -1063,7 +1063,8 @@ let worldTileArt=null,worldPulseArt=null,worldLiveArt=null,worldPlatformArt=null
 // reads, so for those headings the body itself carries the step rhythm: a sideways sway and a small roll, two footfalls
 // per cycle. Horizontal headings, where the atlas shows the legs, are left to the atlas. Proper fix: rebake those rows.
 const FORAGER_CYCLE_PX=40;
-const FORAGER_MIRE={cell:192,frames:9,directions:16,scale:.65/1.5,duty:.72,stride:FORAGER_CYCLE_PX*.72};
+// scale: the side pose is 168 cell px wide; .325/1.5 draws it 36 px wide on a 46 px lane (it had grown to 73 px).
+const FORAGER_MIRE={cell:192,frames:9,directions:16,scale:.325/1.5,duty:.72,stride:FORAGER_CYCLE_PX*.72};
 let foragerMireScene=null,foragerMireMotion=new WeakMap();
 function foragerMireReady(){return !!(foragerMireArt&&foragerMireArt.complete&&foragerMireArt.naturalWidth>=FORAGER_MIRE.cell*FORAGER_MIRE.frames&&foragerMireArt.naturalHeight>=FORAGER_MIRE.cell*FORAGER_MIRE.directions);}
 function foragerMirePose(e,heading){
