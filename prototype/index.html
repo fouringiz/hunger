@@ -247,15 +247,16 @@ function syncGeneratorHum() {
     generatorHum = generatorHumGain = null; humMode = '';
   }
 }
-function playCue(kind, frequency, duration, wave = 'sine') {
+function playCue(kind, frequency, duration, wave = 'sine', endFrequency = frequency, interval = 0.045) {
   if (!soundEnabled || document.hidden || !audioContext || audioContext.state !== 'running' || activeVoices >= MAX_AUDIO_VOICES) return;
   const now = audioContext.currentTime;
-  if (now - (lastCueAt[kind] ?? -Infinity) < 0.045) return;
+  if (now - (lastCueAt[kind] ?? -Infinity) < interval) return;
   lastCueAt[kind] = now;
   let reserved = false, osc = null, gain = null;
   try {
     osc = audioContext.createOscillator(); gain = audioContext.createGain();
     osc.type = wave; osc.frequency.setValueAtTime(frequency, now);
+    if (endFrequency !== frequency) osc.frequency.exponentialRampToValueAtTime?.(endFrequency, now + duration * 0.8);
     gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.055, now + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     osc.connect(gain); gain.connect(audioContext.destination);
@@ -1127,13 +1128,51 @@ function visualEnemy(e) {
 // Where a tracer meets a body: the drawn position, dead or alive. The killing shot must land on the drawn body too,
 // so a body's death never snaps its tracer back to the lane axis.
 function tracerPoint(e) { const v = visualEnemy(e); return {x:v.x, y:v.y}; }
-// Presentation only. The lane bends up into the portal for its last pixels; with the Gate drawn front-on, a body turned
-// to face up the screen reads as rearing onto its tail. Until the Gate is redrawn from the map's camera, bodies keep the
-// heading they arrived with over PORTAL_APPROACH and fade into the portal light.
+// Hold the arrival heading, but keep the whole body opaque until the actual floor threshold.
 const PORTAL_APPROACH = 60;
-function portalFade(e) { return e.state === 'lane' || e.state === undefined ? Math.max(0, Math.min(1, (GATE_D - e.d) / PORTAL_APPROACH)) : 1; }
+const PORTAL_ENTRY_D = GATE_D - 18;
+const PORTAL_TELEPORT = {stretch:0.28, peak:0.34, trail:0.20, length:3.8};
+let portalScene=null,portalTracked=new Map(),portalByBody=new WeakMap(),portalEntries=[],portalSequence=0;
+function syncPortalScene(){
+  if(portalScene===S)return;
+  portalScene=S;portalTracked=new Map();portalByBody=new WeakMap();portalEntries=[];portalSequence=0;
+}
+function portalEntryOf(e){syncPortalScene();return portalByBody.get(simOf(e));}
+function portalBodyOpacity(e){const event=portalEntryOf(e);return event&&presentationTime-event.at>=PORTAL_TELEPORT.peak?0:1;}
+function portalEntryState(event){
+  const age=Math.max(0,presentationTime-event.at),u=Math.min(1,age/PORTAL_TELEPORT.stretch),ease=u*u*(3-2*u);
+  return {age,alpha:age<PORTAL_TELEPORT.peak?1:0,length:1+(PORTAL_TELEPORT.length-1)*ease,width:1-.82*ease,pull:28*ease,
+    flash:age<=PORTAL_TELEPORT.peak?Math.pow(age/PORTAL_TELEPORT.peak,3):Math.max(0,1-(age-PORTAL_TELEPORT.peak)/.08),
+    trail:age<PORTAL_TELEPORT.peak?0:Math.max(0,1-(age-PORTAL_TELEPORT.peak)/PORTAL_TELEPORT.trail)};
+}
+function observePortalEntries(){
+  syncPortalScene();
+  portalEntries=portalEntries.filter(event=>presentationTime-event.at<PORTAL_TELEPORT.peak+PORTAL_TELEPORT.trail);
+  const alive=new Set(S.enemies),bodies=new Set([...portalTracked.keys(),...alive]);
+  for(const e of bodies){
+    const old=portalTracked.get(e),lane=e.state==='lane'||e.state===undefined;
+    // Tracked objects retain their final d after simulation removes them. Never infer entry from elapsed time.
+    if(lane&&Number.isFinite(e.d)&&e.d>=PORTAL_ENTRY_D&&!portalByBody.has(e)){
+      const fraction=old&&e.d>old.d?Math.max(0,Math.min(1,(PORTAL_ENTRY_D-old.d)/(e.d-old.d))):1;
+      const at=old?old.at+(presentationTime-old.at)*fraction:presentationTime;
+      const p=posAt(PORTAL_ENTRY_D),q=posAt(PORTAL_ENTRY_D-1),L=Math.hypot(p.x-q.x,p.y-q.y)||1,stagger=staggerOf(e);
+      const hit={x:p.x-(p.y-q.y)/L*stagger.off,y:p.y+(p.x-q.x)/L*stagger.off};
+      const heading=enemyHeading(e),visual=visualEnemy(e);
+      const snapshot={...e,x:0,y:0,d:PORTAL_ENTRY_D,__k:stagger.k,muts:e.muts.slice()};
+      const pose=e.type==='forager'&&foragerMireReady()?{...foragerMirePose(visual,heading)}:null;
+      const target={x:GATE_DETAIL_BOX.x+GATE_DETAIL_BOX.width*.55,y:GATE_DETAIL_BOX.y+GATE_DETAIL_BOX.height*.78};
+      const axis=Math.atan2(target.y-hit.y,target.x-hit.x);
+      const event={id:++portalSequence,at,d:PORTAL_ENTRY_D,hit,axis,snapshot,pose,heading};
+      portalByBody.set(e,event);portalEntries.push(event);
+      // A separate event is also a separate voice; simultaneous entries do not share the ordinary cue throttle.
+      playCue('portal-entry',240,.22,'triangle',2400,0);
+    }
+    if(alive.has(e))portalTracked.set(e,{d:e.d,at:presentationTime});else portalTracked.delete(e);
+  }
+}
 function enemyHeading(e) {
-  const d=portalFade(e)<1?GATE_D-PORTAL_APPROACH:e.d;
+  const lane=e.state==='lane'||e.state===undefined;
+  const d=lane&&e.d>GATE_D-PORTAL_APPROACH?GATE_D-PORTAL_APPROACH:e.d;
   const p=posAt(d+4),q=posAt(d);let angle=Math.atan2(p.y-q.y,p.x-q.x);
   if((e.state==='seek'||e.state==='attached')&&e.gen)angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
   if(e.state==='return'){const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x);}
@@ -1743,8 +1782,6 @@ function enemyArt(e) {
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
   if(e.__k) ctx.scale(e.__k,e.__k);                                   // own size within ±8%
-  const fade=portalFade(e);
-  if(fade<1){ ctx.globalAlpha*=0.15+0.85*fade; const k=0.75+0.25*fade; ctx.scale(k,k); }   // drawn into the portal light
   if(e.type!=='forager'||!foragerMireReady()){
     ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
   }
@@ -1899,6 +1936,7 @@ const GATE_DETAIL_WIDTH=LEGACY_GATE_ART?200:420,GATE_DETAIL_HEIGHT=LEGACY_GATE_A
 const GATE_DETAIL_BOX={x:GATE.x-GATE_DETAIL_ANCHOR.u*GATE_DETAIL_WIDTH,y:GATE.y-GATE_DETAIL_ANCHOR.v*GATE_DETAIL_HEIGHT,width:GATE_DETAIL_WIDTH,height:GATE_DETAIL_HEIGHT};
 const GATE_ART_BOX=LEGACY_GATE_ART?{x:GATE.x-140,y:40,width:240,height:452}:{...GATE_DETAIL_BOX};
 const GATE_FLOOR=LEGACY_GATE_ART?[[0,.85],[.55,.85],[.64,.9],[.64,1],[0,1]]:[[.29,.94],[.55,.92],[.68,.95],[.65,1],[.25,1]];
+const GATE_PORTAL_POLYGON=LEGACY_GATE_ART?[[.47,.58],[.57,.58],[.65,.68],[.65,.85],[.57,.89],[.45,.88],[.44,.72]]:[[.45,.50],[.56,.51],[.64,.65],[.65,.88],[.58,.95],[.43,.94],[.38,.72]];
 function gateDetailPath(c,points){const b=GATE_DETAIL_BOX;points.forEach(([u,v],i)=>i?c.lineTo(b.x+u*b.width,b.y+v*b.height):c.moveTo(b.x+u*b.width,b.y+v*b.height));c.closePath();}
 function gatePolygon(points,fill,stroke){worldPolygon(ctx,points,fill,stroke);}
 function stoneFace(c,points,tint,pattern){
@@ -1970,7 +2008,7 @@ function drawGateField(){
   if(worldImageReady(gateDetailArt)){
     const b=GATE_DETAIL_BOX;
     ctx.save();ctx.beginPath();
-    const portal=LEGACY_GATE_ART?[[.47,.58],[.57,.58],[.65,.68],[.65,.85],[.57,.89],[.45,.88],[.44,.72]]:[[.45,.50],[.56,.51],[.64,.65],[.65,.88],[.58,.95],[.43,.94],[.38,.72]];
+    const portal=GATE_PORTAL_POLYGON;
     for(const [i,[u,v]]of portal.entries()){
       const x=b.x+u*b.width,y=b.y+v*b.height;i?ctx.lineTo(x,y):ctx.moveTo(x,y);
     }
@@ -1998,7 +2036,47 @@ function drawGateField(){
   ctx.restore();
 }
 
+function drawPortalEntry(event){
+  const s=portalEntryState(event),p=event.hit,dx=Math.cos(event.axis),dy=Math.sin(event.axis),nx=-dy,ny=dx;
+  ctx.save();
+  // Expanding rings belong to the upright light surface, never to the surrounding masonry.
+  ctx.save();ctx.beginPath();gateDetailPath(ctx,GATE_PORTAL_POLYGON);ctx.clip();
+  ctx.strokeStyle='#baffff';ctx.lineWidth=1.5;ctx.globalAlpha=Math.max(0,.9*(1-s.age/.54));
+  for(let i=0;i<2;i++){
+    const t=s.age-i*.075;if(t<0)continue;const r=4+t*138;
+    ctx.beginPath();ctx.ellipse(p.x,p.y-4,r*.68,r*1.12,0,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+  // Several narrow rays make a speed streak; the trailing echo survives the simulation body.
+  const energy=s.alpha?Math.min(.75,s.age/.34):s.trail;
+  ctx.strokeStyle='#94fbff';ctx.globalAlpha=energy;
+  for(let i=-2;i<=2;i++){
+    const off=i*2.2,reach=18+60*Math.min(1,s.age/.28)-Math.abs(i)*6;
+    ctx.lineWidth=i===0?(s.alpha?2:3):1;ctx.beginPath();ctx.moveTo(p.x+nx*off-dx*5,p.y+ny*off-dy*5);
+    ctx.lineTo(p.x+nx*off+dx*reach,p.y+ny*off+dy*reach);ctx.stroke();
+  }
+  if(s.alpha){
+    ctx.save();ctx.globalAlpha=1;ctx.translate(p.x+dx*s.pull,p.y+dy*s.pull);
+    ctx.rotate(event.axis);ctx.scale(s.length,s.width);ctx.rotate(-event.axis);
+    if(event.pose&&foragerMireReady()){
+      const c=FORAGER_MIRE.cell,k=FORAGER_MIRE.scale,pose=event.pose;
+      ctx.scale(event.snapshot.__k,event.snapshot.__k);
+      ctx.drawImage(foragerMireArt,pose.frame*c,pose.direction*c,c,c,-c*.5*k,-130*k,c*k,c*k);
+    }else enemyArt(event.snapshot);
+    ctx.restore();
+  }
+  const r=4+30*s.flash,glow=ctx.createRadialGradient?.(p.x,p.y-3,0,p.x,p.y-3,r);
+  if(glow?.addColorStop){glow.addColorStop(0,'#ffffff');glow.addColorStop(.22,'#c5ffff');glow.addColorStop(.55,'#35d8ffb8');glow.addColorStop(1,'#14baff00');}
+  ctx.globalAlpha=s.age<.34?.35+.65*s.flash:s.flash;
+  ctx.fillStyle=glow||'#aaffff';ctx.beginPath();ctx.arc(p.x,p.y-3,r,0,Math.PI*2);ctx.fill();
+  if(s.flash>.65){
+    ctx.globalAlpha=(s.flash-.65)/.35;ctx.strokeStyle='#eaffff';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(p.x-20,p.y-3);ctx.lineTo(p.x+20,p.y-3);ctx.moveTo(p.x-7,p.y-13);ctx.lineTo(p.x+7,p.y+7);ctx.stroke();
+  }
+  ctx.restore();
+}
 function draw() {
+  observePortalEntries();
   observeConstruction();
   buttons = [];
   ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);
@@ -2049,12 +2127,14 @@ function draw() {
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
+  for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
   }
   actors.push({y:GATE_REAR.y,gatePart:'rear'},{y:GATE.y+.1,gatePart:'field'},{y:GATE_FRONT.y,gatePart:'front'});
   actors.sort((a,b)=>a.y-b.y);
   for (const actor of actors) {
+    if(actor.portal){drawPortalEntry(actor.portal);continue;}
     if(actor.platform){platformFront(actor.platform);continue;}
     if(actor.gatePart){
       if(actor.gatePart==='field')drawGateField();
@@ -2064,6 +2144,7 @@ function draw() {
     if (actor.soldier) { drawInfantrySoldier(actor.soldier,actor.tower); continue; }
     if (actor.tower) { drawTowerBody(actor.tower); continue; }
     const e = actor.enemy;
+    if(portalEntryOf(e))continue; // The frozen presentation snapshot owns the body and its disappearance now.
     enemyArt(e);
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
@@ -2145,7 +2226,8 @@ function draw() {
     const x = start.x + (sh.tx-start.x)*k, y = start.y + (sh.ty-start.y)*k - Math.sin(k*Math.PI)*70;
     ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(255,174,66,0.25)'; ctx.beginPath(); ctx.arc(sh.tx, sh.ty, 6, 0, Math.PI*2); ctx.fill(); }
-  for (const f of S.fx) { const k = f.life / f.max; ctx.globalAlpha = k; ctx.strokeStyle = f.color; ctx.lineWidth = 2;
+  for (const f of S.fx) { if(f.kind==='leak')continue; // Blue teleport owns this visual; the simulation leak event stays intact.
+    const k = f.life / f.max; ctx.globalAlpha = k; ctx.strokeStyle = f.color; ctx.lineWidth = 2;
     if (f.kind === 'frag') { ctx.beginPath(); ctx.moveTo(f.x, f.y - 22*k); ctx.lineTo(f.x, f.y); ctx.stroke();   // a fragment streaks down
       ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(f.x, f.y, f.r*(1.6-k), 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; continue; }
     ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (f.kind === 'boom' ? 1 : (1.6 - k)), 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1; }
