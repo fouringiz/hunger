@@ -13,7 +13,7 @@ vm.runInContext(`
   e.d=GATE_D-PORTAL_APPROACH-20; assert.equal(portalFade(e),1,'no fade before the approach'); assert.equal(enemyHeading(e),raw(e.d),'normal heading before the approach');
   const arrival=raw(GATE_D-PORTAL_APPROACH);
   for(const d of [GATE_D-PORTAL_APPROACH+5, GATE_D-20, GATE_D-2]){ e.d=d; assert.equal(enemyHeading(e),arrival,'heading held at '+d); }
-  e.d=GATE_D-PORTAL_APPROACH/2; assert.ok(portalFade(e)>0.4&&portalFade(e)<0.6,'half-way into the approach, half faded');
+  e.d=GATE_D-PORTAL_APPROACH/2; assert.equal(portalFade(e),1,'no fading anywhere before the threshold');
   e.d=GATE_D; assert.equal(portalFade(e),0,'fully faded at the Gate');
   e.state='attached'; e.d=GATE_D-5; assert.equal(portalFade(e),1,'a body off the lane is not faded');
 `,c);
