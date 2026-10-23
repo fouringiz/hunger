@@ -279,6 +279,16 @@ const cases = {
     assert.equal(S.phase, 'over'); assert.equal(S.win, false);
     assert.equal(S.mutations.length, 0, 'a lost run grants the swarm nothing');
   `,
+  'a shell fired at the last body of a wave still lands after that body leaked': `
+    reset(); S.credits = 900; build(SLOTS[5], 'cannon'); S.wave = 1; startWave(); S.spawnQueue.length = 0;
+    const e = makeEnemy('forager', 1); e.wave = 1; e.d = GATE_D - 60; Object.assign(e, posAt(e.d)); S.enemies = [e];
+    const t = S.towers[0]; fireArc(t, tstats(t), e); assert.equal(S.shells.length, 1, 'a shell is in flight');
+    e.d = GATE_D + 1; Object.assign(e, posAt(GATE_D)); stepSimulation(SIM_STEP);        // the body reaches the Gate first
+    assert.ok(S.phase !== 'wave', 'the field is clear and the game is in its pause');
+    assert.equal(S.shells.length, 1, 'the shell is still flying when the pause starts');
+    for (let i = 0; i < 120; i++) stepSimulation(SIM_STEP);
+    assert.equal(S.shells.length, 0, 'it lands during the pause instead of hanging until the next wave');
+  `,
   'an occupied or demolishing slot cannot host a second tower': `
     reset(); build(SLOTS[2], 'cannon');
     const original = SLOTS[2].tower, credits = S.credits;
