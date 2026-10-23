@@ -1,0 +1,17 @@
+'use strict';
+// Offline size/atlas normalization of generated sources. No runtime dependencies.
+// WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/pack-world-details.cjs
+const fs=require('node:fs'),path=require('node:path');
+const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
+const root=path.join(__dirname,'..');
+async function pack(input,output,width,height,crop){
+  const source=await loadImage(path.join(root,input)),canvas=createCanvas(width,height),c=canvas.getContext('2d');
+  c.drawImage(source,...(crop||[0,0,source.width,source.height]),0,0,width,height);
+  const data=canvas.encodeSync('webp',94);fs.writeFileSync(path.join(root,output),data);
+  console.log(output+': '+width+'×'+height+', '+data.length+' bytes');
+}
+(async()=>{
+  await pack('assets/art/studies/organic-lane-material-v1.png','assets/hunger-organic-lane-v1.webp',768,768);
+  await pack('assets/art/studies/ancient-gate-runtime-v3.png','assets/hunger-ancient-gate-v3.webp',512,768);
+  await pack('assets/art/studies/concrete-platform-runtime-v2.png','assets/hunger-concrete-platform-v2.webp',192,224,[150,80,960,1100]);
+})().catch(e=>{console.error(e);process.exitCode=1;});

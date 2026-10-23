@@ -2,7 +2,7 @@
 
 ## Resume here
 
-User asked to save progress because usage is running out. Stop implementation at this checkpoint. Resume with the rejected Gate and muddy-path corrections in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). Runtime remains at `ef6fba9`; this checkpoint does not claim that either correction is implemented.
+This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platform corrections are now implemented in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). See `assets/art/organic-world-runtime-v1.md` for the current implementation, actual renderer previews and verification. The diagnosis and verdicts below preserve the original handoff; they are not new pending work. Visual acceptance by the user remains open.
 
 ## User verdicts
 
@@ -17,10 +17,10 @@ User asked to save progress because usage is running out. Stop implementation at
 - Approved scene/material: `assets/art/studies/organic-world-direction-v3.png` (also the image attached to the latest path complaint).
 - Ancient monumental portal reference: `assets/art/references/ancient-gate-user-v1.png`.
 - Rejected in-game Gate: `assets/art/references/gate-runtime-rejected-v1.png`.
-- New **unintegrated candidate** for wet path material: `assets/art/studies/organic-lane-material-v1.png`.
+- Source for the integrated wet-path material: `assets/art/studies/organic-lane-material-v1.png`.
 - Exact candidate prompt: `assets/art/organic-lane-material-v1.prompt.txt`.
 
-The lane candidate was produced with built-in imagegen and saved before stopping. Its appearance has not been approved by the user or tested at gameplay scale. No replacement Gate artwork has been generated yet.
+The lane source was produced with built-in imagegen before stopping and has now been integrated and inspected at gameplay scale. New Gate sources are `assets/art/studies/ancient-gate-runtime-v2.png` (first pass) and `ancient-gate-runtime-v3.png` (final silhouette); platform source is `concrete-platform-runtime-v2.png`. Exact prompts and packaging instructions are linked in the runtime document. User approval of the new in-game appearance remains pending.
 
 ## Diagnosis and next work
 
