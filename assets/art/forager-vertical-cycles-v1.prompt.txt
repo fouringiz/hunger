@@ -1,0 +1,32 @@
+Built-in imagegen. References: original atlas cell0 in rows4 and12, each enlarged to384px without changing artwork.
+
+FRONT
+Edit the attached approved Forager sprite into a production game walk-cycle sheet. EXACT same burgundy muscular insect creature, pitted ivory chitin armor plates, orange eyes, mandibles, low broad body and camera angle. This is the FRONT view looking at its face, the creature faces DOWN the screen, belly low, never rearing upright.
+Deliver ONE transparent square sheet, an exact regular 3 by 3 grid, nine equal cells, no labels, no text, no background, no ground, no slime strands, no shadow, no borders, no disconnected bits. One creature per cell, full silhouette inside its cell with ample clear margin. Same torso size, same torso anchor, same facing in every cell. Match image fidelity and palette, do not redesign anatomy.
+Crucial change: show SIX jointed legs, THREE on EACH side, extending clearly outside the silhouette of the torso. Legs have clear armored upper segments, knees, curved pointed claws, attached continuously to the torso. Keep claws and leg muscles readable on both sides, not tucked under the body. No giant paddle-shaped feet. Only the legs articulate: do not rotate or move the whole torso to simulate walking.
+Read cells left to right then top to bottom. Cell0 rest, all claws grounded. Cells1–8 form a strong, readable, full alternating-tripod crawl cycle. Tripod A = left front + right middle + left rear. Tripod B = right front + left middle + right rear.
+Cell1: A forward planted, B back planted.
+Cell2: A pushes backward, B is bent and lifted swinging forward.
+Cell3: A reaches back planted, B swings visibly forward.
+Cell4: B lands forward, A back and starts lift.
+Cell5: B forward planted, A back lifted.
+Cell6: B pushes backward, A is bent swinging forward.
+Cell7: B back planted, A swings forward.
+Cell8: A lands forward, B starts lifting back, returning naturally toward cell1.
+Make these eight limb poses visibly DIFFERENT, with substantial joint and claw repositioning, not tiny ripples on a frozen creature. Preserve torso and armor identity. Transparent background.
+
+REAR
+Edit the attached approved REAR-view Forager into a production game crawl-cycle sheet. EXACT same burgundy muscles and pitted ivory chitin armor, same broad low abdomen, same camera angle. Rear view, creature faces UP the screen, away from viewer. Do not turn it around or add a face on its back. Low belly, never upright.
+ONE transparent square sheet, exact regular 3x3 grid of NINE equal cells, no labels, no text, no background, no ground, no shadows, no slime strands, no borders, no stray disconnected bits. One full creature inside each cell with clear margin. Same torso size and anchor in every cell. Preserve torso, armor and palette from reference.
+Crucial: SIX clearly jointed legs, THREE EACH SIDE, extending visibly outside torso silhouette. Clear armored upper segments, knees, narrow curved claw tips, continuously attached to torso. No giant paddles. No body rotation/wobble as a substitute for leg movement.
+Cells read left to right, then top to bottom. Cell0 all feet grounded rest. Cells1–8 a visibly strong alternating-tripod crawl cycle. Tripod A = left front + right middle + left rear; B = right front + left middle + right rear.
+1: A forward toward screen TOP planted, B toward bottom planted.
+2: A pushes backward, B bent and lifted swinging forward.
+3: A fully back planted, B reaches forward lifted.
+4: B lands forward, A back starting lift.
+5: B forward planted, A back lifted.
+6: B pushes backward, A bent swinging forward.
+7: B fully back planted, A reaches forward lifted.
+8: A lands forward, B back begins lift, natural return to1.
+Every gait pose must have substantial, clearly DIFFERENT joint and foot positions while keeping torso identity, position and size constant. Real readable stepping from behind, not ripples on one frozen image. Transparent background.
+

@@ -1,0 +1,101 @@
+{
+  "metric": "Mean absolute visible premultiplied RGB difference over8adjacent pairs in9cell row;0..255",
+  "rows": [
+    {
+      "row": 0,
+      "before": 7.925659002386163,
+      "after": 7.925659002386163,
+      "unchanged": true
+    },
+    {
+      "row": 1,
+      "before": 2.277665325933686,
+      "after": 2.277665325933686,
+      "unchanged": true
+    },
+    {
+      "row": 2,
+      "before": 2.5415177267032356,
+      "after": 2.5415177267032356,
+      "unchanged": true
+    },
+    {
+      "row": 3,
+      "before": 1.9517290945074341,
+      "after": 9.27897919963497,
+      "unchanged": false
+    },
+    {
+      "row": 4,
+      "before": 2.333812887045459,
+      "after": 10.946723245403486,
+      "unchanged": false
+    },
+    {
+      "row": 5,
+      "before": 2.480132072633157,
+      "after": 9.28799809030433,
+      "unchanged": false
+    },
+    {
+      "row": 6,
+      "before": 2.744848965249571,
+      "after": 2.744848965249571,
+      "unchanged": true
+    },
+    {
+      "row": 7,
+      "before": 6.744689121397989,
+      "after": 6.744689121397989,
+      "unchanged": true
+    },
+    {
+      "row": 8,
+      "before": 7.930414970800121,
+      "after": 7.930414970800121,
+      "unchanged": true
+    },
+    {
+      "row": 9,
+      "before": 2.229521747665462,
+      "after": 2.229521747665462,
+      "unchanged": true
+    },
+    {
+      "row": 10,
+      "before": 2.4770974906545233,
+      "after": 2.4770974906545233,
+      "unchanged": true
+    },
+    {
+      "row": 11,
+      "before": 1.568498785148917,
+      "after": 10.115308149071392,
+      "unchanged": false
+    },
+    {
+      "row": 12,
+      "before": 1.8656831318878697,
+      "after": 12.096935574163027,
+      "unchanged": false
+    },
+    {
+      "row": 13,
+      "before": 2.1759081162500884,
+      "after": 10.113952849464507,
+      "unchanged": false
+    },
+    {
+      "row": 14,
+      "before": 2.4213618215497226,
+      "after": 2.4213618215497226,
+      "unchanged": true
+    },
+    {
+      "row": 15,
+      "before": 6.750254419529831,
+      "after": 6.750254419529831,
+      "unchanged": true
+    }
+  ]
+}

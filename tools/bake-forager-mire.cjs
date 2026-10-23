@@ -124,4 +124,4 @@ async function bake(){
  fs.writeFileSync(path.join(rows,onlyDirection+'.png'),atlas.toBuffer('image/png'));
 }
 if(require.main===module)bake().catch(e=>{console.error(e);process.exitCode=1;});
-module.exports={footPose,STRIDE,DUTY,CELL,DIRECTIONS,FRAMES,LEGS};
+module.exports={footPose,STRIDE,DUTY,CELL,DIRECTIONS,FRAMES};
