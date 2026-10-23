@@ -5,7 +5,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
 const legacy=process.argv.includes('--legacy'),motion=process.argv.includes('--motion');
 const root=path.join(__dirname,'..'),zone=process.argv.includes('--ember')?'ember':'mire';
-async function main(){
+async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080]}={}){
   let source=fs.readFileSync(path.join(root,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
   const files={unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
   const images={};
@@ -20,11 +20,14 @@ async function main(){
   const materials="const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');";
   assert.ok(source.includes(materials),'world material declaration is still present');
   source=source.replace(materials,'const worldGroundArt=images.worldGroundArt,ancientStoneArt=images.ancientStoneArt;');
-  const viewport=process.argv.includes('--viewport')?[964,631]:[1920,1080];
   const canvas=createCanvas(...viewport);canvas.style={};canvas.addEventListener=()=>{};
   const c=vm.createContext({images,document:{getElementById:()=>canvas,createElement:()=>createCanvas(1,1)},window:{devicePixelRatio:1},innerWidth:viewport[0],innerHeight:viewport[1],
     location:{pathname:'/prototype/index.html',search:'?zone='+zone+(legacy?'&balance=v04':'')},URLSearchParams,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
   vm.runInContext(source,c);const run=code=>vm.runInContext(code,c);
+  return {canvas,run,images};
+}
+async function main(){
+  const {canvas,run}=await loadWorld({zone,legacy,viewport:process.argv.includes('--viewport')?[964,631]:[1920,1080]});
   run("reset();S.phase='build';S.credits=10000;S.buildTimer=999;build(SLOTS[0],'turret');build(SLOTS[1],'cannon');build(SLOTS[5],'voltaic');build(SLOTS[15],'generator');S.selected=null;observeConstruction();presentationTime=2;observeConstruction();S.wave=5;S.phase='wave';S.spawnQueue=[];S.enemies=Array.from({length:18},(_,i)=>{const e=makeEnemy('forager',1);e.d=40+i*79;Object.assign(e,posAt(e.d));e.hp=e.maxHp=10000;return e;});");
   if(process.argv.includes('--empty'))run("reset();S.phase='build';S.buildTimer=999;");
   const dir=path.join(root,'reports/generated/organic-world-'+zone+(legacy?'-legacy':'')+(motion?'-motion':'')+(process.argv.includes('--viewport')?'-viewport':'')+(process.argv.includes('--empty')?'-empty':''));fs.mkdirSync(dir,{recursive:true});
@@ -82,3 +85,5 @@ async function main(){
   console.log('PASS '+zone+': '+(motion?180:90)+' actual renderer frames, pause/resume and no stone obstruction of build slots. '+path.join(dir,'scene.png'));
 }
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
+
+module.exports={loadWorld};
