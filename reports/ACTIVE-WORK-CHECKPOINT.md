@@ -12,4 +12,4 @@ Visual review: opened atlas/game cycles and grayscale full frame. Independent ag
 
 Checkpoints: cb17f7b baseline/red test; e763b54 rejected limb-mask experiment. That experiment had detached/paddle-like limbs and dirt/mesh artifacts and must not be shipped. It is removed from final code; new implementation uses one affine draw of each complete pose. Preserve these intermediate commits as requested.
 
-Remaining: final commit/push and reviewable PR. Do not merge automatically. Full source and evidence are in the repository; /private/tmp/forager-vertical-before.webp retains the original atlas but is not required to use the completed asset.
+Final implementation: fa2da85, pushed. Draft PR #41: https://github.com/fouringiz/hunger/pull/41. No implementation work remains for the stated criteria; user appearance review is pending. Do not merge automatically. Full source and evidence are in the repository; /private/tmp/forager-vertical-before.webp retains the original atlas but is not required to use the completed asset.
