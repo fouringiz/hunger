@@ -777,7 +777,7 @@ function fireFlat(t, st, target) {
   if (presentationBursts.length > 18) presentationBursts.shift();
   playWeaponCue('turret');
   damage(hit, st.dmg, t);
-  S.shots.push({x1:t.x, y1:t.y, x2:hit.x, y2:hit.y, life:0.09, blocked: hit !== target});
+  S.shots.push({x1:t.x, y1:t.y, x2:hit.x, y2:hit.y, life:0.09, blocked: hit !== target, to:hit});
 }
 function fireArc(t, st, target) {
   const flight = 0.65;
@@ -823,7 +823,7 @@ function fireElectro(t, st, target) {
   let from = {x: t.x, y: t.y}, dmg = st.dmg, cur = hit;
   for (let hop = 0; cur && hop <= st.hops; hop++) {
     damage(cur, dmg, t); struck.push(cur);
-    S.shots.push({x1:from.x, y1:from.y, x2:cur.x, y2:cur.y, life:0.12, electro:true, blocked: hop === 0 && hit !== target});
+    S.shots.push({x1:from.x, y1:from.y, x2:cur.x, y2:cur.y, life:0.12, electro:true, blocked: hop === 0 && hit !== target, from:hop ? struck[hop-1] : null, to:cur});
     if (cur.rod) {                                              // Grounding: the rod drinks the charge; the chain ends here
       S.fx.push({kind:'spark', x:cur.x, y:cur.y, r:cur.r + 6, life:0.3, max:0.3, color:'#e0a060'});
       break;
@@ -902,7 +902,7 @@ function stepSimulation(dt) {
   if (newest && newest.queue !== S.spawnQueue) newest.queue = S.spawnQueue;   // a tool or test replaced the newest queue
   for (const st of S.streams) if (st.queue.length) {
     st.timer -= dt;
-    if (st.timer <= 0) { const s = st.queue.shift(); S.spawnedThisWave = st.spawned; const e = makeEnemy(s.type, st.wave); st.spawned = S.spawnedThisWave;
+    if (st.timer <= 0) { const s = st.queue.shift(); S.spawnedThisWave = st.spawned; const e = makeEnemy(s.type, st.wave); st.spawned = S.spawnedThisWave; e.seq = st.spawned - 1;
       e.wave = st.wave; S.enemies.push(e); st.timer = s.delay; }
   }
   const infantryBrown = power().brown;
@@ -1066,8 +1066,9 @@ function foragerMireReady(){return !!(foragerMireArt&&foragerMireArt.complete&&f
 function foragerMirePose(e,heading){
   if(foragerMireScene!==S){foragerMireScene=S;foragerMireMotion=new WeakMap();}
   const x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=Number.isFinite(e.d)?e.d:0;
-  let p=foragerMireMotion.get(e);
-  if(!p){p={x,y,d,distance:Math.max(0,d),heading};foragerMireMotion.set(e,p);}
+  const key=simOf(e);
+  let p=foragerMireMotion.get(key);
+  if(!p){p={x,y,d,distance:Math.max(0,d),offset:staggerOf(key).phase*FORAGER_MIRE.stride/FORAGER_MIRE.duty,heading};foragerMireMotion.set(key,p);}   // offset: own gait phase once moving
   else{
     const travel=e.state==='lane'?Math.abs(d-p.d):Math.hypot(x-p.x,y-p.y);
     p.distance+=travel;p.x=x;p.y=y;p.d=d;
@@ -1075,7 +1076,7 @@ function foragerMirePose(e,heading){
     p.heading+=turn*Math.min(1,travel/5);
   }
   const a=((p.heading/(Math.PI*2)*FORAGER_MIRE.directions)%FORAGER_MIRE.directions+FORAGER_MIRE.directions)%FORAGER_MIRE.directions;
-  const phase=p.distance/(FORAGER_MIRE.stride/FORAGER_MIRE.duty);
+  const phase=(p.distance+(p.offset||0))/(FORAGER_MIRE.stride/FORAGER_MIRE.duty);
   return {frame:p.distance>0?1+Math.floor((phase%1)*(FORAGER_MIRE.frames-1)):0,direction:Math.round(a)%FORAGER_MIRE.directions,distance:p.distance,heading:p.heading};
 }
 function foragerMireSprite(e,heading){
@@ -1095,6 +1096,28 @@ function groundActorMetrics(type) {
   const index={forager:0,carapacid:1,leech:2}[type], r=GROUND_ACTOR_RECTS[index];
   const width=type==='carapacid'?58:type==='leech'?43:34;
   return {index,r,width,height:r[3]/r[2]*width};
+}
+// Presentation only. Bodies are drawn spread across the lane instead of in single file: each body gets a fixed sideways
+// offset within the lane, a size within ±8% and its own gait phase, all derived from its spawn index, so frames repeat
+// exactly. Simulation coordinates are untouched; everything drawn for a body (sprite, markers, tracks, tracers) reads the
+// visual position through a proxy whose __sim points at the real body.
+const LANE_HALF_VISUAL = 22;
+const staggerCache = new WeakMap();
+function simOf(e) { return e && e.__sim ? e.__sim : e; }
+function staggerOf(e) {
+  e = simOf(e); let v = staggerCache.get(e);
+  if (!v) { const h = parseInt(replayHash(String((e.seq ?? 0) * 7919 + (e.wave ?? 0) * 104729 + e.type.length)), 16);
+    const u = (h & 0xffff) / 65535, w = ((h >>> 16) & 0xffff) / 65535, room = Math.max(0, LANE_HALF_VISUAL - e.r - 2);
+    v = {off:(u * 2 - 1) * room, k:0.92 + 0.16 * w, phase:w}; staggerCache.set(e, v); }
+  return v;
+}
+function visualEnemy(e) {
+  if (e.__sim) return e;
+  const v = staggerOf(e);
+  let x = e.x, y = e.y;
+  if ((e.state === 'lane' || e.state === undefined) && Number.isFinite(e.d)) { const a = posAt(e.d + 4), b = posAt(e.d), L = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    x += -(a.y - b.y) / L * v.off; y += (a.x - b.x) / L * v.off; }
+  return Object.assign(Object.create(e), {x, y, __sim:e, __k:v.k});
 }
 // Presentation only. The lane bends up into the portal for its last pixels; with the Gate drawn front-on, a body turned
 // to face up the screen reads as rearing onto its tail. Until the Gate is redrawn from the map's camera, bodies keep the
@@ -1465,10 +1488,10 @@ let mireTrafficScene=null,mireTrafficActors=new WeakMap(),mireTraffic=[];
 function observeMireTraffic(){
   if(mireTrafficScene!==S){mireTrafficScene=S;mireTrafficActors=new WeakMap();mireTraffic=[];}
   mireTraffic=mireTraffic.filter(p=>presentationTime-p.at<1.35);
-  for(const e of S.enemies||[]){
+  for(const e of (S.enemies||[]).map(visualEnemy)){
     if(e.dead||!Number.isFinite(e.x)||!Number.isFinite(e.y))continue;
-    const old=mireTrafficActors.get(e);
-    if(!old){mireTrafficActors.set(e,{x:e.x,y:e.y});continue;}
+    const old=mireTrafficActors.get(simOf(e));
+    if(!old){mireTrafficActors.set(simOf(e),{x:e.x,y:e.y});continue;}
     const travel=Math.hypot(e.x-old.x,e.y-old.y);
     if(travel>=4){
       mireTraffic.push({x:old.x,y:old.y,angle:Math.atan2(e.y-old.y,e.x-old.x),at:presentationTime,size:e.type==='carapacid'?9:5});
@@ -1497,7 +1520,7 @@ function drawLivingSurface(){
     g.globalAlpha=life*.22;g.strokeStyle=WORLD.wet;g.lineWidth=.65;
     g.beginPath();g.moveTo(-2,-p.size-1);g.lineTo(2,-p.size-1);g.stroke();g.restore();
   }
-  for(const e of S.enemies||[]){
+  for(const e of (S.enemies||[]).map(visualEnemy)){
     if(e.dead||!Number.isFinite(e.x)||!Number.isFinite(e.y))continue;
     const h=enemyHeading(e),pose=e.type==='forager'?foragerMirePose(e,h):null;
     const phase=pose?pose.distance*2*Math.PI/(FORAGER_MIRE.stride/FORAGER_MIRE.duty):(e.d||e.x+e.y)*.5;
@@ -1711,6 +1734,7 @@ function enemyArt(e) {
   const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
+  if(e.__k) ctx.scale(e.__k,e.__k);                                   // own size within ±8%
   const fade=portalFade(e);
   if(fade<1){ ctx.globalAlpha*=0.15+0.85*fade; const k=0.75+0.25*fade; ctx.scale(k,k); }   // drawn into the portal light
   if(e.type!=='forager'||!foragerMireReady()){
@@ -2016,7 +2040,7 @@ function draw() {
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
-  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(enemy=>({y:enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
+  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
   }
@@ -2083,6 +2107,8 @@ function draw() {
   for (const original of S.shots) {
     const tower=S.towers.find(t=>t.x===original.x1&&t.y===original.y1),origin=tower?weaponMuzzle(tower):{x:original.x1,y:original.y1-8};
     const s={...original,x1:origin.x,y1:origin.y,y2:original.y2-8};
+    if (original.to && !original.to.dead) { const v = visualEnemy(original.to); s.x2 = v.x; s.y2 = v.y - 8; }
+    if (original.from && !original.from.dead) { const v = visualEnemy(original.from); s.x1 = v.x; s.y1 = v.y - 8; }
     if (s.electro) {                                             // jagged bolt: presentation-only jitter from time and endpoints
       ctx.strokeStyle = s.blocked ? '#ff9f43' : '#9df7ff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, s.life / 0.12);
       const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
