@@ -1093,8 +1093,14 @@ function groundActorMetrics(type) {
   const width=type==='carapacid'?58:type==='leech'?43:34;
   return {index,r,width,height:r[3]/r[2]*width};
 }
+// Presentation only. The lane bends up into the portal for its last pixels; with the Gate drawn front-on, a body turned
+// to face up the screen reads as rearing onto its tail. Until the Gate is redrawn from the map's camera, bodies keep the
+// heading they arrived with over PORTAL_APPROACH and fade into the portal light.
+const PORTAL_APPROACH = 60;
+function portalFade(e) { return e.state === 'lane' || e.state === undefined ? Math.max(0, Math.min(1, (GATE_D - e.d) / PORTAL_APPROACH)) : 1; }
 function enemyHeading(e) {
-  const p=posAt(e.d+4),q=posAt(e.d);let angle=Math.atan2(p.y-q.y,p.x-q.x);
+  const d=portalFade(e)<1?GATE_D-PORTAL_APPROACH:e.d;
+  const p=posAt(d+4),q=posAt(d);let angle=Math.atan2(p.y-q.y,p.x-q.x);
   if((e.state==='seek'||e.state==='attached')&&e.gen)angle=Math.atan2(e.gen.y-e.y,e.gen.x-e.x);
   if(e.state==='return'){const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x);}
   return angle;
@@ -1702,6 +1708,8 @@ function enemyArt(e) {
   const angle=enemyHeading(e);
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   ctx.save();ctx.translate(e.x,e.y);
+  const fade=portalFade(e);
+  if(fade<1){ ctx.globalAlpha*=0.15+0.85*fade; const k=0.75+0.25*fade; ctx.scale(k,k); }   // drawn into the portal light
   if(e.type!=='forager'||!foragerMireReady()){
     ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
   }
