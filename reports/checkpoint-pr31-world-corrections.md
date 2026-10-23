@@ -15,8 +15,8 @@ This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platfor
 ## Durable references
 
 - Approved scene/material: `assets/art/studies/organic-world-direction-v3.png` (also the image attached to the latest path complaint).
-- Ancient monumental portal reference: `assets/art/references/ancient-gate-user-v1.png`.
-- Rejected in-game Gate: `assets/art/references/gate-runtime-rejected-v1.png`.
+- Ancient monumental portal reference: `assets/art/references/world/gate/ancient-gate-user-v1.png`.
+- Rejected in-game Gate: `assets/art/references/world/gate/gate-runtime-rejected-v1.png`.
 - Source for the integrated wet-path material: `assets/art/studies/organic-lane-material-v1.png`.
 - Exact candidate prompt: `assets/art/organic-lane-material-v1.prompt.txt`.
 

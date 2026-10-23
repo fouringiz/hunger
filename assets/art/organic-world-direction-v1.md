@@ -18,11 +18,11 @@ The player selected **v1 as the preferred base**, explicitly approving its platf
 
 ## Original user references
 
-- [Ancient Gate](references/ancient-gate-user-v1.png): scale, weathered structure and ancient energy technology.
-- [Leech](references/leech-maw-user-v1.png): low worm, round toothed maw, wet strands.
-- [Carapacid](references/carapacid-mass-user-v1.png): broad body, porous dark plates, viscous dripping tissue.
-- [General swamp symbiosis](references/swamp-symbiosis-user-v1.png): added to the shared reference collection, original unchanged. Its muted lighting is not a replacement for the requested bright world palette.
-- [Approved Forager master](references/forager-approved-v1.webp): anatomy and material identity.
+- [Ancient Gate](references/world/gate/ancient-gate-user-v1.png): scale, weathered structure and ancient energy technology.
+- [Leech](references/enemies/leech/leech-maw-user-v1.png): low worm, round toothed maw, wet strands.
+- [Carapacid](references/enemies/carapacid/carapacid-mass-user-v1.png): broad body, porous dark plates, viscous dripping tissue.
+- [General swamp symbiosis](references/style/swamp-symbiosis-user-v1.png): added to the shared reference collection, original unchanged. Its muted lighting is not a replacement for the requested bright world palette.
+- [Approved Forager master](references/enemies/forager/forager-approved-v1.webp): anatomy and material identity.
 
 User-provided images are visual references. Authorship and redistribution rights are not established here; they are not shipped by the runtime.
 
