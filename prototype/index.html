@@ -2123,7 +2123,17 @@ function gateSurface(){
   if(!worldImageReady(gateDetailArt))return gateDetailArt;
   const b=GATE_DETAIL_BOX,canvas=document.createElement('canvas');canvas.width=Math.round(b.width*WORLD_RASTER_SCALE);canvas.height=Math.round(b.height*WORLD_RASTER_SCALE);
   const c=canvas.getContext('2d');c.drawImage(gateDetailArt,0,0,canvas.width,canvas.height);
-  const pixels=c.getImageData?.(0,0,canvas.width,canvas.height);
+  // Reading pixels back is refused when the page is opened from disk (file://): the image taints the canvas and
+  // getImageData throws a SecurityError. Then grade and feather with compositing instead of per-pixel edits.
+  let pixels=null; try{ pixels=c.getImageData?.(0,0,canvas.width,canvas.height); }catch(_){ pixels=null; }
+  if(!pixels?.data){
+    c.save();
+    if(WORLD_ZONE==='ember'){ c.globalCompositeOperation='source-atop'; c.fillStyle='rgba(255,120,40,0.16)'; c.fillRect(0,0,canvas.width,canvas.height); }
+    c.globalCompositeOperation='destination-out';
+    const g=c.createLinearGradient(0,canvas.height*.947,0,canvas.height); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,1)');
+    c.fillStyle=g; c.fillRect(0,canvas.height*.94,canvas.width,canvas.height*.06);
+    c.restore();
+  }
   if(pixels?.data){
     for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
       const k=(y*canvas.width+x)*4,d=pixels.data,u=x/canvas.width,v=y/canvas.height;
