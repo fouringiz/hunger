@@ -1,4 +1,8 @@
-# Gate integration — 2026-10-24
+# Active: Carapacid shelter — 2026-10-24
+
+Branch codex/carapacid-shelter from fresh origin/main 0a6d30a. User confirms Gate work completed. Approved Leech concept and broad Carapacid shell; new request adds Foragers gathering beneath shell arches near a tower. See reports/carapacid-shelter-plan.md for references, acceptance, scope and pending work. No implementation yet. Preserve untracked reports/NEW-CHAT-HANDOFF.md. Building readiness belongs to a later PR.
+
+# Previous: Gate integration — 2026-10-24
 
 Repo /Users/home/github/game, branch codex/gate-ground-integration from fresh origin/main 284f3c2. Main contains portal teleport and local ground life. Preserve untracked reports/NEW-CHAT-HANDOFF.md.
 
