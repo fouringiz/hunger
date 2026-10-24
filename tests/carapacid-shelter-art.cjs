@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),{loadWorld}=require('../tools/capture-organic-world.cjs');
 (async()=>{
  const {canvas,run,images}=await loadWorld({viewport:[960,540]});
- assert.equal(images.carapacidShelterArt.width,1024);assert.equal(images.carapacidShelterArt.height,256);
+ assert.equal(images.carapacidShelterArt.width,1024);assert.equal(images.carapacidShelterArt.height,1024);
  run(`reset();S.phase='wave';S.wave=1;S.spawnQueue=[];S.credits=1000;build(SLOTS[1],'turret');S.towers[0].cd=999;
  const c=makeEnemy('carapacid',1);c.d=285;Object.assign(c,posAt(c.d));c.hp=100000;
  const fs=Array.from({length:3},(_,i)=>{const e=makeEnemy('forager',1);e.seq=i;e.d=c.d-15-i*18;Object.assign(e,posAt(e.d));return e;});S.enemies=[c,...fs];
