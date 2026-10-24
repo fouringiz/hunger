@@ -15,3 +15,9 @@ Focused portal-entry, organic-world and forager-mire tests passed for the first 
 ## Integrated render checkpoint
 
 Brown burial artifact corrected and final Mire/Ember captures regenerated. Opened both close-ups, Ember whole scene and Mire grayscale; accepted frontal silhouette and broad approach retained. tests/gate-integration.cjs passes both zones: exact baseline rules/combat/geometry, unchanged upper silhouette, cyan preservation, feathered bottom, warm Ember grading, 80px range, actual body lighting for all three castes and matching lit-floor samples. Tests account for the original image's 249–253 interior alpha. Final npm test pending. No push or merge.
+
+## Completed implementation / awaiting user visual review
+
+Full npm test passed on b67293d (all tests passed); subsequent changes are documentation only. git diff --check clean. Intermediate commits: 3e7e28f baseline, b67293d implementation and native visual tests. Final report/PR text in reports/gate-integration/README.md and PR.md; before/after full and close images for Mire/Ember plus grayscale views included. Source art files untouched. Native rendering validated; browser/device performance not assessed. Final artistic approval remains with the user.
+
+No push, PR creation or merge performed. User can checkout codex/gate-ground-integration, inspect, push and create PR using the report's commands. A three-commit git-am delivery patch is saved after the final documentation commit at reports/generated/gate-ground-integration.patch; do not reapply it to this already-completed branch. Preserve untracked user reports/NEW-CHAT-HANDOFF.md. No remaining implementation task unless user feedback requests changes.
