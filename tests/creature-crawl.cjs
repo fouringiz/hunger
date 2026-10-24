@@ -3,9 +3,9 @@ const assert=require('node:assert/strict'),{createCanvas}=require('@napi-rs/canv
 (async()=>{
  const {run,images}=await loadWorld();
  for(const [type,art]of [['carapacid',images.carapacidShelterArt],['leech',images.leechMireArt]]){
-  assert.equal(art.width,1024);assert.equal(art.height,1024);
-  const c=createCanvas(1024,1024),g=c.getContext('2d');g.drawImage(art,0,0);const data=g.getImageData(0,0,1024,1024).data;
-  for(let row=0;row<4;row++)for(let f=0;f<4;f++){
+  const directions=type==='leech'?16:4;assert.equal(art.width,1024);assert.equal(art.height,256*directions);
+  const c=createCanvas(1024,256*directions),g=c.getContext('2d');g.drawImage(art,0,0);const data=g.getImageData(0,0,1024,256*directions).data;
+  for(let row=0;row<directions;row++)for(let f=0;f<4;f++){
    let diff=0,count=0,opaque=0;
    for(let y=0;y<256;y++)for(let x=0;x<256;x++){
     const a=((row*256+y)*1024+f*256+x)*4,b=((row*256+y)*1024+(f+1)%4*256+x)*4;
@@ -25,5 +25,5 @@ const assert=require('node:assert/strict'),{createCanvas}=require('@napi-rs/canv
    run(`${obj}.x+=6;`);assert.equal(run(`creatureCrawlPose(${obj},0).distance`)-before,6,'off-route hunting uses actual travel');
   }
  }
- console.log('PASS both 4x4 atlases: real motion in every direction, fixed ground baseline, distance-driven cycles and stationary holds');
+ console.log('PASS creature atlases (Carapacid 4 directions, Leech 16): real motion in every direction, fixed ground baseline, distance-driven cycles and stationary holds');
 })().catch(e=>{console.error(e);process.exitCode=1});
