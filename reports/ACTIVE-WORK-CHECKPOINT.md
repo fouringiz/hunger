@@ -1,6 +1,6 @@
 # Active: Carapacid shelter balance audit — 2026-10-24
 
-Branch codex/shelter-balance-audit from main cb7e53a. Main already removes the stale replay fingerprint exception and restamps all eight reference games. Added the explicit AGENTS rule. Next: compare the four human-v0.4 action timelines under current campaign rules with shelter on/off using research-only runtime hooks; report action deferrals and actual shelter occupancy. No game balance changes authorized by the audit. Earlier notes below are historical.
+Branch codex/shelter-balance-audit from main cb7e53a. Main already removes the stale replay fingerprint exception and restamps all eight reference games. Added the explicit AGENTS rule. Completed paired on/off runs on four human-v0.4 timelines under v0.9 campaign rules. Same outcomes/Gate HP in all pairs; real occupancy verified. Report: reports/carapacid-shelter-balance-v0.9.md (results, caveats, reproducible command). Original fixture fidelity and instrumented ON equivalence passed. Restamp command reports zero changes. Next: user review/push; broader balance playtest remains open. No game balance changes authorized by the audit. Earlier notes below are historical.
 
 ## Latest verification correction
 
