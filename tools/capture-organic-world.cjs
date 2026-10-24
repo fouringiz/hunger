@@ -5,9 +5,9 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
 const legacy=process.argv.includes('--legacy'),motion=process.argv.includes('--motion');
 const root=path.join(__dirname,'..'),zone=process.argv.includes('--ember')?'ember':'mire';
-async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080]}={}){
-  let source=fs.readFileSync(path.join(root,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-  const files={unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
+async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHtml=null}={}){
+  let source=(sourceHtml||fs.readFileSync(path.join(root,'prototype/index.html'),'utf8')).match(/<script>([\s\S]*?)<\/script>/)[1];
+  const files={leechMireArt:'hunger-leech-mire-v1.webp',carapacidShelterArt:'hunger-carapacid-shelter-v1.webp',unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
   const images={};
   for(const [name,file]of Object.entries(files)){
     images[name]=await loadImage(path.join(root,'assets',file));

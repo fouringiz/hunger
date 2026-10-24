@@ -19,7 +19,7 @@ for(const base of bases)assert.deepEqual(base,bases[0],'aim and recoil do not mo
 assert.equal(normal.rotations.length,0,'the foundation is never rotated in the canvas plane');
 for(const type of ['forager','carapacid','leech']){
  normal.draws.length=0;normal.run(`enemyArt(makeEnemy('${type}',1));`);
- const expected=normal.images.find(i=>i.src.endsWith('hunger-ground-actors-v3.png'));
+ const expected=normal.images.find(i=>i.src.endsWith(type==='carapacid'?'hunger-carapacid-shelter-v1.webp':type==='leech'?'hunger-leech-mire-v1.webp':'hunger-ground-actors-v3.png'));
  assert.ok(normal.draws.some(a=>a[0]===expected),type+' uses a grounded sprite in the normal campaign too');
 }
 normal.run("infantryArt.complete=false;groundActorArt.complete=false;");normal.draws.length=0;normal.run("enemyArt(makeEnemy('forager',1));");

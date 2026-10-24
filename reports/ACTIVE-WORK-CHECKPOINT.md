@@ -1,4 +1,18 @@
-# Gate integration — 2026-10-24
+# Active: Carapacid shelter — 2026-10-24
+
+## Latest verification correction
+
+The final crawl-atlas integration is saved in 863d111 and origin/main reference additions have been merged into this branch. That integration shortened shelter gaps from [6,24,42] to [6,22,36], but left the previous simulation-baseline rules hash. Reproduced both hashes directly: previous gaps yield 1f5e7d0d; current gaps yield acedc780. Source hash stays 5dbb50a9. Corrected only the expected rules hash; retained all geometry, behavior and visual assertions. Full npm test passed (all tests passed) and git diff --check is clean after the correction. No push or merge into main performed. Older progress notes below predate the integrated animation atlases.
+
+Branch codex/carapacid-shelter from fresh origin/main 0a6d30a. User confirms Gate work completed. Approved Leech concept and broad Carapacid shell; new request adds Foragers gathering beneath shell arches near a tower. See reports/carapacid-shelter-plan.md. Preserve untracked reports/NEW-CHAT-HANDOFF.md. Building readiness belongs to a later PR.
+
+Implementation checkpoint: real deterministic gathering into three provisional lee-side berths, natural forward speed with a berth cap and bounded lateral movement. Inactive towers do not trigger it. Dead, frozen or infantry-blocked carriers release it; portal approach excludes grouping. Existing damage and interception functions are unchanged. Historical balance presets retain original movement and accept only the known previous source fingerprint; campaign replays have new movement/rules and version v0.9.
+
+New generated four-view Carapacid art is in assets/hunger-carapacid-shelter-v1.webp. Render depth puts the shell over sheltered bodies. Initial capture hid the entire group; adjusted berth separation and lateral offsets, now actual alpha tests confirm each of three bodies is partly visible and partly covered. Read-only native captures for Mire/Ember, before/after and full 6-second approach/shelter/death/release movie are in reports/carapacid-shelter/. Full npm test passed after behavior changes; an added native occlusion test passed separately. Final suite/review still pending after latest marker-height adjustment.
+
+Known scope boundary: these are four static directional Carapacid poses, not a new authored leg-cycle atlas. Accepted Leech art has not been integrated. No browser/device or balance playtest yet; no push/PR/merge. Next: finish checks/report, save commits and give user branch/push commands. Do not claim the entire two-creature animation task is complete.
+
+# Previous: Gate integration — 2026-10-24
 
 Repo /Users/home/github/game, branch codex/gate-ground-integration from fresh origin/main 284f3c2. Main contains portal teleport and local ground life. Preserve untracked reports/NEW-CHAT-HANDOFF.md.
 

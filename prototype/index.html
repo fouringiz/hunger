@@ -471,10 +471,63 @@ function nearestPathD(x, y) {
   return result;
 }
 function soldierPosition(s) { const p = posAt(s.d); return {x:p.x, y:p.y-8}; }
+// Small, deterministic berths under the lee side of a living shell. Values are
+// provisional until a balance playtest; geometry and tower damage are unchanged.
+const CARAPACID_SHELTER = {reach:70, gaps:[6,22,36], offsets:[22,23,22], lateralSpeed:24};
+function shelterThreat(c) {
+  let best=null, distance=Infinity;
+  for(const t of S.towers){
+    if(t.type==='generator'||t.type==='barracks'||t.paused||t.selling||t.warm>0)continue;
+    const d=Math.hypot(t.x-c.x,t.y-c.y),st=tstats(t);
+    if(d<=st.range&&d>=(t.T.minRange||0)&&d<distance){best=t;distance=d;}
+  }
+  return best;
+}
+function planCarapacidShelter(dt,feastMul) {
+  if(BALANCE_PRESET)return; // Historical balance recordings retain their original convoy behavior.
+  const shells=S.enemies.filter(c=>!c.dead&&c.type==='carapacid'&&!c.blockedBy&&!(c.slowUntil>S.time&&c.slowMul<1)&&c.d<GATE_D-80);
+  const plans=new Map(),used=new Map();
+  for(const c of shells){
+    const tower=shelterThreat(c);if(!tower)continue;
+    const p=posAt(c.d),q=posAt(c.d+1),L=Math.hypot(q.x-p.x,q.y-p.y)||1;
+    const side=((tower.x-c.x)*-(q.y-p.y)+(tower.y-c.y)*(q.x-p.x))/L>0?-1:1;
+    plans.set(c,{side,nextD:c.d+laneEffectiveSpeed(c,feastMul)*dt});used.set(c,new Set());
+  }
+  // Retain occupied berths first, then admit the closest followers. Spawn-order
+  // tie breaks are stable and require no randomness or presentation clock.
+  const followers=S.enemies.filter(e=>!e.dead&&e.type==='forager').sort((a,b)=>Number(!!b.shelter)-Number(!!a.shelter)||b.d-a.d);
+  for(const e of followers){
+    const valid=c=>plans.has(c)&&!e.blockedBy&&c.d-e.d>=-1&&c.d-e.d<CARAPACID_SHELTER.reach;
+    let c=e.shelter&&e.shelter.shell,slot=e.shelter&&e.shelter.slot;
+    if(!valid(c)||used.get(c).has(slot)){c=null;slot=null;}
+    if(!c){
+      for(const candidate of shells){
+        if(!valid(candidate))continue;
+        const free=CARAPACID_SHELTER.gaps.findIndex((gap,i)=>!used.get(candidate).has(i)&&candidate.d-e.d>=gap-1);
+        if(free<0)continue;
+        if(!c||candidate.d<c.d){c=candidate;slot=free;}
+      }
+    }
+    if(c){used.get(c).add(slot);const p=plans.get(c);e.shelter={shell:c,slot,targetD:p.nextD-CARAPACID_SHELTER.gaps[slot],offset:p.side*CARAPACID_SHELTER.offsets[slot]};}
+    else e.shelter=null;
+  }
+}
+function shelterLanePosition(e,dt) {
+  // Blend laterally only once the animal actually reaches the shell. Releasing
+  // a berth also blends back to the route, including after death or freezing.
+  const near=e.shelter?Math.max(0,Math.min(1,1-(e.shelter.targetD-e.d)/24)):0;
+  const target=e.shelter?e.shelter.offset*near:0;
+  const p=posAt(e.d),q=posAt(e.d+1),L=Math.hypot(q.x-p.x,q.y-p.y)||1;
+  const tx=-(q.y-p.y)/L*target,ty=(q.x-p.x)/L*target;
+  const dx=tx-(e.shelterX||0),dy=ty-(e.shelterY||0),travel=Math.hypot(dx,dy),blend=travel?Math.min(1,CARAPACID_SHELTER.lateralSpeed*dt/travel):0;
+  e.shelterX=(e.shelterX||0)+dx*blend;e.shelterY=(e.shelterY||0)+dy*blend;
+  e.shelterOffset=Math.hypot(e.shelterX,e.shelterY);
+  e.x=p.x+e.shelterX;e.y=p.y+e.shelterY;
+}
 function laneEffectiveSpeed(e, feastMul) {
   let sp = e.speed;
   if (e.type === 'forager') for (const c of S.enemies)
-    if (!c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
+    if (!e.shelter && !c.dead && c.type === 'carapacid' && c.d > e.d && c.d - e.d < 70) sp = Math.min(sp, c.speed * 1.05);
   if (e.dash > 0) sp *= SPRINTER_DASH_MULT;
   if (e.slowUntil > S.time) sp *= e.slowMul;                    // Cryojet coolant
   return sp * feastMul;
@@ -569,6 +622,7 @@ function replayRulesFingerprint() {
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS};
+  if(!BALANCE_PRESET)rules.CARAPACID_SHELTER=CARAPACID_SHELTER;
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -579,7 +633,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,advanceShells,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -634,7 +688,10 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  // Only preserved historical presets may accept this known pre-shelter source.
+  // Campaign recordings require the current rules/source and cannot silently cross movement versions.
+  const historicalSource=BALANCE_PRESET&&data.source==='129d68a7';
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()&&!historicalSource) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -695,7 +752,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.8',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.9',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -931,6 +988,7 @@ function stepSimulation(dt) {
   updateInfantry(dt, infantryBrown);
   // enemies
   const feastMul = 1 + 0.08 * S.feast;                          // FEAST: the whole swarm quickens
+  planCarapacidShelter(dt,feastMul);
   for (const e of S.enemies) {
     if (e.dead) continue;
     if (e.type === 'leech') {
@@ -975,6 +1033,7 @@ function stepSimulation(dt) {
       continue;
     }
     let sp = laneEffectiveSpeed(e, feastMul);
+    if(e.shelter)sp=Math.min(sp,Math.max(0,(e.shelter.targetD-e.d)/dt));
     if (e.dash > 0) e.dash -= dt; // current tick uses dash before decrement; resume uses the remaining dash time
     e.resumeSpeed = laneEffectiveSpeed(e, feastMul);
     e.effSpeed = sp;
@@ -983,6 +1042,7 @@ function stepSimulation(dt) {
     if (!e.blockedBy) { const contact = infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
     e.effSpeed = sp;
     const p = posAt(e.d); e.x = p.x; e.y = p.y;
+    if(e.type==='forager'&&!BALANCE_PRESET)shelterLanePosition(e,dt);
     if (e.d >= GATE_D) {
       e.dead = true;
       S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
@@ -1039,6 +1099,10 @@ const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
+const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
+if (carapacidShelterArt) carapacidShelterArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-carapacid-shelter-v1.webp';
+const leechMireArt = typeof Image === 'undefined' ? null : new Image();
+if (leechMireArt) leechMireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-mire-v1.webp';
 const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
 if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
 const foragerMireArt = typeof Image === 'undefined' ? null : new Image();
@@ -1102,6 +1166,8 @@ function lowBuildingSprite(cell,x,y,width,height) {
 }
 function groundActorMetrics(type) {
   const index={forager:0,carapacid:1,leech:2}[type], r=GROUND_ACTOR_RECTS[index];
+  if(type==='carapacid'&&carapacidShelterArt&&carapacidShelterArt.complete&&carapacidShelterArt.naturalWidth)return {index,r,width:70,height:208/256*70};
+  if(type==='leech'&&leechMireArt&&leechMireArt.complete&&leechMireArt.naturalWidth)return {index,r,width:55,height:208/256*55};
   const width=type==='carapacid'?58:type==='leech'?43:34;
   return {index,r,width,height:r[3]/r[2]*width};
 }
@@ -1124,7 +1190,8 @@ function visualEnemy(e) {
   const v = staggerOf(e);
   let x = e.x, y = e.y;
   if ((e.state === 'lane' || e.state === undefined) && Number.isFinite(e.d)) { const a = posAt(e.d + 4), b = posAt(e.d), L = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    x += -(a.y - b.y) / L * v.off; y += (a.x - b.x) / L * v.off; }
+    const fade=e.type==='forager'?Math.max(0,1-Math.abs(e.shelterOffset||0)/4):e.type==='carapacid'?0:1;
+    x += -(a.y - b.y) / L * v.off*fade; y += (a.x - b.x) / L * v.off*fade; }
   return Object.assign(Object.create(e), {x, y, __sim:e, __k:v.k});
 }
 // Where a tracer meets a body: the drawn position, dead or alive. The killing shot must land on the drawn body too,
@@ -1183,6 +1250,7 @@ function enemyHeading(e) {
 function enemyBodyPoint(e) { const m=groundActorMetrics(e.type);return {x:e.x,y:e.y-m.height*.48}; }
 function groundActorSprite(e,angle) {
   if(foragerMireSprite(e,angle))return true;
+  if(creatureCrawlSprite(e,angle))return true;
   if(!groundActorArt || !groundActorArt.complete || !groundActorArt.naturalWidth) return false;
   const m=groundActorMetrics(e.type);
   // Distance-driven contraction is continuous and stops when movement stops. The underside never rises.
@@ -1190,6 +1258,39 @@ function groundActorSprite(e,angle) {
   const stretch=1+Math.sin(phase)*.018;
   ctx.save();ctx.scale((Math.cos(angle)<0?-1:1)*stretch,1);
   let drawn=false;try{ctx.drawImage(groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height);portalLightSprite(e,groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height,Math.cos(angle)<0);drawn=true;}catch(_){}finally{ctx.restore();}return drawn;
+}
+let creatureCrawlScene=null,creatureCrawlMotion=new WeakMap();
+function creatureCrawlPose(e,angle) {
+  if(creatureCrawlScene!==S){creatureCrawlScene=S;creatureCrawlMotion=new WeakMap();}
+  const body=simOf(e),x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=Number.isFinite(e.d)?e.d:0;
+  let p=creatureCrawlMotion.get(body);
+  if(!p){p={x,y,d,distance:Math.max(0,d)};creatureCrawlMotion.set(body,p);}
+  else {p.distance+=e.state==='lane'?Math.abs(d-p.d):Math.hypot(x-p.x,y-p.y);p.x=x;p.y=y;p.d=d;}
+  const stride=e.type==='carapacid'?28:24;
+  return {row:(Math.round(angle/(Math.PI/2))+4)%4,frame:Math.floor(p.distance/stride*4)%4,distance:p.distance};
+}
+function creatureCrawlSprite(e,angle) {
+  const art=e.type==='carapacid'?carapacidShelterArt:e.type==='leech'?leechMireArt:null;
+  if(!art||!art.complete||art.naturalWidth<1024||art.naturalHeight<1024)return false;
+  const p=creatureCrawlPose(e,angle),cell=256,size=e.type==='carapacid'?70:55;
+  ctx.drawImage(art,p.frame*cell,p.row*cell,cell,208,-size/2,-208/256*size,size,208/256*size);
+  portalLightSprite(e,art,p.frame*cell,p.row*cell,cell,208,-size/2,-208/256*size,size,208/256*size);
+  drawCreatureMudLip(e,size,p.distance);
+  return true;
+}
+function drawCreatureMudLip(e,size,distance){
+  if(!worldLiveArt||!Number.isFinite(e.x)||!Number.isFinite(e.y))return;
+  const rx=size*.40,lip=-.7+Math.sin(distance*.25)*.35;
+  const x=Math.max(0,e.x-rx),y=Math.max(0,e.y-2),right=Math.min(W,e.x+rx),bottom=Math.min(H,e.y+4);
+  if(right<=x||bottom<=y)return;
+  ctx.save();ctx.beginPath();ctx.moveTo(-rx,lip);
+  ctx.bezierCurveTo(-rx*.4,lip+1.4,rx*.3,lip-.8,rx,lip+.4);
+  ctx.lineTo(rx,4);ctx.lineTo(-rx,4);ctx.closePath();ctx.clip();
+  ctx.drawImage(worldLiveArt,x*WORLD_RASTER_SCALE,y*WORLD_RASTER_SCALE,(right-x)*WORLD_RASTER_SCALE,(bottom-y)*WORLD_RASTER_SCALE,x-e.x,y-e.y,right-x,bottom-y);ctx.restore();
+}
+function shelteredBy(e) {
+  const s=e.shelter;
+  return s&&!s.shell.dead&&Math.abs(s.targetD-e.d)<10?s.shell:null;
 }
 // Explicit source rectangles avoid generated artwork bleeding across nominal grid cells.
 const STRUCTURE_RECTS = [[43,111,302,271],[390,95,311,287],[739,83,330,302],[1102,72,327,313],
@@ -1640,7 +1741,7 @@ function drawLivingSurface(){
   for(const e of (S.enemies||[]).map(visualEnemy)){
     if(e.dead||!Number.isFinite(e.x)||!Number.isFinite(e.y))continue;
     const h=enemyHeading(e),pose=e.type==='forager'?foragerMirePose(e,h):null;
-    const phase=pose?pose.distance*2*Math.PI/(FORAGER_MIRE.stride/FORAGER_MIRE.duty):(e.d||e.x+e.y)*.5;
+    const phase=pose?pose.distance*2*Math.PI/(FORAGER_MIRE.stride/FORAGER_MIRE.duty):creatureCrawlPose(e,h).distance*2*Math.PI/(e.type==='carapacid'?28:24);
     const a=Math.atan2(Math.sin(h)*.42,Math.cos(h));
     const size=e.type==='carapacid'?1.5:e.type==='leech'?1.1:1.5;
     // Move the actual ground texture around the contact, then draw a narrow displaced wet ridge.
@@ -2284,7 +2385,7 @@ function draw() {
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
-  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
+  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});

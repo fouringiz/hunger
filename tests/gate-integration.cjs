@@ -3,6 +3,8 @@ const assert=require('node:assert/strict');
 const {createCanvas}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const baseline=require('../reports/gate-integration/baseline.json');
+// Shelter movement was explicitly authorized after this visual baseline. Keep its geometry checks.
+Object.assign(baseline,require('../reports/carapacid-shelter/simulation-baseline.json'));
 (async()=>{
  for(const zone of ['mire','ember']){
   const {canvas,run,images}=await loadWorld({zone});
