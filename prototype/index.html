@@ -1270,7 +1270,9 @@ function creatureCrawlPose(e,angle) {
 function creatureCrawlSprite(e,angle) {
   const art=e.type==='carapacid'?carapacidShelterArt:e.type==='leech'?leechMireArt:null;
   if(!art||!art.complete||art.naturalWidth<1024||art.naturalHeight<1024)return false;
-  const p=creatureCrawlPose(e,angle),cell=256,size=e.type==='carapacid'?70:55;
+  // Draw size is the cell, not the body: the Carapacid body spans 220 of 256 cell px, the Leech 160. These cells put
+  // the Carapacid body at ~65 px and the Leech at ~50 px against the Forager's 34 (collision radii 18 / 10 / 7).
+  const p=creatureCrawlPose(e,angle),cell=256,size=e.type==='carapacid'?76:80;
   ctx.drawImage(art,p.frame*cell,p.row*cell,cell,208,-size/2,-208/256*size,size,208/256*size);
   portalLightSprite(e,art,p.frame*cell,p.row*cell,cell,208,-size/2,-208/256*size,size,208/256*size);
   drawCreatureMudLip(e,size,p.distance);
