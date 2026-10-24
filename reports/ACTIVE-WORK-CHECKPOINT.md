@@ -1,5 +1,9 @@
 # Active: Carapacid shelter — 2026-10-24
 
+## Latest verification correction
+
+The final crawl-atlas integration is saved in 863d111 and origin/main reference additions have been merged into this branch. That integration shortened shelter gaps from [6,24,42] to [6,22,36], but left the previous simulation-baseline rules hash. Reproduced both hashes directly: previous gaps yield 1f5e7d0d; current gaps yield acedc780. Source hash stays 5dbb50a9. Corrected only the expected rules hash; retained all geometry, behavior and visual assertions. Full npm test passed (all tests passed) and git diff --check is clean after the correction. No push or merge into main performed. Older progress notes below predate the integrated animation atlases.
+
 Branch codex/carapacid-shelter from fresh origin/main 0a6d30a. User confirms Gate work completed. Approved Leech concept and broad Carapacid shell; new request adds Foragers gathering beneath shell arches near a tower. See reports/carapacid-shelter-plan.md. Preserve untracked reports/NEW-CHAT-HANDOFF.md. Building readiness belongs to a later PR.
 
 Implementation checkpoint: real deterministic gathering into three provisional lee-side berths, natural forward speed with a berth cap and bounded lateral movement. Inactive towers do not trigger it. Dead, frozen or infantry-blocked carriers release it; portal approach excludes grouping. Existing damage and interception functions are unchanged. Historical balance presets retain original movement and accept only the known previous source fingerprint; campaign replays have new movement/rules and version v0.9.
