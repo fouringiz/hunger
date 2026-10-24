@@ -1,4 +1,6 @@
-# Active: Carapacid shelter balance audit — 2026-10-24
+# Active: Creature 16-direction source audit — 2026-10-24
+
+Branch codex/creature-16dir-atlas from freshly fetched origin/main. User limits work to assets/baking tools and explicitly requires stopping if diagonal masters are missing. Visually inspected both 4x4 source sheets; missing SE/SW/NW/NE cycles for both castes. Stopped before baking. Exact two generation prompts and resume checklist: reports/creature-16dir-master-request.md. No game files/assets changed; contact JSON and 16-row tests remain pending. Separate scope conflict: renderer hardcodes four rows, so live diagonal-route acceptance requires authorization for a presentation-only row-selection change. Full baseline npm test passed (all tests passed); git diff --check clean. Older notes below are historical.
 
 Branch codex/shelter-balance-audit from main cb7e53a. Main already removes the stale replay fingerprint exception and restamps all eight reference games. Added the explicit AGENTS rule. Completed paired on/off runs on four human-v0.4 timelines under v0.9 campaign rules. Same outcomes/Gate HP in all pairs; real occupancy verified. Report: reports/carapacid-shelter-balance-v0.9.md (results, caveats, reproducible command). Original fixture fidelity and instrumented ON equivalence passed. Restamp command reports zero changes. Next: user review/push; broader balance playtest remains open. No game balance changes authorized by the audit. Earlier notes below are historical.
 
