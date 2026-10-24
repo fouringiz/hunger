@@ -2,6 +2,8 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 const baseline=require('../reports/portal-teleport/baseline.json');
+// Shelter movement was explicitly authorized after this visual baseline. Keep its geometry checks.
+Object.assign(baseline,require('../reports/carapacid-shelter/simulation-baseline.json'));
 function boot(){
  const voices=[];
  class Audio{constructor(){this.state='running';this.currentTime=0;this.destination={};}createOscillator(){const v={frequency:{setValueAtTime(n){v.startPitch=n;},exponentialRampToValueAtTime(n){v.endPitch=n;}},connect(){},disconnect(){},start(){},stop(){}};voices.push(v);return v;}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}}

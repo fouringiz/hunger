@@ -2,6 +2,8 @@
 const assert=require('node:assert/strict');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const baseline=require('../reports/local-ground-life/baseline.json');
+// Shelter movement was explicitly authorized after this visual baseline. Keep its geometry checks.
+Object.assign(baseline,require('../reports/carapacid-shelter/simulation-baseline.json'));
 (async()=>{
  for(const zone of ['mire','ember']){
   const {canvas,run}=await loadWorld({zone,viewport:[960,540]});
