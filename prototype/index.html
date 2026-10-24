@@ -1054,13 +1054,14 @@ const WORLD_ZONE=(()=>{const name=typeof location==='undefined'?null:new URLSear
 const WORLD= WORLD_PALETTES[WORLD_ZONE], PLATFORM_HEIGHT=22, WORLD_RASTER_SCALE=2;
 function worldMaterial(file){
   if(typeof Image==='undefined')return null;
-  const image=new Image();image.onload=()=>{terrainArt=null;worldTileArt=null;worldPulseArt=null;worldLiveArt=null;worldPlatformArt=null;gateStoneCache=null;platformWallArt=null;};
+  const image=new Image();image.onload=()=>{terrainArt=null;worldTileArt=null;worldPulseArt=null;worldLiveArt=null;worldPlatformArt=null;gateStoneCache=null;gateSurfaceCache=null;platformWallArt=null;};
   image.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/'+file;return image;
 }
 const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');
 const LEGACY_GATE_ART=!!BALANCE_PRESET;
 const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('hunger-ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
 let worldTileArt=null,worldPulseArt=null,worldLiveArt=null,worldPlatformArt=null,gateStoneCache=null,platformWallArt=null;
+let gateSurfaceCache=null,portalLightMask=null;
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
 // Gait is driven by distance travelled: one full leg cycle per FORAGER_CYCLE_PX of lane. 40 px at the Forager's 52 px/s is
 // 1.3 cycles a second — a slow crawl through sludge (it started at 17.7 px, almost three cycles a second).
@@ -1089,6 +1090,7 @@ function foragerMireSprite(e,heading){
   if(e.type!=='forager'||!foragerMireReady())return false;
   const p=foragerMirePose(e,heading),c=FORAGER_MIRE.cell,s=FORAGER_MIRE.scale;
   ctx.drawImage(foragerMireArt,p.frame*c,p.direction*c,c,c,-c*.5*s,-130*s,c*s,c*s);
+  portalLightSprite(e,foragerMireArt,p.frame*c,p.direction*c,c,c,-c*.5*s,-130*s,c*s,c*s);
   drawForagerBurial(e,p);
   return true;
 }
@@ -1187,7 +1189,7 @@ function groundActorSprite(e,angle) {
   const phase=(e.d+(e.state==='lane'?0:(e.x+e.y)*.25))*.3;
   const stretch=1+Math.sin(phase)*.018;
   ctx.save();ctx.scale((Math.cos(angle)<0?-1:1)*stretch,1);
-  let drawn=false;try{ctx.drawImage(groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height);drawn=true;}catch(_){}finally{ctx.restore();}return drawn;
+  let drawn=false;try{ctx.drawImage(groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height);portalLightSprite(e,groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height,Math.cos(angle)<0);drawn=true;}catch(_){}finally{ctx.restore();}return drawn;
 }
 // Explicit source rectangles avoid generated artwork bleeding across nominal grid cells.
 const STRUCTURE_RECTS = [[43,111,302,271],[390,95,311,287],[739,83,330,302],[1102,72,327,313],
@@ -2016,6 +2018,76 @@ const GATE_DETAIL_BOX={x:GATE.x-GATE_DETAIL_ANCHOR.u*GATE_DETAIL_WIDTH,y:GATE.y-
 const GATE_ART_BOX=LEGACY_GATE_ART?{x:GATE.x-140,y:40,width:240,height:452}:{...GATE_DETAIL_BOX};
 const GATE_FLOOR=LEGACY_GATE_ART?[[0,.85],[.55,.85],[.64,.9],[.64,1],[0,1]]:[[.29,.94],[.55,.92],[.68,.95],[.65,1],[.25,1]];
 const GATE_PORTAL_POLYGON=LEGACY_GATE_ART?[[.47,.58],[.57,.58],[.65,.68],[.65,.85],[.57,.89],[.45,.88],[.44,.72]]:[[.45,.50],[.56,.51],[.64,.65],[.65,.88],[.58,.95],[.43,.94],[.38,.72]];
+// Cached presentation material: preserve the approved frontal projection and source alpha.
+function gateSurface(){
+  if(gateSurfaceCache)return gateSurfaceCache;
+  if(!worldImageReady(gateDetailArt))return gateDetailArt;
+  const b=GATE_DETAIL_BOX,canvas=document.createElement('canvas');canvas.width=Math.round(b.width*WORLD_RASTER_SCALE);canvas.height=Math.round(b.height*WORLD_RASTER_SCALE);
+  const c=canvas.getContext('2d');c.drawImage(gateDetailArt,0,0,canvas.width,canvas.height);
+  const pixels=c.getImageData?.(0,0,canvas.width,canvas.height);
+  if(pixels?.data){
+    for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){
+      const k=(y*canvas.width+x)*4,d=pixels.data,u=x/canvas.width,v=y/canvas.height;
+      if(!d[k+3])continue;
+      const cyan=d[k+1]>d[k]*1.16&&d[k+2]>d[k]*1.2;
+      if(!cyan){
+        // Ember removes the green cast from moss/stone; Mire keeps a muted olive earth cast.
+        const r=d[k],g=d[k+1],blue=d[k+2];
+        d[k]=WORLD_ZONE==='ember'?Math.min(255,r*1.10+g*.08):r*.97;
+        d[k+1]=WORLD_ZONE==='ember'?g*.84:g*.98;
+        d[k+2]=WORLD_ZONE==='ember'?blue*.78:blue*.94;
+      }
+      // Break the cutout's last edge into uneven, feathered pockets; the actual threshold stays intact.
+      const edge=(cyan?.974:.947)+Math.sin(u*81)*.008+Math.sin(u*157)*.004;
+      const fade=Math.max(0,Math.min(1,(v-edge)/(1-edge)));
+      d[k+3]*=1-fade*fade*(3-2*fade);
+    }
+    c.putImageData(pixels,0,0);
+  }
+  if(terrainArt&&!LEGACY_GATE_ART){
+    c.save();c.scale(WORLD_RASTER_SCALE,WORLD_RASTER_SCALE);c.translate(-b.x,-b.y);c.globalCompositeOperation='source-atop';
+    // The same world-space organic material climbs in narrow roots; the aperture stays clear.
+    const roots=[ [.12,.965,.15,.87,5], [.20,.985,.24,.90,7], [.29,.99,.32,.90,5], [.69,.99,.71,.87,7], [.80,.99,.84,.90,6], [.93,.99,.91,.88,5] ];
+    for(const [u,v,up,top,width]of roots){
+      const x=b.x+u*b.width,y=b.y+v*b.height,tx=b.x+up*b.width,ty=b.y+top*b.height;
+      c.save();c.beginPath();c.moveTo(x-width,y+8);
+      c.bezierCurveTo(x-width*1.4,y-10,tx-width,ty+12,tx,ty);
+      c.bezierCurveTo(tx+width*.8,ty+13,x+width*.4,y-13,x+width,y+8);c.closePath();c.clip();
+      c.globalAlpha=.88;c.drawImage(terrainArt,0,0,W,H);c.restore();
+    }
+    c.restore();
+  }
+  return gateSurfaceCache=canvas;
+}
+const PORTAL_LIGHT_RADIUS=80;
+function portalLightAmount(e){
+  if(S.gate<=0||!Number.isFinite(e.x)||!Number.isFinite(e.y))return 0;
+  const q=Math.max(0,1-Math.hypot(e.x-GATE.x,e.y-GATE.y)/PORTAL_LIGHT_RADIUS);
+  return q*q*(3-2*q);
+}
+function portalLightSprite(e,image,sx,sy,sw,sh,x,y,w,h,reverse=false){
+  const light=portalLightAmount(e);if(light<=0||!worldImageReady(image))return;
+  // One reusable small mask keeps spill on body pixels only; no new per-frame canvases.
+  if(!portalLightMask){portalLightMask=document.createElement('canvas');portalLightMask.width=portalLightMask.height=128;}
+  const g=portalLightMask.getContext('2d');g.clearRect(0,0,128,128);g.globalCompositeOperation='source-over';g.drawImage(image,sx,sy,sw,sh,0,0,128,128);
+  g.globalCompositeOperation='source-in';const tint=g.createLinearGradient?.(reverse?128:0,0,reverse?0:128,0);
+  if(tint?.addColorStop){tint.addColorStop(0,'#24b9d900');tint.addColorStop(.55,'#38d4ec9c');tint.addColorStop(1,'#b4ffff');}
+  g.fillStyle=tint?.addColorStop?tint:'#63eaff';g.fillRect(0,0,128,128);g.globalCompositeOperation='source-over';
+  ctx.save();ctx.globalAlpha*=light*.6;ctx.globalCompositeOperation='screen';ctx.drawImage(portalLightMask,x,y,w,h);ctx.restore();
+}
+function drawGateGroundShadow(c=ctx){
+  c.save();c.translate(GATE.x-43,GATE.y+15);c.scale(1,.22);
+  const shadow=c.createRadialGradient?.(0,0,12,0,0,132);
+  if(shadow?.addColorStop){shadow.addColorStop(0,'#07101099');shadow.addColorStop(.55,'#09100c55');shadow.addColorStop(1,'#09100c00');c.fillStyle=shadow;c.fillRect(-132,-132,264,264);}
+  c.restore();
+}
+function drawPortalGroundLight(c=ctx){
+  if(S.gate<=0)return;
+  c.save();c.translate(GATE.x,GATE.y+3);c.scale(1,.62);
+  const light=c.createRadialGradient?.(0,0,2,0,0,PORTAL_LIGHT_RADIUS);
+  if(light?.addColorStop){light.addColorStop(0,'#6cf6ff99');light.addColorStop(.35,'#21cce855');light.addColorStop(1,'#16bbdf00');c.globalCompositeOperation='screen';c.fillStyle=light;c.fillRect(-80,-80,160,160);}
+  c.restore();
+}
 function gateDetailPath(c,points){const b=GATE_DETAIL_BOX;points.forEach(([u,v],i)=>i?c.lineTo(b.x+u*b.width,b.y+v*b.height):c.moveTo(b.x+u*b.width,b.y+v*b.height));c.closePath();}
 function gatePolygon(points,fill,stroke){worldPolygon(ctx,points,fill,stroke);}
 function stoneFace(c,points,tint,pattern){
@@ -2044,7 +2116,7 @@ function buildGateStone(front){
     gateDetailPath(c,GATE_FLOOR);c.clip('evenodd');c.beginPath();
     if(!front)c.rect(GATE_ART_BOX.x,GATE_ART_BOX.y,GATE_ART_BOX.width,GATE_ART_BOX.height);
     near.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();c.clip('evenodd');
-    c.drawImage(gateDetailArt,b.x,b.y,b.width,b.height);c.restore();return canvas;
+    c.drawImage(gateSurface(),b.x,b.y,b.width,b.height);c.restore();return canvas;
   }
   const pattern=worldPattern(c,ancientStoneArt,64),side=front?-1:1;
   // Stepped, eroded buttresses extend away from the passage, leaving the real building pads free.
@@ -2065,19 +2137,25 @@ function buildGateStone(front){
   return canvas;
 }
 function gateStone(){if(!gateStoneCache)gateStoneCache={rear:buildGateStone(false),front:buildGateStone(true)};return gateStoneCache;}
-function drawGateApproach(){
+function paintGateApproach(c){
+  drawGateGroundShadow(c);
   if(worldImageReady(gateDetailArt)){
     // The flat threshold belongs below actors, unlike the upright near buttress.
-    const b=GATE_DETAIL_BOX;ctx.save();ctx.beginPath();gateDetailPath(ctx,GATE_FLOOR);ctx.clip();
-    ctx.drawImage(gateDetailArt,b.x,b.y,b.width,b.height);ctx.restore();return;
+    const b=GATE_DETAIL_BOX;c.save();c.beginPath();gateDetailPath(c,GATE_FLOOR);c.clip();
+    c.drawImage(gateSurface(),b.x,b.y,b.width,b.height);c.restore();drawPortalGroundLight(c);return;
   }
-  ctx.save();
-  worldPolygon(ctx,[gatePoint(-76,0,-22),gatePoint(76,0,-22),gatePoint(76,0,48),gatePoint(-76,0,48)],'#18251c70');
-  worldPolygon(ctx,[gatePoint(-68,0,-12),gatePoint(68,0,-12),gatePoint(68,0,34),gatePoint(-68,0,34)],'#636954','#9b9c7c');
-  ctx.strokeStyle='#394737';ctx.lineWidth=1;
-  for(let u=-60;u<=60;u+=15){const a=gatePoint(u,0,-11),b=gatePoint(u,0,33);ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();}
-  ctx.strokeStyle='#8fe5d377';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(...gatePoint(-35,0,GATE_MOUTH_DEPTH));ctx.lineTo(...gatePoint(35,0,GATE_MOUTH_DEPTH));ctx.stroke();
-  ctx.restore();
+  c.save();
+  worldPolygon(c,[gatePoint(-76,0,-22),gatePoint(76,0,-22),gatePoint(76,0,48),gatePoint(-76,0,48)],'#18251c70');
+  worldPolygon(c,[gatePoint(-68,0,-12),gatePoint(68,0,-12),gatePoint(68,0,34),gatePoint(-68,0,34)],'#636954','#9b9c7c');
+  c.strokeStyle='#394737';c.lineWidth=1;
+  for(let u=-60;u<=60;u+=15){const a=gatePoint(u,0,-11),b=gatePoint(u,0,33);c.beginPath();c.moveTo(...a);c.lineTo(...b);c.stroke();}
+  c.strokeStyle='#8fe5d377';c.lineWidth=2;c.beginPath();c.moveTo(...gatePoint(-35,0,GATE_MOUTH_DEPTH));c.lineTo(...gatePoint(35,0,GATE_MOUTH_DEPTH));c.stroke();
+  c.restore();drawPortalGroundLight(c);
+}
+function drawGateApproach(){
+  paintGateApproach(ctx);
+  // Creature burial samples the same lit floor instead of pasting unlit brown mud over the spill.
+  if(worldLiveArt)paintGateApproach(worldLiveArt.getContext('2d'));
 }
 function drawGateJamb(p,front){
   const stone=gateStone();ctx.drawImage(front?stone.front:stone.rear,GATE_ART_BOX.x,GATE_ART_BOX.y,GATE_ART_BOX.width,GATE_ART_BOX.height);
@@ -2141,6 +2219,7 @@ function drawPortalEntry(event){
       const c=FORAGER_MIRE.cell,k=FORAGER_MIRE.scale,pose=event.pose;
       ctx.scale(event.snapshot.__k,event.snapshot.__k);
       ctx.drawImage(foragerMireArt,pose.frame*c,pose.direction*c,c,c,-c*.5*k,-130*k,c*k,c*k);
+      portalLightSprite(event.hit,foragerMireArt,pose.frame*c,pose.direction*c,c,c,-c*.5*k,-130*k,c*k,c*k);
     }else{ctx.scale(event.snapshot.__k,event.snapshot.__k);drawEnemyBody(event.snapshot,event.heading);}
     ctx.restore();
   }
