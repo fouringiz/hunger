@@ -4,11 +4,27 @@
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const ROOT=path.join(__dirname,'..'),CELL=256,BASE=208;
-async function pack(kind,input){
- if(!['carapacid','leech'].includes(kind)||!input)throw new Error('Usage: node tools/pack-creature-crawl.cjs carapacid|leech INPUT.png');
+async function extractFrames(kind,input,{rowCuts=null,blackMatte=false}={}){
  const im=await loadImage(input),raw=createCanvas(im.width,im.height),g=raw.getContext('2d');g.drawImage(im,0,0);const pixels=g.getImageData(0,0,im.width,im.height).data;
+ if(blackMatte){
+  // Archived source sheets may have been flattened onto black. Remove only
+  // boundary-connected matte; preserve enclosed dark mouth/body details.
+  const w=im.width,h=im.height,background=new Uint8Array(w*h),queue=[];
+  const visit=i=>{if(i<0||i>=w*h||background[i])return;const k=i*4;if(Math.max(pixels[k],pixels[k+1],pixels[k+2])>18)return;background[i]=1;queue.push(i);};
+  for(let x=0;x<w;x++){visit(x);visit((h-1)*w+x);}for(let y=0;y<h;y++){visit(y*w);visit(y*w+w-1);}
+  for(let j=0;j<queue.length;j++){const i=queue[j],x=i%w;visit(i-w);visit(i+w);if(x)visit(i-1);if(x<w-1)visit(i+1);}
+  for(let i=0;i<w*h;i++){
+   const k=i*4;if(background[i]){pixels[k]=pixels[k+1]=pixels[k+2]=pixels[k+3]=0;continue;}
+   const x=i%w,edge=(x&&background[i-1])||(x<w-1&&background[i+1])||background[i-w]||background[i+w];
+   if(edge){const peak=Math.max(pixels[k],pixels[k+1],pixels[k+2]),a=Math.min(1,peak/90);
+    if(a>0&&a<1){pixels[k+3]=Math.round(255*a);for(let ch=0;ch<3;ch++)pixels[k+ch]=Math.min(255,Math.round(pixels[k+ch]/a));}
+   }
+  }
+ }
  // Generated rows have generous gutters, but their heights need not be equal.
- const ys=(kind==='carapacid'?[0,305,620,878,1223]:[0,278,596,835,1254]).map(y=>Math.round(y*im.height/(kind==='carapacid'?1223:1254)));
+ const cuts=rowCuts||(kind==='carapacid'?[0,305/1223,620/1223,878/1223,1]:[0,278/1254,596/1254,835/1254,1]);
+ const ys=cuts.map(y=>Math.round(y*im.height));
+ if(ys.length!==5||ys[0]!==0||ys[4]!==im.height||ys.some((y,i)=>i&&y<=ys[i-1]))throw new Error('Expected five increasing normalized row cuts');
  const rects=[];
  for(let row=0;row<4;row++){
   // Whole connected silhouettes avoid chopping a tail that crosses the nominal cell grid.
@@ -28,6 +44,11 @@ async function pack(kind,input){
    t.putImageData(data,0,0);rects.push({r,tile});
   }
  }
+ return {rects,width:im.width,height:im.height};
+}
+async function pack(kind,input){
+ if(!['carapacid','leech'].includes(kind)||!input)throw new Error('Usage: node tools/pack-creature-crawl.cjs carapacid|leech INPUT.png');
+ const {rects}=await extractFrames(kind,input);
  const scale=Math.min(224/Math.max(...rects.map(o=>o.r[2])),200/Math.max(...rects.map(o=>o.r[3]))),out=createCanvas(CELL*4,CELL*4),c=out.getContext('2d');
  rects.forEach(({r,tile},i)=>c.drawImage(tile,i%4*CELL+(CELL-r[2]*scale)/2,Math.floor(i/4)*CELL+BASE-r[3]*scale,r[2]*scale,r[3]*scale));
  const filename=kind==='carapacid'?'hunger-carapacid-shelter-v1.webp':'hunger-leech-mire-v1.webp';
@@ -37,4 +58,6 @@ async function pack(kind,input){
  for(let row=0;row<4;row++){const strip=createCanvas(1024,256);strip.getContext('2d').drawImage(out,0,row*256,1024,256,0,0,1024,256);fs.writeFileSync(path.join(dir,kind+'-'+row+'.png'),strip.toBuffer('image/png'));}
  console.log(filename+' packed: shared scale '+scale.toFixed(4));
 }
-pack(process.argv[2],process.argv[3]).catch(e=>{console.error(e);process.exitCode=1});
+if(require.main===module)pack(process.argv[2],process.argv[3]).catch(e=>{console.error(e);process.exitCode=1});
+
+module.exports={extractFrames,pack};

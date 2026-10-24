@@ -1,3 +1,14 @@
+# Active: Leech 16 directions — implementation checkpoint
+
+Branch codex/creature-16dir-atlas, continued from e6f2641. User authorizes only Leech now, including presentation row selection. Carapacid redesign deferred. Requested diagonal source was absent locally/remotely; user explicitly authorized generating it, showing before baking, and row-by-row retries if needed. Generated full 4x4 sheet via built-in imagegen, displayed and inspected, saved assets/art/sources/leech-headings-diagonal-4x4-v1.png. Camera/proportions similar; diagonal armor highlights slightly brighter. Source path: /Users/home/.codex/generated_images/01a16884-8faf-76b2-a01b-4265786ba173/exec-c0c0d0bd-247b-46e5-afec-63289911f209.png.
+
+Implemented configurable bake-creature-crawl.cjs: 8 authored + 8 affine intermediate headings, four phases, annotated belly support paths projected into contacts JSON; new sources can be configured for future Carapacid. Original cardinal source is opaque black (archived flattening), so extractor removes connected matte and protects dark interiors. Added edge decontamination and lossless WebP encoding via Pillow (system Python lacks Pillow; bundled runtime found automatically, or CREATURE_PYTHON override). Runtime change is ONLY Leech row count 4 -> 16 in creatureCrawlPose. No contacts rendering integration requested. Simulation untouched, no restamp required.
+
+Before/after native game captures in reports/leech-16dir; first curve changes rows 1,1,1,1,0,0,0,0 -> 4,4,3,2,2,1,0,0. Opened both strips and after full frame. Must refresh captures after final bake. Existing gait test passed initial atlas. New matte test caught dark source fringes; cleanup and lossless rebuild under validation. Next: finish atlas/contact tests, inspect contact overlay + final route series/full cycle, full npm test, final report/checkpoint. Do not mark complete yet.
+
+---
+Historical checkpoint follows.
+
 # Active: Creature 16-direction source audit — 2026-10-24
 
 Branch codex/creature-16dir-atlas from freshly fetched origin/main. User limits work to assets/baking tools and explicitly requires stopping if diagonal masters are missing. Visually inspected both 4x4 source sheets; missing SE/SW/NW/NE cycles for both castes. Stopped before baking. Exact two generation prompts and resume checklist: reports/creature-16dir-master-request.md. No game files/assets changed; contact JSON and 16-row tests remain pending. Separate scope conflict: renderer hardcodes four rows, so live diagonal-route acceptance requires authorization for a presentation-only row-selection change. Full baseline npm test passed (all tests passed); git diff --check clean. Older notes below are historical.

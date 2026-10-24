@@ -1264,7 +1264,8 @@ function creatureCrawlPose(e,angle) {
   if(!p){p={x,y,d,distance:Math.max(0,d)};creatureCrawlMotion.set(body,p);}
   else {p.distance+=e.state==='lane'?Math.abs(d-p.d):Math.hypot(x-p.x,y-p.y);p.x=x;p.y=y;p.d=d;}
   const stride=e.type==='carapacid'?28:24;
-  return {row:(Math.round(angle/(Math.PI/2))+4)%4,frame:Math.floor(p.distance/stride*4)%4,distance:p.distance};
+  const directions=e.type==='leech'?16:4;
+  return {row:(Math.round(angle/(2*Math.PI/directions))+directions)%directions,frame:Math.floor(p.distance/stride*4)%4,distance:p.distance};
 }
 function creatureCrawlSprite(e,angle) {
   const art=e.type==='carapacid'?carapacidShelterArt:e.type==='leech'?leechMireArt:null;
