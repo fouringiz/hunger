@@ -1,4 +1,15 @@
-# Active: Creature mire contact — implementation checkpoint (2026-10-25)
+# Creature mire contact — current implementation accepted (2026-10-25)
+
+## Final user confirmation
+
+- After being asked to open `prototype/index.html` from disk, inspect Leech near a platform/Gate and check the console, user replied `все ок`. Record the requested manual file-origin/browser check as passed by user and current visual correction as user-accepted. Agent did not perform the browser run.
+- Full `npm test` was previously confirmed by user after `2304e63`; no implementation changes followed. Ground burial/body protection and platform occlusion have focused/native evidence recorded below, with actual Mire/Ember before/after context and whole frames opened by the agent. User supplied the final human visual review; no separate agent review is claimed.
+- Current requested work is accepted: Carapacid/Leech contact integration, preserved Leech body/mouth/tail, and Leech hidden behind slab tops instead of drawn over them. Platform fix is render-only masking, not obstacle avoidance. Combat, balance, PATH/GATE_D, slots and source sprite layouts were not changed by this work.
+- Evidence remains local: `reports/generated/leech-platform-occlusion/{mire,ember}-{before,after}-context.webp` plus whole/gray frames; ground-mask evidence in `reports/generated/leech-body-contact/`. Generated drafts/captures are ignored and were not added to commits. Do not treat a future remote PR as having these attachments until they are explicitly supplied there.
+- Scope boundaries retained: no performance/device certification or exhaustive continuous all-heading visual claim; earlier general scene-contrast concerns were not addressed by this fix. No push/PR/merge performed. There is no further implementation step for the accepted correction unless new feedback arrives.
+
+---
+Previous checkpoint:
 
 ## Full suite passed by user
 
