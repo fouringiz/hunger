@@ -1,5 +1,18 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Platform occlusion: focused PASS and actual-frame review completed
+
+- User reports all five requested checks PASS on `197c82b`: leech-platform-occlusion, creature-mire-body, creature-mire-contact, creature-mire-parity, file-origin-canvas. This is focused validation, not confirmation of full npm test or a real browser console check.
+- New context/whole/gray files exist in `reports/generated/leech-platform-occlusion/`. Agent opened before/after context sheets and whole scenes in both zones, plus both after grayscale whole frames. No checks/captures run by agent.
+- Visual criteria in the recorded 25-sample 0–3.2s crossing: slab hides the overlapping head/body progressively (frames 5–10); full concealment when the body is entirely behind it (10–12); body emerges progressively at the other side (13–20). No body remains on top of the slab in the formerly bad frames 7–14. Exposed body remains visible. No rectangular patch or slab/tower overwrite observed. Scene perspective/geometry unchanged. Actual smoothness between these discrete samples and other approach directions remains outside this evidence.
+- Before/after evidence: `reports/generated/leech-platform-occlusion/mire-before-context.webp` -> `mire-after-context.webp`; `ember-before-context.webp` -> `ember-after-context.webp`; corresponding `*-before-whole.webp`/`*-after-whole.webp` show unchanged scene composition with corrected hiding.
+- Grayscale review: the generator remains distinguishable; Leech is fully behind the slab at the selected whole-frame timestamp, so these grayscale frames do not establish exposed-enemy contrast. Prior general contrast concern remains open; no unrelated terrain/lighting change made in this iteration.
+- Current narrow issue (Leech painted over slab tops) is visually corrected in the sampled passage and supported by user-run front/side/behind tests in three scales. No final user artistic approval of these new frames is inferred merely from 'all pass'. Earlier acceptance of the ground-mask correction still stands.
+- Next release checks by user: `npm test`, then actual `file://` game/console check around a platform and near the Gate. Before any PR merge, obtain the required independent second visual review. Latest all-heading scene capture/general contrast and full release verification must not be claimed complete. No push/PR/merge performed.
+
+---
+Previous iteration:
+
 ## Platform-top overlap explicitly rejected; depth-mask fix pending
 
 - User clarified that Leech still crawls visually across platform tops, pointing at frames 7–14 of the accepted context sheet. Previous acceptance covered the ground-mask correction; it does not approve platform overlap. Agent's visual review missed this defect. User reference preserved in `reports/generated/leech-platform-occlusion/user-references/platform-overlap.png`.
