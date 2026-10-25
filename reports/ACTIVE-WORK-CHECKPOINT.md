@@ -1,3 +1,37 @@
+# Active: Creature mire contact — paused at user checkpoint request (2026-10-25)
+
+## Verified state
+
+- Working branch: codex/creature-mire-contact. Fast-forwarded to current local/origin main 22e4d45, which changed only display cell sizes: Carapacid 76, Leech 80 (previously 70/55). Preserve these new sizes.
+- Current task: make Carapacid and Leech sink into mud like Forager: feathered lower-body occlusion, contact shadow, local ground deformation and trails. Presentation only; combat, balance, collision radii, speed, PATH/GATE_D and Forager rendering must remain unchanged.
+- No task implementation has been made to prototype/index.html or assets. Only a capture tool and original BEFORE captures exist. The previous checkpoint request was interrupted before saving; this entry closes that gap.
+- tools/capture-creature-mire.cjs captures the actual renderer through loadWorld: Carapacid/Leech/Forager, eight frames per cycle plus a full map view. BEFORE is pinned to aa9ed15. Captures in reports/creature-mire-contact are successful but PRE-DATE the size change in 22e4d45; they are historical only, not a valid current comparison. Not yet visually inspected. No AFTER captures exist.
+- Leech has a 16x4 atlas and assets/hunger-leech-mire-v1.contacts.json (belly support paths). Carapacid still has its old 4x4 atlas; no Carapacid contacts JSON exists. New Carapacid design was deferred in the previous task. Need contacts for the CURRENT atlas without redesigning it.
+- No tests run for this task; earlier green npm test belonged to the completed Leech atlas task.
+
+## Inspected implementation
+
+- creatureCrawlSprite / drawCreatureMudLip: currently only a narrow foreground lip; actor rendering is already scaled by e.__k inside enemyArt, so world texture/contact sampling must account for that scale.
+- foragerMireSprite -> drawForagerBurial uses actual worldLiveArt texture plus baked contact coordinates; preserve these functions and Forager assets byte-for-byte.
+- observeMireTraffic / drawLivingSurface already create generic trails/local displacement for all bodies. Extend only Carapacid/Leech branches using their contact geometry; leave Forager branch/output unchanged.
+- JSON cannot be fetched naively from file://. Existing Forager contacts are embedded in the HTML; use a reproducible offline embedding step for creature contacts as well.
+
+## Next steps (implementation proposal, not completed)
+
+1. Re-read AGENTS.md and latest state. Update BEFORE capture baseline from aa9ed15 to 22e4d45 (or newly verified main), regenerate current Mire/Ember before frames and open them.
+2. Derive/annotate visible foot contacts for the current Carapacid atlas; embed both caste contact tables from JSON. Preserve all atlas files/layouts.
+3. Add contact-local shadow BEFORE each sprite; sink its presentation a few pixels; copy real ground texture over belly/feet with a soft irregular mask AFTER it. Use drawing/compositing/gradients, no runtime pixel reads. Match ground coordinates with actor scale. Belly paths must cover Leech underside in all headings, not just an ellipse at the anchor; Carapacid shell remains above mud while lower body/feet are buried.
+4. Align small ground displacement and short-lived trails with those contacts, not a disconnected generic shadow. Preserve foundation protection and Forager pixels.
+5. Verify actual closeups/full cycles/full frame and grayscale, before/after for both zones and relevant headings. Test regression against old lip-only rendering, contact projection, rendering-only state/fingerprints, unchanged Forager, and SecurityError resilience. Full npm test and diff check before final report.
+6. Save checkpoints, concise evidence/report and PR commands; no remote push/merge authorized here.
+
+## Browser verification limitation
+
+AGENTS now requires file:// browser/console check and forbids unguarded canvas pixel reads. Chrome was unavailable via cua. Available in-app browser explicitly BLOCKED file:///Users/home/github/game/prototype/index.html: only HTTP(S) permitted; tool forbids workaround/alternate surface/raw CDP to bypass. Do not attempt a bypass. This is a browser URL-policy restriction, not a user refusal. Native capture does not establish browser success. Use safe mocked SecurityError tests for independent coverage, and clearly leave real file:// console check to user/authorized browser access.
+
+---
+Previous completed atlas task checkpoint follows; it is not progress on this task.
+
 # Active: Leech 16 directions — ready for visual review
 
 Branch codex/creature-16dir-atlas; implementation checkpoint 5272414. Continued from e6f2641. User authorized generating missing diagonals, showing the source before baking, and Leech-only presentation row selection. Generated source is saved in assets/art/sources/leech-headings-diagonal-4x4-v1.png and was shown before baking. Carapacid remains deferred and byte-unchanged.
