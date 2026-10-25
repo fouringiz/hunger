@@ -1,5 +1,18 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## User verification received; Leech tail correction pending
+
+- User supplied successful output on `d768cdb` for creature-mire-contact (80 poses, old-lip negative control, portal boundary), creature-mire-parity (both zones, Forager pixels, simulation fingerprints/geometry), creature-crawl, portal-entry and file-origin-canvas (both zones). These focused results are confirmed by the user's run, not a full suite or a real browser check.
+- User successfully captured before/after with `--poses` for Mire and Ember. Opened Mire before/after route strips for both creatures, both after whole/gray frames, Mire Carapacid after pose sheet, Mire Leech before/after pose sheets, Ember Leech after pose sheet.
+- Visual findings: feet/belly occlusion is visible and detached bright rings are absent in inspected route strips. However, Leech's lifted tail tip is erased by the all-rim mask, so this output is rejected. Pose sheets also reveal that their fixed probe origin is off-route; they test heading coverage, while route strips supply the mud-context comparison. Discrete sheets do not establish smooth motion/no sliding in real-time.
+- Grayscale: creatures are distinguishable, but terrain/platforms/Gate compete with them in contrast. The required enemy/tower contrast hierarchy is not approved; towers are absent from these scenes. Projection was not changed; complete perspective acceptance remains open.
+- Preserved rejected Leech route/pose sheets under ignored `reports/generated/creature-mire-rejected-d768cdb/` before further capture. Current comparison references: `reports/creature-mire-contact/mire-leech-before.webp` vs `reports/generated/creature-mire-rejected-d768cdb/mire-leech-after.webp`; corresponding `*-poses.webp` show all headings.
+- New implementation, NOT RUN: only Leech rim masking is limited to within 5 local pixels of the authored belly support polyline; its raised tail is excluded. Carapacid, sink, sizes, ground trails, combat and geometry unchanged. Added a fixed lifted-tail landmark assertion plus negative control that restores the rejected all-rim behavior. Existing 80-pose burial/feathering thresholds retained.
+- Next user commands: `node tests/creature-mire-contact.cjs`; if green, `node tools/capture-creature-mire.cjs after --poses && node tools/capture-creature-mire.cjs after --ember --poses`. Baseline images need no regeneration. Inspect the new tail and belly together before any further visual iteration. Full npm test, populated gameplay contrast, actual file-origin browser console/portal motion and independent visual approval remain pending.
+
+---
+Previous session checkpoint:
+
 ## Resumed session: pending user checks
 
 - Read AGENTS.md, this checkpoint and working changes on `codex/creature-mire-contact`. All earlier verification claims below are historical; no tests, captures or browser checks were run in this session.

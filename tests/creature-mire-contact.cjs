@@ -23,6 +23,22 @@ const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/ca
     return Buffer.from(pixel());
    };
    const raw=paint(''),buried=paint(`drawCreatureBurial(probe,${pose});`);
+   if(type==='leech'&&row===0&&frame===0){
+    // Fixed atlas landmark: the lifted tail tip, well above the belly. The old all-rim mask erased it.
+    run('var savedBellyContact=creatureMireTouchesBelly;creatureMireTouchesBelly=()=>true;creatureMireMasks.clear();');
+    const badTail=paint(`drawCreatureBurial(probe,${pose});`);
+    run('creatureMireTouchesBelly=savedBellyContact;creatureMireMasks.clear();');
+    let tailPixels=0,oldDamaged=0;
+    for(let y=88;y<109;y++)for(let x=106;x<114;x++){
+     const k=(y*256+x)*4;if(raw[k+3]<180)continue;
+     tailPixels++;
+     const delta=p=>Math.max(...[0,1,2,3].map(c=>Math.abs(p[k+c]-raw[k+c])));
+     assert.ok(delta(buried)<=3,'raised tail tip must retain its original sprite pixels');
+     if(delta(badTail)>10)oldDamaged++;
+    }
+    assert.ok(tailPixels>5,'fixed tail landmark contains visible sprite pixels');
+    assert.ok(oldDamaged>3,'negative control detects the known all-rim tail erosion');
+   }
    // Negative control: the previous anchor-only lip cannot cover a raised belly or leg contour.
    const lip=paint("ctx.save();ctx.beginPath();ctx.rect(-40,-.7,80,4.7);ctx.clip();ctx.fillStyle='#b06020';ctx.fillRect(-40,-.7,80,4.7);ctx.restore();");
    let covered=0,oldCovered=0,soft=0;

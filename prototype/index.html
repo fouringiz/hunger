@@ -1297,6 +1297,15 @@ function creatureMirePoints(e,pose){
   });
   return {rim:frame.rim.map(project),belly:frame.belly.map(project),feet};
 }
+function creatureMireTouchesBelly(p,belly){
+  // A silhouette edge can belong to the raised tail, rather than the ground-facing belly.
+  for(let i=1;i<belly.length;i++){
+    const a=belly[i-1],b=belly[i],dx=b.x-a.x,dy=b.y-a.y;
+    const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1)));
+    if(Math.hypot(p.x-a.x-t*dx,p.y-a.y-t*dy)<=5)return true;
+  }
+  return false;
+}
 function creatureMireMask(e,pose){
   const key=e.type+':'+pose.row+':'+pose.frame;
   if(creatureMireMasks.has(key))return creatureMireMasks.get(key);
@@ -1308,7 +1317,10 @@ function creatureMireMask(e,pose){
     g.fillStyle=fill;g.beginPath();g.arc(0,0,1,0,Math.PI*2);g.fill();g.restore();
   };
   // The actual silhouette rim is buried, not merely the actor's nominal y=0 anchor.
-  for(const p of points.rim)dab(p.x,p.y+1,2.8,e.type==='leech'?3.8:3.1);
+  for(const p of points.rim){
+    if(e.type==='leech'&&!creatureMireTouchesBelly(p,points.belly))continue;
+    dab(p.x,p.y+1,2.8,e.type==='leech'?3.8:3.1);
+  }
   const support=e.type==='leech'?points.belly:points.feet;
   for(let i=0;i<support.length;i++){
     const p=support[i];dab(p.x,p.y+1,e.type==='leech'?4.2:4,e.type==='leech'?4.8:3.2);
