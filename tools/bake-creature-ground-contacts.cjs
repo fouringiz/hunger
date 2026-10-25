@@ -3,6 +3,22 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {loadImage,createCanvas}=require('@napi-rs/canvas');
 const root=path.join(__dirname,'..');
+function leechBodyCore(image,row,frame){
+ // Bake from the actual display-size alpha, including resampling. No runtime pixel reads.
+ const c=createCanvas(128,128),g=c.getContext('2d');
+ g.drawImage(image,frame*256,row*256,256,208,24,3,80,65);
+ const rgba=g.getImageData(0,0,128,128).data,offsets=[],spans=[];
+ for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=9)offsets.push([dx,dy]);
+ for(let y=3;y<125;y++){
+  let start=-1;
+  for(let x=3;x<=125;x++){
+   const inside=x<125&&offsets.every(([dx,dy])=>rgba[((y+dy)*128+x+dx)*4+3]>=200);
+   if(inside&&start<0)start=x;
+   if(!inside&&start>=0){spans.push([start-64,y-64,x-start]);start=-1;}
+  }
+ }
+ return spans;
+}
 async function bake(){
  const tables={};
  for(const kind of ['carapacid','leech']){
@@ -21,7 +37,7 @@ async function bake(){
      const bands=r%2===0?[[20,88,120,207],[89,151,140,207],[152,235,120,207]]:[[20,95,105,163],[20,95,164,207],[160,235,105,163],[160,235,164,207]];
      feet=bands.map(([a,b,t,z])=>{let best=null;for(let y=t;y<=z;y++)for(let x=a;x<=b;x++)if(p[(y*256+x)*4+3]>=160&&(!best||y>best[1]))best=[x,y];assert.ok(best,'visible foot in band');return best;});
     }
-    frames.push({rim,feet,belly:old?old.rows[r][f].belly:[]});
+    frames.push({rim,feet,belly:old?old.rows[r][f].belly:[],...(kind==='leech'?{bodyCore:leechBodyCore(im,r,f)}:{})});
    }
    rows.push(frames);
   }

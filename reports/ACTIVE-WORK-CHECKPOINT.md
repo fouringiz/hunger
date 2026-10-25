@@ -1,5 +1,16 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Body protection from actual alpha added; tests pending
+
+- User ran the chain on `9e354b2`: body preservation failed at Leech row 0/frame 2, display pixel (147,126). Contact test and capture did not run. The 3.5-px strip is not accepted.
+- Inspection: a strip measured from sparse 4-atlas-pixel rim samples does not guarantee distance from the actual resampled silhouette. Interpolation can enter body interior. Further width tuning alone is insufficient.
+- Added offline `bodyCore` scanline spans for each Leech pose. Baker renders the exact 80px cell/4px sink to alpha, protects a 3px opaque interior (alpha >=200), and embeds spans alongside the contacts. The runtime subtracts this protection from the ground mask using compositing, without pixel reads. This adds a margin around the independent test's stricter 4px/alpha220 interior. Tests and burial thresholds are unchanged; strong lower-edge overlap is retained where outside protected interior.
+- Ran ONLY the data-generation command `node tools/bake-creature-ground-contacts.cjs` to build implementation data; it succeeded. No tests, captures or browser checks were run by the agent. Atlas images and Carapacid data/renderer unchanged.
+- Next user run remains: `node tests/creature-mire-body.cjs && node tests/creature-mire-contact.cjs && node tools/capture-leech-contact-context.cjs`. Both numerical invariants and actual new frames remain unverified. Platform-front occlusion and contrast still separate open issues.
+
+---
+Previous iteration:
+
 ## Narrow-edge regression result: body preserved, burial insufficient
 
 - User ran checks on `a5d1bef`: body preservation passed (23,494 interior pixels across 64 poses; rejected broad mask damages 3,715). Contact test failed on Leech row 0/frame 0: only 4 strongly buried underside pixels, required >15. The chained context capture did NOT run.
