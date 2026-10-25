@@ -15,7 +15,7 @@ function runtime({image = true, pathname = '/prototype/'} = {}) {
     addEventListener(){},getBoundingClientRect:() => ({left:0,top:0})};
   const ctx = new Proxy({}, {get(target, key) {
     if (key === 'canvas') return canvas;
-    if (key === 'createLinearGradient') return () => ({addColorStop(){}});
+    if (key === 'createLinearGradient' || key === 'createRadialGradient') return () => ({addColorStop(){}});
     if (key === 'measureText') return value => ({width:String(value).length * 6});
     if (key === 'drawImage') return (...args) => calls.drawImages.push(args);
     if (key === 'arc') return (...args) => calls.arcs.push(args);

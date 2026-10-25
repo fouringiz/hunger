@@ -14,7 +14,7 @@ function makeContext() {
 function makeUiContext() {
   let input=null, downloadCount=0;
   const gradient={addColorStop(){}};
-  const drawing=new Proxy({}, {get(_t,key){if(key==='createLinearGradient')return ()=>gradient;if(key==='measureText')return value=>({width:String(value).length*6});return ()=>{};},set(){return true;}});
+  const drawing=new Proxy({}, {get(_t,key){if(key==='createLinearGradient'||key==='createRadialGradient')return ()=>gradient;if(key==='measureText')return value=>({width:String(value).length*6});return ()=>{};},set(){return true;}});
   const canvas={width:960,height:540,style:{},getContext:()=>drawing,getBoundingClientRect:()=>({left:0,top:0}),addEventListener(name,fn){if(name==='pointerdown')this.pointerDown=fn;}};
   const document={hidden:false,body:{appendChild(el){if(el.type==='file')input=el;}},getElementById:()=>canvas,createElement(tag){
     if(tag==='canvas')return {width:0,height:0,getContext:()=>drawing};

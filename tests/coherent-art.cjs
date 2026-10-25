@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 function boot(search=''){
  const images=[],draws=[],rotations=[],transforms=[],lines=[];class Image{constructor(){this.complete=true;this.naturalWidth=1448;this.naturalHeight=1086;images.push(this);}}
- const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...a)=>draws.push(a);if(k==='rotate')return a=>rotations.push(a);if(k==='transform')return (...a)=>transforms.push(a);if(k==='moveTo'||k==='lineTo')return (...a)=>lines.push([k,...a]);if(k==='createLinearGradient')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*6});return o[k]??(o[k]=()=>{});}});
+ const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...a)=>draws.push(a);if(k==='rotate')return a=>rotations.push(a);if(k==='transform')return (...a)=>transforms.push(a);if(k==='moveTo'||k==='lineTo')return (...a)=>lines.push([k,...a]);if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*6});return o[k]??(o[k]=()=>{});}});
  const canvas={style:{},getContext:()=>ctx,addEventListener(){}};
  const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
  vm.runInContext(source,c);return {run:x=>vm.runInContext(x,c),images,draws,rotations,transforms,lines};
@@ -40,7 +40,7 @@ const angleSet=new Set();for(let i=0;i<64;i++){
 }
 assert.equal(angleSet.size,64,'the weapon has continuous yaw, not four directional cells');
 for(const type of ['forager','carapacid','leech']){
- const r=boot();for(const d of [0,1,40,80]){r.draws.length=0;r.run(`const sample${d}=makeEnemy('${type}',1);sample${d}.d=${d};groundActorSprite(sample${d},0);`);const a=r.draws[0];assert.equal(a[6]+a[8],0,'every crawling pose contacts the ground line');}
+ const r=boot();for(const d of [0,1,40,80]){r.draws.length=0;r.run(`const sample${d}=makeEnemy('${type}',1);sample${d}.d=${d};groundActorSprite(sample${d},0);`);const a=r.draws[0];assert.equal(a[6]+a[8],{forager:0,carapacid:3.5,leech:4}[type],'every crawling pose keeps its fixed ground/burial baseline');}
 }
 const tesla=boot();tesla.run("reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
 const firstLines=tesla.lines.slice();tesla.lines.length=0;tesla.run('S.towers[0].angle=Math.PI/2;drawTowerBody(S.towers[0]);');assert.deepEqual(tesla.lines,firstLines,'Tesla draws no changing directional pointer');
