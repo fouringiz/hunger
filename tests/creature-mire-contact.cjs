@@ -43,14 +43,21 @@ const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/ca
    }
    // Negative control: the previous anchor-only lip cannot cover a raised belly or leg contour.
    const lip=paint("ctx.save();ctx.beginPath();ctx.rect(-40,-.7,80,4.7);ctx.clip();ctx.fillStyle='#b06020';ctx.fillRect(-40,-.7,80,4.7);ctx.restore();");
-   let covered=0,oldCovered=0,soft=0;
-   for(let y=50;y<124;y++)for(let x=85;x<172;x++){
+   let covered=0,oldCovered=0,rimCovered=0,rimSoft=0;
+   const bottom=new Map();
+   for(let x=85;x<172;x++)for(let y=140;y>=50;y--)if(raw[(y*256+x)*4+3]>=180){bottom.set(x,y);break;}
+   for(let y=50;y<=140;y++)for(let x=85;x<172;x++){
     const k=(y*256+x)*4;if(raw[k+3]<180||groundDistance(raw,k)<70)continue;
-    if(groundDistance(buried,k)<groundDistance(raw,k)*.5)covered++;
-    if(groundDistance(lip,k)<groundDistance(raw,k)*.5)oldCovered++;
-    const delta=groundDistance(raw,k)-groundDistance(buried,k);if(delta>10&&delta<groundDistance(raw,k)*.8)soft++;
+    const strong=groundDistance(buried,k)<groundDistance(raw,k)*.5;
+    // Keep the raised-underside regression, without confusing it with the position of every heading's belly.
+    if(y<124){if(strong)covered++;if(groundDistance(lip,k)<groundDistance(raw,k)*.5)oldCovered++;}
+    if(y>=bottom.get(x)-4){
+     if(strong)rimCovered++;
+     const delta=groundDistance(raw,k)-groundDistance(buried,k);if(delta>10&&delta<groundDistance(raw,k)*.8)rimSoft++;
+    }
    }
-   if(!(covered>15)||!(soft>10))poseFailures.push(`${type} row ${row} frame ${frame}: buried=${covered} (required >15), feathered=${soft} (required >10)`);
+   if(!(rimCovered>15)||!(rimSoft>10))poseFailures.push(`${type} row ${row} frame ${frame}: lower-rim buried=${rimCovered} (required >15), feathered=${rimSoft} (required >10)`);
+   if((type==='carapacid'||row===0)&&!(covered>15))poseFailures.push(`${type} row ${row} frame ${frame}: raised underside=${covered} (required >15)`);
    assert.equal(oldCovered,0,'old lip fails the same raised-underside regression');rejectedOldLip++;
   }
  }

@@ -1,5 +1,18 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Diagnostic reviewed: incorrect fixed measurement window corrected; visual capture needed
+
+- User ran all 14 diagnostic candidates. All body-preservation tests pass; none passes the old contact test. Best strip (depth4.5/reach7/feather2.5) fails only Leech 15/0 (13 buried, 12 soft) and 15/3 (6 buried, 14 soft). Full logs read from `reports/generated/leech-burial-diagnostic/`.
+- Found a test-specification error: every pose was required to bury >15 pixels inside fixed `y<124`, although the actual projected belly contacts for 15/0 and 15/3 largely lie at y126–131. That window was introduced to reject the anchor-only lip; it is not a valid all-heading ground-contact region. Repeated parameter tuning was optimizing an incorrect proxy.
+- Selected the already screened depth4.5/reach7/feather2.5 mask for the next visual iteration. Baked body protection retained. This candidate has prior user-run body PASS, but the current implementation/updated test is not yet rerun and appearance is not approved.
+- Corrected contact test: all 80 poses require >15 strongly buried pixels and >10 feathered pixels along the actual rendered lower silhouette (outer 4px, obtained independently from raw sprite alpha). Kept the original raised-underside >15 regression for all Carapacid poses and four Leech row-0 phases, where it is meaningful. Original lip still must give 0 in the raised window, and lifted-tail/body tests remain unchanged. Known bad lip is still rejected; exact rejected broad mask still damages 3,715 protected interior pixels in the user's diagnostic.
+- This is a documented correction of measurement location, not artistic approval or evidence of passing tests. No threshold was lowered. Agent ran no tests/captures.
+- Next user commands separately: `node tests/creature-mire-body.cjs && node tests/creature-mire-contact.cjs`, then `node tools/capture-leech-contact-context.cjs` regardless of test outcome, so that actual game evidence is finally available. Inspect paired context/whole files in `reports/generated/leech-body-contact/`, including platform-front overlap, before further changes.
+- Diagnostic source anchors updated for the selected mask. Full cycles, populated grayscale/readability, file-origin browser console, platform-depth assessment and independent final visual review remain open.
+
+---
+Previous iteration:
+
 ## All-pose results received; bounded diagnostic prepared, game unchanged
 
 - User run on `0a4b8eb`: all 23,494 protected interior pixels pass. Contact/feathering fails in 14 Leech poses: 1/1, 1/3, 3/2, 3/3, 4/2, 8/0, 8/2, 8/3, 11/2, 12/2, 15/0, 15/1, 15/2, 15/3. Some lack burial, others feathering. Capture did not run. Current game remains a rejected/unverified implementation, not ready for approval.

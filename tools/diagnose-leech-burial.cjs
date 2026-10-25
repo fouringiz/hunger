@@ -8,10 +8,9 @@ const source=fs.readFileSync(path.join(root,'prototype/index.html'),'utf8');
 const replace=(s,from,to)=>{assert.ok(s.includes(from),'candidate source anchor missing: '+from);return s.replace(from,to);};
 const candidates=[];
 for(const depth of [3.5,4.5,5.5])for(const reach of [5,7])for(const feather of [1.5,2.5]){
- let html=replace(source,'createLinearGradient(0,p.y-3.5,0,p.y-.5)',`createLinearGradient(0,p.y-${depth},0,p.y${feather-depth})`);
- html=replace(html,"fill.addColorStop(1/3,'#fff');",'');
- html=replace(html,'fillRect(left,p.y-3.5,width,7.5)',`fillRect(left,p.y-${depth},width,${depth+4})`);
- html=replace(html,'<=5)return true;',`<=${reach})return true;`);
+ let html=replace(source,'createLinearGradient(0,p.y-4.5,0,p.y-2)',`createLinearGradient(0,p.y-${depth},0,p.y${feather-depth})`);
+ html=replace(html,'fillRect(left,p.y-4.5,width,8.5)',`fillRect(left,p.y-${depth},width,${depth+4})`);
+ html=replace(html,'<=7)return true;',`<=${reach})return true;`);
  candidates.push({id:`strip-depth${depth}-reach${reach}-feather${feather}`,html});
 }
 // A distinct geometry candidate: authored contact dabs with the same baked core protection.
@@ -21,7 +20,7 @@ const oldMask=rejected.match(maskPattern)[0];
 const protection="if(e.type==='leech'){g.globalCompositeOperation='destination-out';g.fillStyle='#fff';for(const [x,y,width]of CREATURE_MIRE_CONTACTS.leech.rows[pose.row][pose.frame].bodyCore)g.fillRect(x,y,width,1);g.globalCompositeOperation='source-over';}\n  ";
 for(const reach of [5,7]){
  const mask=replace(oldMask,'creatureMireMasks.set(key,mask);return mask;',protection+'creatureMireMasks.set(key,mask);return mask;');
- const html=replace(source.replace(maskPattern,()=>mask),'<=5)return true;',`<=${reach})return true;`);
+ const html=replace(source.replace(maskPattern,()=>mask),'<=7)return true;',`<=${reach})return true;`);
  candidates.push({id:`contact-dabs-protected-reach${reach}`,html});
 }
 const results=[];
