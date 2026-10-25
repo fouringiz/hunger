@@ -1,5 +1,15 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Protected body passed; strengthen edge opacity, collect all pose failures
+
+- User run on `1677a5f`: body preservation passed (23,494 interior pixels; rejected mask damages 3,715). Contact test passed through earlier poses, then failed at Leech row 3/frame 2: 11 buried pixels, required >15. Context capture did not run.
+- New, untested: same 3.5px mask extent, same contact gate and baked body protection; reaches full opacity after the first 1px of feathering instead of the earlier gradual 3px ramp. No widened area, no changes to simulation or other creatures.
+- Contact test now collects burial/feathering failures across all 80 poses before failing, to avoid serial discovery of one pose per user run. Strict >15 burial and >10 feathering conditions remain unchanged, as do negative controls and body/tail preservation.
+- Next user run: `node tests/creature-mire-body.cjs && node tests/creature-mire-contact.cjs && node tools/capture-leech-contact-context.cjs`. Agent ran no checks/captures. New appearance and all remaining criteria are unverified.
+
+---
+Previous iteration:
+
 ## Body protection from actual alpha added; tests pending
 
 - User ran the chain on `9e354b2`: body preservation failed at Leech row 0/frame 2, display pixel (147,126). Contact test and capture did not run. The 3.5-px strip is not accepted.

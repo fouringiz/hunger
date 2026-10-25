@@ -7,6 +7,7 @@ const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/ca
  const ctx=canvas.getContext('2d'),pixel=()=>ctx.getImageData(0,0,256,256).data;
  const groundDistance=(p,k)=>Math.abs(p[k]-176)+Math.abs(p[k+1]-96)+Math.abs(p[k+2]-32);
  let rejectedOldLip=0;
+ const poseFailures=[];
  for(const [type,file,art]of [['carapacid','hunger-carapacid-shelter-v1',images.carapacidShelterArt],['leech','hunger-leech-mire-v1',images.leechMireArt]]){
   const table=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets',file+'.ground-contacts.json')));
   assert.deepEqual(JSON.parse(run(`JSON.stringify(CREATURE_MIRE_CONTACTS.${type})`)),table,'offline/runtime contacts agree');
@@ -48,11 +49,11 @@ const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/ca
     if(groundDistance(lip,k)<groundDistance(raw,k)*.5)oldCovered++;
     const delta=groundDistance(raw,k)-groundDistance(buried,k);if(delta>10&&delta<groundDistance(raw,k)*.8)soft++;
    }
-   assert.ok(covered>15,`${type} row ${row} frame ${frame}: ground must overlap actual raised underside (${covered})`);
-   assert.ok(soft>10,'burial has a feathered transition');
+   if(!(covered>15)||!(soft>10))poseFailures.push(`${type} row ${row} frame ${frame}: buried=${covered} (required >15), feathered=${soft} (required >10)`);
    assert.equal(oldCovered,0,'old lip fails the same raised-underside regression');rejectedOldLip++;
   }
  }
+ assert.equal(poseFailures.length,0,'All pose failures (unchanged thresholds):\n'+poseFailures.join('\n'));
  run("ctx.setTransform(1,0,0,1,0,0);reset();S.phase='wave';S.spawnQueue=[];const actor=makeEnemy('leech',1);actor.d=500;Object.assign(actor,posAt(actor.d));S.enemies=[actor];draw();");
  const sign=run('replaySignature()');run('draw();');assert.equal(run('replaySignature()'),sign,'draw cannot mutate simulation');
  run('actor.d+=10;Object.assign(actor,posAt(actor.d));presentationTime+=.1;draw();');

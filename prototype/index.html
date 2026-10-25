@@ -1321,7 +1321,7 @@ function creatureMireMask(e,pose){
         const p={x:left+width/2,y:a.y+(b.y-a.y)*t};
         if(!creatureMireTouchesBelly(p,points.belly))continue;
         const fill=g.createLinearGradient(0,p.y-3.5,0,p.y-.5);
-        fill.addColorStop(0,'#ffffff00');fill.addColorStop(.5,'#ffffffbb');fill.addColorStop(1,'#fff');
+        fill.addColorStop(0,'#ffffff00');fill.addColorStop(1/3,'#fff');fill.addColorStop(1,'#fff');
         g.fillStyle=fill;g.fillRect(left,p.y-3.5,width,7.5);
       }
     }
