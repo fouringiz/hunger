@@ -4,7 +4,7 @@
 
 - User supplied an independent review accepting code, passing tests and improved visuals, with publication follow-ups. The user-owned verification agreement is now explicit in CLAUDE.md as well as AGENTS.md.
 - Recorded platform avoidance, mutation markers and offset HP bar in the capture README backlog; no gameplay or test changes.
-- PR #54 is open at this checkpoint. Four reviewer captures named `pr54-…` were not found locally; their location has been requested. Attaching those frames and squash-merging remain pending; no merge is claimed.
+- Located and opened all four final reviewer comparisons in Downloads (`pr54-…`); uploaded them as GitHub attachments in https://github.com/fouringiz/hunger/pull/54#issuecomment-6400265423. BEFORE is above AFTER in each comparison. The comment contains Carapacid/Leech contact and Mire/Ember platform crossings. PR #54 is ready for the user-authorized squash merge; no new game or test changes.
 
 ## Publication cleanup
 

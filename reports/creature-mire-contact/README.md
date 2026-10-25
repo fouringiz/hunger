@@ -1,5 +1,7 @@
 # Creature mire contact captures
 
+Final reviewed BEFORE/AFTER comparisons are published as four image attachments in [PR #54](https://github.com/fouringiz/hunger/pull/54#issuecomment-6400265423): Carapacid contact, Leech contact, and Leech platform occlusion in Mire/Ember. In each image, BEFORE is above AFTER.
+
 The tracked BEFORE images here are historical captures from aa9ed15, before the display-size change. They are not the baseline for the final implementation. The capture tool now uses 22e4d45.
 
 Local generated evidence (ignored by Git):
