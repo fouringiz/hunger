@@ -1,5 +1,19 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Platform-top overlap explicitly rejected; depth-mask fix pending
+
+- User clarified that Leech still crawls visually across platform tops, pointing at frames 7–14 of the accepted context sheet. Previous acceptance covered the ground-mask correction; it does not approve platform overlap. Agent's visual review missed this defect. User reference preserved in `reports/generated/leech-platform-occlusion/user-references/platform-overlap.png`.
+- Observable criteria for this iteration: a platform hides the overlapping portion of a Leech behind its footing; uncovered body remains visible; a Leech in front of the footing stays visible in front. Preserve slab geometry/camera, route and movement/combat. A visual mask does not implement obstacle avoidance.
+- Cause: platform tops are drawn in the terrain pass, while only front walls participate in actor depth ordering. The body therefore covers the top even when behind the footing.
+- New, NOT RUN: Leech-only offscreen body/light/shadow/burial compositing near foreground platforms. Subtract the actual top/front asset alpha using world coordinates and individual scale when the Leech anchor is behind the footing. Reuse one 256px layer; no pixel reads or new assets. Forager/Carapacid and platform/tower ordering remain unchanged. Optional drawing-context arguments route existing lighting/shadow/burial into that layer.
+- Added `tests/leech-platform-occlusion.cjs`: native alpha checks behind/beside/in front, both zones, scales .92/1/1.08, simulation read-only signature, and negative control disabling the occlusion mask to reproduce the known top-overlap defect. No assertions run yet.
+- Context capture now uses `62409dc` as BEFORE (ground fix present, platform defect present), output `reports/generated/leech-platform-occlusion/`. Adds grayscale whole frames; paired context sheets still cover 25 samples over 3.2s. Previous ground comparisons remain preserved in `reports/generated/leech-body-contact/`.
+- Next user tests: `node tests/leech-platform-occlusion.cjs && node tests/creature-mire-body.cjs && node tests/creature-mire-contact.cjs && node tests/creature-mire-parity.cjs && node tests/file-origin-canvas.cjs`. Separately run `node tools/capture-leech-contact-context.cjs` so frames are available even on a test failure. Agent must open before/after context, whole and gray images and check for pop-in, edge seams, incorrect front/rear hiding, tower overwrite and readability before calling the issue fixed.
+- No simulation changes/restamp, checks or captures run by agent. Current platform fix is unverified. Actual file-origin console and final broader release validation remain pending.
+
+---
+Previous iteration:
+
 ## Current Leech disappearance fix accepted by user
 
 - On implementation `fc4d2d1`, user reports the requested body/contact tests and context capture all passed and says the result is in order. Treat this as acceptance of the current Leech texture-disappearance correction. No further rendering change made after that acceptance.
