@@ -1,5 +1,15 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Full suite passed by user
+
+- User reports `all tests passed` from full `npm test` after `2304e63`. Full-suite PASS is user-confirmed; agent did not run checks. This supersedes the failed full-suite attempt below.
+- Latest implementation remains `197c82b` (ground contact/body protection plus Leech platform occlusion); subsequent commits record visual evidence and repair test mocks/baseline expectations. Actual before/after platform context and whole/gray evidence was inspected in both zones as recorded below.
+- Remaining delivery boundaries: actual game opened from disk (`file://`) with console checked near a platform and Gate is not yet confirmed; final artistic approval of platform-occlusion frames and required independent visual review before merge remain pending. General contrast/all-heading scene coverage limitations below still apply. No push/PR/merge performed.
+- Next user step: open `prototype/index.html` from disk, inspect the platform crossing and Gate interaction, and check the browser console. No additional automated rerun needed unless code changes or a new failure appears.
+
+---
+Previous iteration:
+
 ## Full-suite attempt: canvas mock incompatibility corrected; rerun pending
 
 - User ran `npm test` on `197c82b` plus documentation checkpoint. It FAILED in `tests/building-buildup.cjs`: its generic canvas proxy returned undefined from `createRadialGradient`, causing `.addColorStop` to throw when a Carapacid mask was first drawn. Full suite is not green.
