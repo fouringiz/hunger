@@ -1,5 +1,13 @@
 # Creature mire contact — current implementation accepted (2026-10-25)
 
+## Publication cleanup
+
+- Preserved all 27 modified/untracked WebP captures from `reports/creature-mire-contact/` under ignored `reports/generated/creature-mire-working-captures-20261025/`, with original paths and SHA-256 hashes in `manifest.json`; verified each copy before removing the untracked originals. Final platform comparisons remain separately in `reports/generated/leech-platform-occlusion/`.
+- Restored the three tracked historical BEFORE images only after saving their modified versions. Updated the capture README to distinguish the old tracked baseline, corrected local baseline and final generated evidence.
+- Included the previously uncommitted AGENTS.md agreement that the user runs checks. No game or test changes; existing successful validation remains applicable. This is local cleanup, not a remote push or merge.
+
+---
+
 ## Final user confirmation
 
 - After being asked to open `prototype/index.html` from disk, inspect Leech near a platform/Gate and check the console, user replied `все ок`. Record the requested manual file-origin/browser check as passed by user and current visual correction as user-accepted. Agent did not perform the browser run.

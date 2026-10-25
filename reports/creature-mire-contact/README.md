@@ -1,7 +1,10 @@
-# Initial captures — historical baseline only
+# Creature mire contact captures
 
-These BEFORE captures were generated from aa9ed15 with tools/capture-creature-mire.cjs through the actual native game renderer. No visual implementation was made yet. They have not been visually reviewed.
+The tracked BEFORE images here are historical captures from aa9ed15, before the display-size change. They are not the baseline for the final implementation. The capture tool now uses 22e4d45.
 
-Main subsequently added 22e4d45, changing Carapacid/Leech display cell sizes to 76/80. Regenerate BEFORE captures against that revision before implementing or comparing burial effects. The capture tool still pins aa9ed15 intentionally; the next session must update it to the verified baseline. There are no AFTER captures and no completed validation for this task.
+Local generated evidence (ignored by Git):
+- `../generated/leech-platform-occlusion/`: final before/after platform crossing, whole scenes and grayscale in Mire/Ember.
+- `../generated/leech-body-contact/`: earlier ground-mask comparisons and user references.
+- `../generated/creature-mire-working-captures-20261025/`: all 27 modified/untracked captures preserved during working-copy cleanup, including corrected 22e4d45 BEFORE images. `manifest.json` records original paths and SHA-256 hashes. These include intermediate results and must not be presented as final.
 
-See ../ACTIVE-WORK-CHECKPOINT.md for the full continuation state.
+All paths above are local evidence; they are not included in the published branch. See [the active checkpoint](../ACTIVE-WORK-CHECKPOINT.md) for user-confirmed tests, browser verification and visual acceptance boundaries.
