@@ -1,5 +1,19 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## User rejects Leech disappearing into textures — narrow-edge iteration pending
+
+- User reports all requested tests passed after `c01c1b9`, but provides three live screenshots showing unacceptable Leech occlusion on terrain and beside/on an empty platform. This is a visual rejection despite passing tests. Full `npm test` was not separately identified in the supplied output.
+- Saved the supplied screenshots under ignored `reports/generated/leech-body-contact/user-references/{platform,side,lane}.png`. These are real user screenshots, not agent captures.
+- Code inspection distinguishes two mechanisms: `worldLiveArt` contains terrain/contact effects, not the platform top/front; `platformFront` is separately depth-sorted. The broad belly mask additionally paints terrain inside the body/mouth. Do not attribute the platform wall to texture sampling or declare its occlusion solved by this iteration.
+- Acceptance for this iteration: preserve opaque body/mouth interior and the lifted tail; retain a soft, narrow submerged lower silhouette. No internal terrain holes. Existing burial thresholds stay unchanged. Platform front depth/overlap and general contrast remain separate unresolved visual items.
+- New, NOT RUN: Leech mask fades only in a strip from 2 local px above the lower rim to below it, gated by belly contact proximity. Removed broad interior belly dabs from the Leech path; Carapacid path unchanged. Pixel-aligned mask strips avoid fractional stripe seams. No simulation/asset/route/platform changes.
+- Added `tests/creature-mire-body.cjs`: protects opaque body interior in all 64 poses via independent 4-px silhouette erosion; exact rejected mask from `c01c1b9` is the negative control. This supplements the old burial-only tests that missed excessive coverage.
+- Added `tools/capture-leech-contact-context.cjs`: actual simulation/rendering of a seeking Leech passing an empty pad toward a generator, paired `c01c1b9`/working output in both zones. Files go to ignored `reports/generated/leech-body-contact/{zone}-{before,after}-{context,whole}.webp`. This also exposes the separate platform overlap; it is not expected to prove that issue fixed.
+- Next user run: `node tests/creature-mire-body.cjs && node tests/creature-mire-contact.cjs && node tools/capture-leech-contact-context.cjs`. If green, inspect new close/whole comparisons before the next iteration. All new test/capture results are pending; user runs them. Full cycle recapture, grayscale/readability with towers, real file-origin console and independent final review remain required.
+
+---
+Previous iteration:
+
 ## User verification received; Leech tail correction pending
 
 - User supplied successful output on `d768cdb` for creature-mire-contact (80 poses, old-lip negative control, portal boundary), creature-mire-parity (both zones, Forager pixels, simulation fingerprints/geometry), creature-crawl, portal-entry and file-origin-canvas (both zones). These focused results are confirmed by the user's run, not a full suite or a real browser check.

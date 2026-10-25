@@ -1311,6 +1311,22 @@ function creatureMireMask(e,pose){
   if(creatureMireMasks.has(key))return creatureMireMasks.get(key);
   const points=creatureMirePoints(e,pose),mask=document.createElement('canvas');mask.width=mask.height=256;
   const g=mask.getContext('2d');g.setTransform(2,0,0,2,128,176);
+  if(e.type==='leech'){
+    // Belly annotations locate contact, but must not paint holes through the body.
+    // Fade only across the bottom silhouette, with at most two local pixels inside it.
+    for(let i=1;i<points.rim.length;i++){
+      const a=points.rim[i-1],b=points.rim[i];
+      for(let left=Math.ceil(a.x*2)/2;left<b.x;left+=.5){
+        const width=.5,t=Math.min(1,(left+width/2-a.x)/(b.x-a.x));
+        const p={x:left+width/2,y:a.y+(b.y-a.y)*t};
+        if(!creatureMireTouchesBelly(p,points.belly))continue;
+        const fill=g.createLinearGradient(0,p.y-2,0,p.y+1);
+        fill.addColorStop(0,'#ffffff00');fill.addColorStop(.65,'#ffffffbb');fill.addColorStop(1,'#fff');
+        g.fillStyle=fill;g.fillRect(left,p.y-2,width,6);
+      }
+    }
+    creatureMireMasks.set(key,mask);return mask;
+  }
   const dab=(x,y,rx,ry)=>{
     g.save();g.translate(x,y);g.scale(rx,ry);
     const fill=g.createRadialGradient(0,0,0,0,0,1);fill.addColorStop(0,'#fff');fill.addColorStop(.55,'#fff');fill.addColorStop(1,'#ffffff00');
