@@ -1,5 +1,17 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Current Leech disappearance fix accepted by user
+
+- On implementation `fc4d2d1`, user reports the requested body/contact tests and context capture all passed and says the result is in order. Treat this as acceptance of the current Leech texture-disappearance correction. No further rendering change made after that acceptance.
+- Agent opened all eight freshly generated context/whole before/after images for Mire and Ember from `reports/generated/leech-body-contact/`. Comparisons use the same camera, size and sequence: 25 samples spanning 0–3.20s of seeking past an empty platform toward a generator. The mouth/lower body remain visible where the rejected broad mask removed them; raised tail remains present. These samples do not cover attachment, a full approach, all 16 headings or continuous video motion.
+- Evidence: `reports/generated/leech-body-contact/mire-before-context.webp` and `mire-after-context.webp`; `ember-before-context.webp` and `ember-after-context.webp`; matching `*-before-whole.webp` / `*-after-whole.webp`. User-generated captures use the actual renderer through `loadWorld` in `tools/capture-organic-world.cjs`. Generated study images remain ignored and uncommitted.
+- Confirmed scope: user-run focused body/contact tests passed; sampled Leech body/mouth preservation visually inspected in both zones; current result accepted by user. Platform geometry/depth ordering was not changed. Source sprites, combat, balance, route and slot positions remain unchanged by this correction.
+- Release boundaries remain explicit: latest full `npm test`, real disk-browser console check, final all-heading cycle recapture and grayscale contrast hierarchy are not separately confirmed by this message. Earlier checkpoint concerns remain historical/open where not covered by current acceptance. Do not describe the whole branch as fully release-validated.
+- Next only if preparing delivery/PR: obtain remaining release verification, preserve compact final evidence/report and keep user approval attached to this implementation. No push/PR/merge has been performed.
+
+---
+Previous iteration:
+
 ## Diagnostic reviewed: incorrect fixed measurement window corrected; visual capture needed
 
 - User ran all 14 diagnostic candidates. All body-preservation tests pass; none passes the old contact test. Best strip (depth4.5/reach7/feather2.5) fails only Leech 15/0 (13 buried, 12 soft) and 15/3 (6 buried, 14 soft). Full logs read from `reports/generated/leech-burial-diagnostic/`.
