@@ -1,3 +1,50 @@
+# Active: Creature mire contact — implementation checkpoint (2026-10-25)
+
+## Resumed session: pending user checks
+
+- Read AGENTS.md, this checkpoint and working changes on `codex/creature-mire-contact`. All earlier verification claims below are historical; no tests, captures or browser checks were run in this session.
+- Fixed a code-level portal boundary: portal snapshots carry synthetic `(0,0)` coordinates. The render-only portal body now receives the real entry coordinates for lighting and an explicit airborne flag; contact shadow/ground overlay are skipped while the body stretches. Sprite sink remains consistent. Not visually verified.
+- Extended `tests/creature-mire-contact.cjs` with portal ground-sampling/shadow rejection and a grounded negative control. Added `tests/creature-mire-parity.cjs` for exact Forager-only scene pixels in both zones, rules/source fingerprints and route/slot parity against `22e4d45`.
+- Corrected the file-origin mock to actually select Ember and load the Carapacid atlas dimensions; explicitly renders both creatures under denied pixel access.
+- Capture tool supports `--poses`: all 4/16 headings, eight intervals plus closing phase of one gait cycle, through actual `draw()`. These are controlled heading probes; existing route strips remain separate motion evidence. Whole-scene grayscale is also saved. No new captures generated here.
+- Acceptance still pending: buried feet/belly with soft ground transitions, no detached ridges or sliding across the cycle; coherent perspective; enemy/tower readability in grayscale. Current whole-scene capture has no built towers, so tower contrast needs a populated gameplay/browser view as well.
+- Next: user runs focused commands below; inspect results and freshly generated before/after images, then handle remaining scale/contact/visual defects. Full `npm test`, real disk-browser console check and independent visual review remain pending. Do not treat the existing `after` images as evidence for the latest ridges/portal fix.
+- No combat, balance, PATH, GATE_D, slot or atlas-layout changes intended; simulation parity is pending, no restamp run.
+
+From repository root (first stop on a failure):
+
+```sh
+node tests/creature-mire-contact.cjs && node tests/creature-mire-parity.cjs && node tests/creature-crawl.cjs && node tests/portal-entry.cjs && node tests/file-origin-canvas.cjs
+```
+
+Then regenerate matching evidence:
+
+```sh
+node tools/capture-creature-mire.cjs before --poses && node tools/capture-creature-mire.cjs after --poses
+node tools/capture-creature-mire.cjs before --ember --poses && node tools/capture-creature-mire.cjs after --ember --poses
+```
+
+Output: `reports/creature-mire-contact/{mire,ember}-{before,after}-whole.webp`, `*-gray.webp`, `{zone}-{carapacid,leech}-{before,after}.webp` (route motion) and `*-poses.webp` (controlled full cycles). These are output paths, not a claim the new files already exist. Portal animation and actual file-origin console still require the user's browser check. Capture artifacts remain outside this implementation commit.
+
+---
+Previous implementation notes (historical checks, not rerun):
+
+Branch `codex/creature-mire-contact`, base `22e4d45`, previous checkpoint `4ef87d4`.
+
+Implemented, not yet finally verified:
+- Atlas-derived ground-contact JSON for current Carapacid (4 rows) and Leech (16 rows), reproducibly embedded by `node tools/bake-creature-ground-contacts.cjs`.
+- Actual ground texture masks the lower silhouette and belly/feet with soft edges; local contact shadows, contact-driven displacement and fading tracks. Presentation sink 3.5/4 px; body sizes remain 76/80.
+- Combat, assets, route and Forager functions untouched. No simulation restamp required; full parity still to verify.
+- Before captures regenerated from correct base 22e4d45, Mire and Ember. First Mire after strips inspected: burial visible; detached green rings rejected and changed to subtle broken brown/gold ridges. Need recapture revised output.
+- Existing creature-crawl and file-origin mock tests pass. New all-pose burial regression test added; full suite not run yet.
+
+Next: finish focused regression tests, capture/inspect both zones and multiple headings/full cycles, verify Forager pixel parity, full npm test, final report and checkpoint commit. Portal snapshots must not sample ground at fake (0,0) coordinates; inspect this boundary before completion.
+
+Browser limitation: previous in-app browser explicitly rejected file:// under its URL policy. Do not bypass. Real disk-browser console check remains manual; native capture and SecurityError mock are separate evidence.
+
+---
+Historical checkpoint follows.
+
 # Active: Creature mire contact — paused at user checkpoint request (2026-10-25)
 
 ## Verified state
