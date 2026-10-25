@@ -1,5 +1,14 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Narrow-edge regression result: body preserved, burial insufficient
+
+- User ran checks on `a5d1bef`: body preservation passed (23,494 interior pixels across 64 poses; rejected broad mask damages 3,715). Contact test failed on Leech row 0/frame 0: only 4 strongly buried underside pixels, required >15. The chained context capture did NOT run.
+- New adjustment, not run: increase the edge-only fade extent from 2 to 3.5 local pixels, reaching opaque ground 0.5 px below that inner band toward the rim (`rim.y - 0.5`). Keep the contact gate, lifted-tail protection, and absence of interior belly dabs. Body preservation still protects the independently eroded 4-px interior; all test thresholds unchanged.
+- Repeat the same three-command chain from the preceding checkpoint. Need both preservation and burial tests to pass before inspecting actual context captures. No new visual claim or simulation change.
+
+---
+Previous iteration:
+
 ## User rejects Leech disappearing into textures — narrow-edge iteration pending
 
 - User reports all requested tests passed after `c01c1b9`, but provides three live screenshots showing unacceptable Leech occlusion on terrain and beside/on an empty platform. This is a visual rejection despite passing tests. Full `npm test` was not separately identified in the supplied output.
