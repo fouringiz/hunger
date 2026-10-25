@@ -2,7 +2,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/capture-organic-world.cjs');
 (async()=>{
- const {run,canvas,images}=await loadWorld();
+ const sourceHtml=process.env.CREATURE_MIRE_CANDIDATE?fs.readFileSync(process.env.CREATURE_MIRE_CANDIDATE,'utf8'):null;
+ const {run,canvas,images}=await loadWorld({sourceHtml});
  run("reset();S.phase='wave';S.spawnQueue=[];draw();const savedBurial=drawCreatureBurial;const probe=makeEnemy('leech',1);probe.x=480;probe.y=270;probe.__k=1;worldLiveArt=document.createElement('canvas');worldLiveArt.width=W*WORLD_RASTER_SCALE;worldLiveArt.height=H*WORLD_RASTER_SCALE;const flat=worldLiveArt.getContext('2d');flat.fillStyle='#b06020';flat.fillRect(0,0,worldLiveArt.width,worldLiveArt.height);");
  const ctx=canvas.getContext('2d'),pixel=()=>ctx.getImageData(0,0,256,256).data;
  const groundDistance=(p,k)=>Math.abs(p[k]-176)+Math.abs(p[k+1]-96)+Math.abs(p[k+2]-32);

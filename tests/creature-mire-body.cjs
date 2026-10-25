@@ -1,10 +1,11 @@
 'use strict';
-const assert=require('node:assert/strict'),path=require('node:path'),{execFileSync}=require('node:child_process');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 (async()=>{
  const rejectedHtml=execFileSync('git',['show','c01c1b9:prototype/index.html'],{cwd:path.join(__dirname,'..'),encoding:'utf8'});
  const rejectedMask=rejectedHtml.match(/function creatureMireMask\(e,pose\)\{[\s\S]*?\n\}\n(?=function drawCreatureContactShadow)/)[0];
- const {run,canvas}=await loadWorld();
+ const sourceHtml=process.env.CREATURE_MIRE_CANDIDATE?fs.readFileSync(process.env.CREATURE_MIRE_CANDIDATE,'utf8'):null;
+ const {run,canvas}=await loadWorld({sourceHtml});
  run(`var rejectedMask=${rejectedMask};var currentMask=creatureMireMask;`);
  run("reset();var probe=makeEnemy('leech',1);probe.x=480;probe.y=270;probe.__k=1;worldLiveArt=document.createElement('canvas');worldLiveArt.width=W*WORLD_RASTER_SCALE;worldLiveArt.height=H*WORLD_RASTER_SCALE;var flat=worldLiveArt.getContext('2d');flat.fillStyle='#b06020';flat.fillRect(0,0,worldLiveArt.width,worldLiveArt.height);");
  const ctx=canvas.getContext('2d');let protectedPixels=0,rejectedDamage=0;

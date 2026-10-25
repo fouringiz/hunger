@@ -1,5 +1,16 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## All-pose results received; bounded diagnostic prepared, game unchanged
+
+- User run on `0a4b8eb`: all 23,494 protected interior pixels pass. Contact/feathering fails in 14 Leech poses: 1/1, 1/3, 3/2, 3/3, 4/2, 8/0, 8/2, 8/3, 11/2, 12/2, 15/0, 15/1, 15/2, 15/3. Some lack burial, others feathering. Capture did not run. Current game remains a rejected/unverified implementation, not ready for approval.
+- No new game-rendering change this iteration. Prepared `tools/diagnose-leech-burial.cjs` for a single user-run diagnostic: 12 bounded strip variants (depth 3.5/4.5/5.5, contact proximity 5/7, feather 1.5/2.5) plus 2 authored-dab variants, all with the existing baked body protection.
+- Each candidate is a separate ignored HTML copy. Both existing strict tests run unchanged in assertions; optional `CREATURE_MIRE_CANDIDATE` selects the copy. Without that environment variable, tests still load the actual working game. Every candidate gets logs and a result in `reports/generated/leech-burial-diagnostic/results.json`. No candidate is applied to the game automatically.
+- If any candidate passes both tests, the first bounded candidate gets paired actual-game context captures in its own folder, clearly separate from working-game output. This is numerical screening only; visual review, complete cycles, readability and platform occlusion remain required. If none passes, no capture or implementation selection occurs.
+- Next user command: `node tools/diagnose-leech-burial.cjs`. Agent did not run this diagnostic, tests or captures. After user output, inspect detailed logs and any candidate images before choosing an implementation. Do not repeat one-parameter guessing with another serial fail/retry loop.
+
+---
+Previous iteration:
+
 ## Protected body passed; strengthen edge opacity, collect all pose failures
 
 - User run on `1677a5f`: body preservation passed (23,494 interior pixels; rejected mask damages 3,715). Contact test passed through earlier poses, then failed at Leech row 3/frame 2: 11 buried pixels, required >15. Context capture did not run.
