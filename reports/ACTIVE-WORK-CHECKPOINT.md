@@ -1,5 +1,11 @@
 # Creature mire contact — current implementation accepted (2026-10-25)
 
+## PR #54 review follow-up
+
+- User supplied an independent review accepting code, passing tests and improved visuals, with publication follow-ups. The user-owned verification agreement is now explicit in CLAUDE.md as well as AGENTS.md.
+- Recorded platform avoidance, mutation markers and offset HP bar in the capture README backlog; no gameplay or test changes.
+- PR #54 is open at this checkpoint. Four reviewer captures named `pr54-…` were not found locally; their location has been requested. Attaching those frames and squash-merging remain pending; no merge is claimed.
+
 ## Publication cleanup
 
 - Preserved all 27 modified/untracked WebP captures from `reports/creature-mire-contact/` under ignored `reports/generated/creature-mire-working-captures-20261025/`, with original paths and SHA-256 hashes in `manifest.json`; verified each copy before removing the untracked originals. Final platform comparisons remain separately in `reports/generated/leech-platform-occlusion/`.

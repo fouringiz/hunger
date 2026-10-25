@@ -8,3 +8,11 @@ Local generated evidence (ignored by Git):
 - `../generated/creature-mire-working-captures-20261025/`: all 27 modified/untracked captures preserved during working-copy cleanup, including corrected 22e4d45 BEFORE images. `manifest.json` records original paths and SHA-256 hashes. These include intermediate results and must not be presented as final.
 
 All paths above are local evidence; they are not included in the published branch. See [the active checkpoint](../ACTIVE-WORK-CHECKPOINT.md) for user-confirmed tests, browser verification and visual acceptance boundaries.
+
+## Follow-up backlog from PR #54 review
+
+- Leech platform avoidance: the current mask handles visibility only; movement still crosses platform footprints. Any route/simulation change requires separate approval and validation.
+- Mutation markers: review visibility and placement independently of the burial effect.
+- Offset HP bar: align its display with the visible creature in a separate visual iteration.
+
+These items are outside PR #54 and are not claimed as fixed.
