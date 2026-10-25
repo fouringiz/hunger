@@ -4,7 +4,7 @@ function scene(withImage) {
   const images=[],draws=[];
   class FakeImage {constructor(){this.complete=false;this.naturalWidth=0;images.push(this);}}
   const ctx=new Proxy({}, {get(o,k){
-    if(k==='createLinearGradient')return ()=>({addColorStop(){}});
+    if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});
     if(k==='measureText')return value=>({width:String(value).length*6});
     if(k==='drawImage')return (...args)=>draws.push(args);
     return o[k]??(o[k]=()=>{});

@@ -1,5 +1,15 @@
 # Active: Creature mire contact — implementation checkpoint (2026-10-25)
 
+## Full-suite attempt: canvas mock incompatibility corrected; rerun pending
+
+- User ran `npm test` on `197c82b` plus documentation checkpoint. It FAILED in `tests/building-buildup.cjs`: its generic canvas proxy returned undefined from `createRadialGradient`, causing `.addColorStop` to throw when a Carapacid mask was first drawn. Full suite is not green.
+- Updated all nine matching canvas mocks to return gradient objects for both linear and radial APIs: building-buildup, coherent-art, infantry-art, forager-mire, organic-world, party-replay, readability, salvage-and-ranges, voltaic-art. This fixes the test harness API contract; no game-rendering fallback/change was made.
+- Code inspection also found coherent-art's former zero sprite-baseline expectation. Updated to the intended fixed burial baselines: Forager 0, Carapacid 3.5, Leech 4; still checked at all four tested distances. Actual native contact/body/occlusion assertions remain unchanged.
+- Agent did not execute tests. Next user command: `npm test`. Existing inspected platform comparison frames remain valid because this iteration changes tests only. Full-suite success and actual file-origin browser console are still pending.
+
+---
+Previous iteration:
+
 ## Platform occlusion: focused PASS and actual-frame review completed
 
 - User reports all five requested checks PASS on `197c82b`: leech-platform-occlusion, creature-mire-body, creature-mire-contact, creature-mire-parity, file-origin-canvas. This is focused validation, not confirmation of full npm test or a real browser console check.

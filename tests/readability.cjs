@@ -6,7 +6,7 @@ const html = fs.readFileSync(require('node:path').join(__dirname, '../prototype/
 const calls = Object.create(null);
 const ctx = new Proxy({}, {get(target, key) {
   if (key === 'measureText') return value => ({width:String(value).length * 6});
-  if (key === 'createLinearGradient') return () => ({addColorStop(){}});
+  if (key === 'createLinearGradient' || key === 'createRadialGradient') return () => ({addColorStop(){}});
   if (key === 'canvas') return canvas;
   if (!(key in target)) target[key] = (...args) => { calls[key] = (calls[key] || 0) + 1; };
   return target[key];

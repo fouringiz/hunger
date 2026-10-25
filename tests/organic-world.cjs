@@ -4,7 +4,7 @@ const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf
 function boot(search=''){
   const images=[],draws=[];let canvases=0;
   class Image{constructor(){this.complete=true;this.naturalWidth=512;images.push(this);}set src(value){this.url=value;if(value.includes('forager-mire')){this.naturalWidth=2496;this.naturalHeight=3072;}}get src(){return this.url;}}
-  const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...a)=>draws.push(a);if(k==='createLinearGradient')return ()=>({addColorStop(){}});if(k==='createPattern')return ()=>({});if(k==='measureText')return t=>({width:String(t).length*6});return o[k]??(o[k]=()=>{});}});
+  const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...a)=>draws.push(a);if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});if(k==='createPattern')return ()=>({});if(k==='measureText')return t=>({width:String(t).length*6});return o[k]??(o[k]=()=>{});}});
   const canvas={style:{},getContext:()=>ctx,addEventListener(){}};
   const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement(){canvases++;return {...canvas};}},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
   vm.runInContext(source,c);return {run:s=>vm.runInContext(s,c),images,draws,canvases:()=>canvases};
