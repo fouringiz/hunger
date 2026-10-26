@@ -1,5 +1,5 @@
 {
-  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp). Visual-task geometry baselines remain unchanged.",
+  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp), then v0.10.1: Grounding never makes a flying body a rod. Visual-task geometry baselines remain unchanged.",
   "rules": "b0925b01",
-  "source": "54e5cb80"
+  "source": "b24a2992"
 }

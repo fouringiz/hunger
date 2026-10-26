@@ -53,6 +53,15 @@ const cases={
     const before=S.enemies.length; damage(kids[0],10000,t); stepSimulation(SIM_STEP);
     assert.equal(S.enemies.filter(e=>e.type==='polypoid').length,1,'a Polypoid dies without splitting');
   `,
+  'Grounding never makes a flying body a rod; ground bodies keep the every-third cadence and every Carapacid': `
+    reset(); S.mutations=['grounding']; S.phase='wave'; S.spawnedThisWave=0;
+    const bodies=waveDef(6).map(s=>makeEnemy(s.type,6));
+    assert.ok(bodies.some(b=>b.T.air),'wave 6 has a flight');
+    assert.ok(bodies.every(b=>!b.T.air||!b.rod),'no Aeroplankton is a rod');
+    assert.ok(bodies.every(b=>b.type!=='carapacid'||b.rod),'every Carapacid is a rod');
+    bodies.forEach((b,i)=>{ if(!b.T.air&&b.type!=='carapacid') assert.equal(b.rod,i%ROD_EVERY===ROD_EVERY-1,'ground body '+i+' follows the cadence'); });
+    assert.ok(bodies.some(b=>b.rod&&(b.type==='polyp'||b.type==='forager')),'rods still appear on ground bodies of the wave');
+  `,
 };
 for(const [name,code] of Object.entries(cases)){ run(code); console.log('PASS '+name); n++; }
 const legacy=boot('?balance=v04'); assert.ok(!new Set(vm.runInContext('waveDef(8).map(s=>s.type)',legacy)).has('aero'),'legacy waves are classic');
