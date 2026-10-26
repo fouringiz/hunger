@@ -1,4 +1,5 @@
-// Construction is a view of tower identities: no build delay, replay event or combat mutation.
+// Construction is a view of tower identities: no replay event or combat mutation. The simulation's own build warm-up
+// (BUILD_WARMUP) lasts exactly as long as the drawn deployment, so the first shot lands as the deployment ends.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 function boot(type='turret'){
@@ -21,10 +22,12 @@ assert.equal(r.run('constructionProgress(SLOTS[0].tower)'),0,'a newly purchased 
 r.run('reset();S.phase="build";build(SLOTS[0],"turret");draw();');assert.equal(r.run('constructionProgress(S.towers[0])'),0,'a new run cannot inherit construction state');
 console.log('PASS presentation parity, one-shot cues, upgrades, sell/rebuild and reset');
 const immediate=boot();immediate.run("observeConstruction();S.phase='wave';S.wave=1;const enemy=makeEnemy('carapacid',1);enemy.d=180;Object.assign(enemy,posAt(enemy.d));S.enemies=[enemy];update(SIM_STEP);draw();");
-assert.ok(immediate.run('weaponFeedback.has(S.towers[0])'),'control tower actually fired');
+assert.ok(!immediate.run('weaponFeedback.has(S.towers[0])'),'a deploying tower holds fire');
+immediate.run("while(S.towers[0].warm>0)update(SIM_STEP);update(SIM_STEP);draw();");
+assert.ok(immediate.run('weaponFeedback.has(S.towers[0])'),'control tower fires once deployed');
 assert.equal(immediate.run('constructionProgress(S.towers[0])'),1,'the first actual shot reveals the fully deployed weapon');
 const selling=boot();selling.run('observeConstruction();sell(S.towers[0]);draw();');assert.equal(selling.run('constructionProgress(S.towers[0])'),1,'demolition does not continue deployment');
-console.log('PASS instant combat activation and demolition interrupt deployment');
+console.log('PASS combat starts with the deployment done and demolition interrupts deployment');
 function combat(render){const r=boot();r.run("S.phase='wave';S.wave=1;S.spawnQueue=[];const enemy=makeEnemy('carapacid',1);enemy.d=180;Object.assign(enemy,posAt(enemy.d));S.enemies=[enemy];");for(let i=0;i<300;i++)r.run(`update(SIM_STEP);presentationTime+=SIM_STEP;${render?'draw();':''}`);return r.run('replaySignature()');}
 assert.equal(combat(true),combat(false),'rendering construction must preserve exact combat outcomes');
 const fallback=boot();fallback.run('lowBuildingArt.complete=false;structureArt.complete=false;');for(const t of [0,.3,.8,1.2,1.65,2])assert.doesNotThrow(()=>fallback.run(`presentationTime=${t};draw();`),'deployment and final pose work with missing art');
@@ -45,7 +48,9 @@ for(const type of ['turret','cannon','voltaic','generator','barracks']){
  for(const time of [0,.3,.8,1.3,2])assert.doesNotThrow(()=>absent.run(`presentationTime=${time};draw();`),type+' has a missing-art fallback');
  if(['cannon','voltaic'].includes(type)){
    const battle=boot(type);battle.run("observeConstruction();S.phase='wave';S.wave=1;const e=makeEnemy('carapacid',1);e.d=180;Object.assign(e,posAt(e.d));S.enemies=[e];update(SIM_STEP);draw();");
-   assert.ok(battle.run('weaponFeedback.has(S.towers[0])'),type+' control fires');assert.equal(battle.run('constructionProgress(S.towers[0])'),1,type+' first shot reveals the assembled model');
+   assert.ok(!battle.run('weaponFeedback.has(S.towers[0])'),type+' holds fire while deploying');
+   battle.run("while(S.towers[0].warm>0)update(SIM_STEP);update(SIM_STEP);draw();");
+   assert.ok(battle.run('weaponFeedback.has(S.towers[0])'),type+' control fires once deployed');assert.equal(battle.run('constructionProgress(S.towers[0])'),1,type+' first shot reveals the assembled model');
  }
 }
 const drained=boot('generator');drained.run("observeConstruction();const leech=makeEnemy('leech',1);leech.gen=S.towers[0];leech.state='attached';S.towers[0].leeched=leech;observeConstruction();");assert.equal(drained.run('constructionProgress(S.towers[0])'),1,'draining displays the functional generator immediately');
@@ -55,7 +60,7 @@ const troopsState=troops.run('replaySignature()');troops.run('presentationTime=1
 assert.equal(troops.run('replaySignature()'),troopsState,'entrance animation never moves physical soldiers');
 troops.run("S.towers[0].soldiers[0].target=makeEnemy('forager',1);observeConstruction();");assert.equal(troops.run('constructionProgress(S.towers[0])'),1,'engaged infantry reveals the ready Barracks immediately');
 console.log('PASS all five deployments, exact final poses, missing art, combat/drain interruption and Barracks exit parity');
-const route=boot('barracks');route.run("reset();S.phase='build';S.credits=10000;build(SLOTS[3],'barracks');for(let i=0;i<120;i++)update(SIM_STEP);observeConstruction();");
+const route=boot('barracks');route.run("reset();S.phase='build';S.credits=10000;build(SLOTS[3],'barracks');while(S.towers[0].warm>0)update(SIM_STEP);for(let i=0;i<120;i++)update(SIM_STEP);observeConstruction();");
 const routeState=route.run('replaySignature()');
 for(let i=0;i<=100;i++){
  route.run(`presentationTime=${1.32+1.25*i/100};`);
