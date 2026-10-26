@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.11</title>
+<title>Ultimate TD — core loop prototype v0.12</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,8 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.12: the Polyp bursts into six zygotes where it dies; zygote i hatches a Polypoid (40 HP, speed 56, bounty 3, gate 1)
+// POLYP_HATCH[i] seconds later. Zygotes are not bodies: untargetable, untouched by damage, and they keep their wave open.
 // v0.11: the Leech hunts beneath the ooze (passport v2.15). From the moment it picks a generator it is submerged:
 // a ripple on the surface, no body for the towers to target; cannon splash, flamer jet, plasma pools and tesla hops
 // landing on bodies next to it bleed through at LEECH_OOZE.collateral. It surfaces LEECH_OOZE.surfaceDist from the
@@ -764,7 +766,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -825,7 +827,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.10',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.12',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -2240,13 +2242,20 @@ function drawPolypBody(e,angle) {
   ctx.strokeStyle='#5a1f6b';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.stroke();
   ctx.restore();
 }
-// Presentation only. A zygote is a small upright capsule on the lane that pulses faster as it nears its hatch tick, then
-// opens (widens, splits along its seam) and fades in the last 0.15 s. Light fill with a dark outline and a bright seam
-// keeps it readable in greyscale against the lane.
+// Presentation only. The six zygotes of one burst share a lane point; they are drawn as a small cluster (two rows of
+// three: columns ZYGOTE_GAP apart across the lane, rows ZYGOTE_ROW apart along its tangent) so every one is visible and countable. Each is a Forager-sized
+// upright capsule that pulses faster as it nears its hatch tick, then opens (widens, splits along its seam) and fades in
+// the last 0.15 s. Light fill with a dark outline and a bright seam keeps it readable in greyscale against the lane.
+const ZYGOTE_GAP = 9, ZYGOTE_ROW = 13;   // the row step is wider so upright 16 px capsules stay countable on a vertical lane
+function zygotePose(z) {
+  const a = posAt(Math.max(0, z.d - 2)), b = posAt(z.d + 2), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const tx = (b.x - a.x) / len, ty = (b.y - a.y) / len, across = ((z.idx % 3) - 1) * ZYGOTE_GAP, along = (Math.floor(z.idx / 3) - 0.5) * ZYGOTE_ROW;
+  return {x: z.x + tx * along - ty * across, y: z.y + ty * along + tx * across};
+}
 function drawZygote(z) {
-  const left=Math.max(0,z.t), open=Math.max(0,1-left/0.15), rate=3+5*(1-left/z.max), puls=1+Math.sin(presentationTime*rate+z.idx*1.3)*.1;
-  const w=3.4*(1+open*.9)*puls, h=6.5*(1-open*.35)/puls;
-  ctx.save();ctx.translate(z.x,z.y-h*.5);ctx.globalAlpha=1-open*.85;
+  const pose=zygotePose(z), left=Math.max(0,z.t), open=Math.max(0,1-left/0.15), rate=3+5*(1-left/z.max), puls=1+Math.sin(presentationTime*rate+z.idx*1.3)*.06;
+  const w=4.5*(1+open*.9)*puls, h=8*(1-open*.35)/puls;
+  ctx.save();ctx.translate(pose.x,pose.y-h*.9);ctx.globalAlpha=1-open*.85;
   ctx.fillStyle='#f0c8f5';ctx.strokeStyle='#4a1560';ctx.lineWidth=1.4;
   ctx.beginPath();ctx.ellipse(0,0,w,h,0,0,Math.PI*2);ctx.fill();ctx.stroke();
   ctx.strokeStyle=open>0?'#ffffff':'#7a2d92';ctx.lineWidth=open>0?1.8:1;ctx.beginPath();ctx.moveTo(0,-h*.8);ctx.lineTo(0,h*.8);ctx.stroke();
@@ -2715,7 +2724,7 @@ function draw() {
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
-  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygote.y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
+  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygotePose(zygote).y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
