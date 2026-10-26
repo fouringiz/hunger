@@ -1,3 +1,21 @@
+# Leech beneath the ooze — v0.11 (2026-10-26)
+
+## State
+
+- Implemented in `prototype/index.html`: `LEECH_OOZE` (surfaceDist 120 — raised from 60 by the user after the first browser look, collateral 0.25, collateralR 30; null under presets), submerged hunt from target pick, `surfacing` state for `BUILD_WARMUP_SECONDS`, targeting and tesla hops skip submerged bodies, collateral from shells, jet, pools and hops, wave cap by free generators (`freeGeneratorCount`), Leech 200/38/35 (presets keep 130/46/25), ripple drawing (`drawOozeRipple`), `LEECH_OOZE` in the rules fingerprint. Version string `prototype-v0.11` not yet added to the replay version list — exported replays still say `prototype-v0.10` (deliberate: no replay format change).
+- Agent-run checks (chat session, not the user): `tests/leech-ooze.cjs` (new, 6 PASS), `tests/prototype-regression.cjs` (30/0 after updating the approach scenario to the surfacing state), `castes-v010`, `leech-slab-avoidance`, `overlapping-waves`, `flamethrower`, `branches`, `enemy-stagger`, `salvage-and-ranges`, `balance-preset`, `dispersal-control`, `build-warmup`; `node tools/restamp-replays.cjs --write` re-stamped 8 replays (source fingerprint only, rules unchanged, every checkpoint verified).
+- Second pass after the user's first `npm test` failed on `creature-mire-parity`: `reports/carapacid-shelter/simulation-baseline.json` updated to the v0.11 fingerprints (rules df890fca, source c8f739ec); `tests/readability.cjs` attachment loop widened for the surfacing time. Agent then ran every test in `tests/` individually in the chat sandbox: all pass except `leech-crawl-atlas.cjs`, which the sandbox killed for memory (not a logic failure; known heavy test) — the user's `npm test` is the real full-suite result.
+- NOT run: browser check from disk, frame captures. Visual readability of the ripple (greyscale contrast) is unverified.
+
+## Next step
+
+- User: full `npm test`; open `prototype/index.html` from disk, watch a Leech wave (wave 5+ with a generator built), check the console; capture a frame with the ripple for the PR.
+- Simulation to run before locking the number: Leech survival on the open crawl at surfaceDist 60 vs 120 against a level-3 Turret next to the generator (seconds of fire survived, share of hunts that latch); and how many of the current map's slots lie within 120 of the lane (those generators never get the submerged hunt).
+- Then: Testudo damage threshold (passport v2.15), separate PR.
+
+---
+Previous checkpoint:
+
 # Creature mire contact — current implementation accepted (2026-10-25)
 
 ## PR #54 review follow-up
