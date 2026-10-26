@@ -1,0 +1,150 @@
+{
+  "status": "proposed, awaiting stage-1 review",
+  "brief": "/Users/home/Downloads/polyp-designer-brief.pdf",
+  "references": [
+    {
+      "id": 1,
+      "group": "01 / КОЛОНИЯ",
+      "title": "Marrus · отдельные тела в одном организме",
+      "source": "https://annualreport.mbari.org/2020/story/finding-resilience-and-relaxation-in-the-midnight-zone",
+      "image": "https://mbari-annualreport.s3.amazonaws.com/uploads/DSCN2527_2003_Marrus_claudanielis_T0596_03.JPG",
+      "take": "Повторяющиеся телесные модули с общей связью; у каждого свой объём.",
+      "avoid": "Длинную цепь и плавающую посадку. Полип — компактная тяжёлая масса."
+    },
+    {
+      "id": 2,
+      "group": "01 / КОЛОНИЯ",
+      "title": "Botryllus · границы внутри общей ткани",
+      "source": "https://www.exoticsguide.org/botryllus_schlosseri",
+      "image": "https://www.exoticsguide.org/sites/default/files/species_images/b_schlosseri_lg_j.jpg",
+      "take": "Соседние особи различимы, хотя соединены общей оболочкой.",
+      "avoid": "Орнаментальную правильность и множество одинаковых мелких ячеек."
+    },
+    {
+      "id": 3,
+      "group": "01 / КОЛОНИЯ",
+      "title": "Botrylloides · неправильное сращение",
+      "source": "https://www.marinespecies.org/photogallery.php?pic=105415",
+      "image": "https://images.marinespecies.org/thumbs/105415_botrylloides-nigrum-marina-bocas-del-toro-panama.jpg?w=700",
+      "take": "Неровную границу колонии, разную величину и плотность сросшихся участков.",
+      "avoid": "Оранжевую окраску и плоский ковёр: нужны шесть объёмных лопастей."
+    },
+    {
+      "id": 4,
+      "group": "01 / КОЛОНИЯ",
+      "title": "Blue bell tunicates · лиловая полупрозрачность",
+      "source": "https://reefguide.org/pixhtml/bluebelltunicate2.html",
+      "image": "https://reefguide.org/pix/bluebelltunicate2.jpg",
+      "take": "Синюшные стенки, мягкий влажный свет, перекрывающиеся отдельные тела.",
+      "avoid": "Трубки и отверстия, похожие на глаза; насыщенный аквариумный неон."
+    },
+    {
+      "id": 5,
+      "group": "02 / ШВЫ И МАТЕРИАЛ",
+      "title": "Brain coral · широкие рельефные перемычки",
+      "source": "https://www.katielcramer.com/projects",
+      "image": "https://images.squarespace-cdn.com/content/v1/6425d9f9c152437746f481f9/1fa21f89-1e08-44bf-af6b-bcf209db9b6c/Cnatans.closeup.JPG",
+      "take": "Толщину и непрерывность светлого гребня между тёмными впадинами.",
+      "avoid": "Каменный материал и лабиринт мелких борозд: шов должен разделять тела."
+    },
+    {
+      "id": 6,
+      "group": "02 / ШВЫ И МАТЕРИАЛ",
+      "title": "Diploria · светлая кромка, тёмный провал",
+      "source": "https://www.thecephalopodpage.org/MarineInvertebrateZoology/Diplorialabyrinthiformis.html",
+      "image": "https://www.thecephalopodpage.org/MarineInvertebrateZoology/images/Diplorialabyrinthiformis.jpg",
+      "take": "Контраст на границе объёмов; шов читается как поднятая ткань.",
+      "avoid": "Твёрдый панцирь и регулярную мозговую текстуру."
+    },
+    {
+      "id": 7,
+      "group": "02 / ШВЫ И МАТЕРИАЛ",
+      "title": "Ascidians · молочная мягкая оболочка",
+      "source": "https://www.allenhost.com/gallery/v/reefwreck/Philippines/aax.jpg.html",
+      "image": "https://www.allenhost.com/gallery/d/20181-4/aax.jpg",
+      "take": "Мутную полупрозрачность и нежный лиловый оттенок для Полипоида.",
+      "avoid": "Стеклянную чистоту и длинную вертикальную форму."
+    },
+    {
+      "id": 9,
+      "group": "03 / ЗИГОТА",
+      "title": "Actinia fragacea · масса под натяжением",
+      "source": "https://www.nationalgeographic.com.es/medio-ambiente/disenan-proteina-artificial-capaz-degradar-microplasticos_20888",
+      "image": "https://content.nationalgeographic.com.es/medio/2023/10/20/actinia-fragacea_a1fc4a00_231020101145_1280x854.jpg",
+      "take": "Влажные крупные блики и ощущение внутреннего давления.",
+      "avoid": "Красную окраску и мелкие точки: при 9×16 px они исчезнут."
+    },
+    {
+      "id": 10,
+      "group": "03 / ЗИГОТА",
+      "title": "Southern anemone · складки и мягкие лопасти",
+      "source": "https://collections.museumsvictoria.com.au/species/8134",
+      "image": "https://collections.museumsvictoria.com.au/content/media/2/389852-small.jpg",
+      "take": "Складчатую поверхность и неравномерно собранную живую ткань.",
+      "avoid": "Множество пузырьков, которые превращают силуэт в виноград."
+    },
+    {
+      "id": 11,
+      "group": "04 / ПОЛИПОИД",
+      "title": "Ophioderma · диск и независимые лучи",
+      "source": "https://www.aqua-life.ro/stea-ophioderma-brittle-star-acvarin-marin-reef-recif-cuc-cleanupcrew",
+      "image": "https://www.aqua-life.ro/image/cache/data/poze%202/Ophioderma-sp-brittle-star-stea-recif-reef-aqua-life-800x800.jpg",
+      "take": "Маленький центральный диск и пять гибких направлений опоры.",
+      "avoid": "Полосатость и членистый скелет: у Полипоида щупальца мягкие."
+    },
+    {
+      "id": 12,
+      "group": "04 / ПОЛИПОИД",
+      "title": "Ophiothrix · прижатая к грунту посадка",
+      "source": "https://glassvirtualzoo.wordpress.com/common-brittlestar/",
+      "image": "https://glassvirtualzoo.wordpress.com/wp-content/uploads/2017/04/o-aculeatarag183_web.jpg?w=1040",
+      "take": "Низкую посадку диска и разные изгибы лучей на поверхности.",
+      "avoid": "Шипы и тонкую бахрому; по фото нельзя подтвердить темп анимации."
+    },
+    {
+      "id": 14,
+      "group": "05 / НАСТРОЕНИЕ",
+      "title": "The Thing · скульптура неправильного сращения",
+      "source": "https://nevsedoma.com.ua/en/574925-15-curious-facts-about-john-carpenters-the-thing-11-photos.html",
+      "image": "https://cn22.nevsedoma.com.ua/p/26/2636/1609_files/531ef32b0bf6a0962159c4547449644c.jpg",
+      "take": "Ощущение нескольких сил внутри одной массы и переходы между чужими объёмами.",
+      "avoid": "ЛЮБУЮ человеческую анатомию, пасти, руки и кровь. Только принцип сращения."
+    },
+    {
+      "id": 15,
+      "group": "05 / НАСТРОЕНИЕ",
+      "title": "The Thing · натяжение сросшейся ткани",
+      "source": "https://nevsedoma.com.ua/en/574925-15-curious-facts-about-john-carpenters-the-thing-11-photos.html",
+      "image": "https://cn22.nevsedoma.com.ua/p/26/2636/1609_files/2bbfd8cbffcc82eaef4a807df9f9b188.jpg",
+      "take": "Тяжёлые складки и тканевые мосты между несогласованными формами.",
+      "avoid": "Лицо, зубы и гуманоидный силуэт. Это ограниченный реф материала, не анатомии."
+    },
+    {
+      "id": 16,
+      "group": "06 / СВЯЗЬ С ИГРОЙ",
+      "title": "Forager · узнаваемый фрагмент роя",
+      "source": "assets/art/references/enemies/forager/forager-approved-v1.webp",
+      "image": "assets/art/references/enemies/forager/forager-approved-v1.webp",
+      "take": "Узнаваемую форму обломка конечности; редкое вкрапление в мягкую массу.",
+      "avoid": "Целиком копировать тело или делать суставчатые ноги основным способом движения."
+    },
+    {
+      "id": 17,
+      "group": "06 / СВЯЗЬ С ИГРОЙ",
+      "title": "Carapacid · существующая форма пластин",
+      "source": "assets/art/sources/carapacid-headings-4x4-v1.png",
+      "image": "assets/art/sources/carapacid-headings-4x4-v1.png",
+      "take": "Контур отдельных обломков пластин из текущего источника игры.",
+      "avoid": "Новый панцирь поверх Полипа; пластины только включения между лопастями."
+    },
+    {
+      "id": 18,
+      "group": "06 / СВЯЗЬ С ИГРОЙ",
+      "title": "Mire · палитра окружения",
+      "source": "assets/art/references/style/mire-palette-approved-v1.webp",
+      "image": "assets/art/references/style/mire-palette-approved-v1.webp",
+      "take": "Окружение, относительно которого проверять лиловую массу и светлые швы.",
+      "avoid": "Считать этот реф кадром проверки: нужна будущая съёмка из настоящей игры."
+    }
+  ]
+}
