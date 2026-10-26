@@ -188,7 +188,7 @@ const MUT = {
 const COUNTERS = {flat:['keratin'], arc:['sprinter','dispersal'], electro:['grounding'], fire:['mirror']};
 const LEDGER_ORDER = ['flat', 'arc', 'electro', 'fire'];      // tie-break: kinetic first, then artillery, then voltaic
 const FLAME_SHADOW_PASS = 0.35;                      // a Carapacid in the jet lets this share of the fire through (draft)
-const ROD_EVERY = 3;                                   // Grounding: every third spawn of a grounded wave is a rod; every Carapacid is
+const ROD_EVERY = 3;                                   // Grounding: every third spawn of a grounded wave is a rod; every Carapacid is; a flying body never is
 const DISPERSAL_SPACING = 1.5;                         // EXPERIMENTAL: Dispersal stretches spawn intervals; speed untouched. Measure wave duration.
 // The report separates what changed (effect) from why (cause). A replacement is explained as such:
 // the ledger never blames a weapon the player did not fire.
@@ -337,7 +337,7 @@ function makeEnemy(type, n) {
   const T = ENEMY[type]; const mul = (1 + HP_GROWTH*(n-1)) * (1 + satedBonus());
   const muts = [...S.mutations];
   const index = S.spawnedThisWave++;                             // deterministic: no randomness in the simulation
-  const rod = muts.includes('grounding') && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);
+  const rod = muts.includes('grounding') && !T.air && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);   // nothing grounds in the air
   return {type, T, hp:T.hp*mul, maxHp:T.hp*mul, d:0, speed:T.speed, effSpeed:T.speed, r:T.r,
           x:PATH[0][0], y:PATH[0][1], dead:false, incoming:0, dash:0, blockedBy:null,
           muts, rod, state:'lane', gen:null, feedT:0};
