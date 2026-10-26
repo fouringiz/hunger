@@ -1279,7 +1279,21 @@ function enemyHeading(e) {
   if(e.state==='return'){const home=posAt(e.returnD);angle=Math.atan2(home.y-e.y,home.x-e.x);}
   return angle;
 }
-function enemyBodyPoint(e) { const m=groundActorMetrics(e.type);return {x:e.x,y:e.y-m.height*.48}; }
+// Where the drawn body sits and how tall it stands over the lane point. Ground castes read their atlas rects;
+// Aeroplankton hovers, the Polyps are drawn around the lane point itself. Every marker drawn on a body goes through here,
+// so a new caste that is not in GROUND_ACTOR_RECTS cannot take the frame loop down.
+const AIR_HOVER = 26;                                  // drawAirBody lifts the body this far above its shadow
+function enemyBodyHeight(e) {
+  if (e.T.air) return AIR_HOVER + e.r*1.1 + 2;
+  if (e.type === 'polyp' || e.type === 'polypoid') return e.r + 2;
+  if (e.type === 'forager' && foragerMireReady()) return 44;
+  return groundActorMetrics(e.type).height;
+}
+function enemyBodyPoint(e) {
+  if (e.T.air) return {x:e.x, y:e.y - AIR_HOVER};
+  if (e.type === 'polyp' || e.type === 'polypoid') return {x:e.x, y:e.y};
+  return {x:e.x, y:e.y - groundActorMetrics(e.type).height*.48};
+}
 function groundActorSprite(e,angle) {
   if(foragerMireSprite(e,angle))return true;
   if(creatureCrawlSprite(e,angle))return true;
@@ -2125,7 +2139,7 @@ function drawTowerBody(t) {
 // Vector bodies for the v0.10 castes (sprites pending). The Aeroplankton floats above its ground shadow.
 function drawAirBody(e,angle) {
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(0,2,e.r*1.4,e.r*.5,0,0,Math.PI*2);ctx.fill();
-  ctx.save();ctx.translate(0,-26+Math.sin(presentationTime*3+e.d*.05)*2);ctx.rotate(angle);
+  ctx.save();ctx.translate(0,-AIR_HOVER+Math.sin(presentationTime*3+e.d*.05)*2);ctx.rotate(angle);
   ctx.fillStyle='rgba(143,211,255,0.55)';ctx.beginPath();ctx.ellipse(0,0,e.r*1.9,e.r*1.1,0,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle='rgba(220,245,255,0.9)';ctx.lineWidth=1.2;ctx.stroke();
   ctx.strokeStyle='rgba(143,211,255,0.8)';for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(-e.r*1.2,i*2.2);ctx.lineTo(-e.r*2.4,i*3.4+Math.sin(presentationTime*9+i)*1.5);ctx.stroke();}
@@ -2627,7 +2641,7 @@ function draw() {
     }
     if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-(e.type==='forager'&&foragerMireReady()?44:groundActorMetrics(e.type).height)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
+    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-enemyBodyHeight(e)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
   if (DEBUG_HIT_BOUNDS) {
