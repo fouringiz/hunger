@@ -1,11 +1,13 @@
-# Ultimate TD — Interface Documents (EN, v1.4)
+# Ultimate TD — Interface Documents (EN, v1.5)
 
+> **Изменения v1.4 → v1.5 (паспорт v2.15):** ролики Know Your Consumer **#09 Neurocoupler, #10 Lithophage и #11 Specimen N сняты** (касты и аномалии убраны из игры), Matriarch стал **#09**, серия ×9; **#07 Testudo** переписан под порог урона, **#08 Leech** — под движение под жижей и приоритет генератор → руина (и без «set target priority», которого нет с v2.5). Notice of Appropriation 12-046 — без Neurocoupler. Реплика Patch про Литофага снята.
+>
 > **Изменения v1.3 → v1.4 (паспорт v2.13):** ролик Know Your Consumer #11 сокращён до формата 20 секунд и учит читать рапорт о мутации вместо универсального «смени оружие»; P.S. меморандума 0558-M переписан — выбор мутации зависит от игрока, срок — нет (убрано противоречие с правилом выбора по урону и преждевременная уверенность в авторе расписания).
 > **Изменения v1.2 → v1.3 (паспорт v2.12):** написаны четыре текста на замену, маркеры «к замене» сняты. Меморандум 0412-M: Marsh просит не живого Координатора, а бурение над Венами — перехватывать больше некого. Меморандум узла 0558-M переписан целиком: прогноз из расписания эволюции с оговоркой «forecast, not verdict» и пересчётом при смене доминирующего источника урона. Ролик Know Your Consumer #11 — **Specimen N (Category: pending)** вместо Coordinator (единственное исключение формата: ролик посвящён аномалии, а не касте, и выходит при её первом возвращении). Агитка «THE COORDINATOR IS WATCHING» заменена на «THE HUNGER KEEPS A SCHEDULE. KEEP AHEAD OF IT.». Счёт текстов не изменился: 12 роликов, 14 агиток, 21 документ ассигнований.
 >
 > **Изменения v1.1 → v1.2 (паспорт v2.11):** каста Coordinator удалена из игры, категория A закреплена за Matriarch. Механические правки применены: Form 7-B/bis (строка категории A), Dispatch 3-114 (состав волны), Notice of Appropriation 12-046 (перечень категорий A и B), заголовок узла Marked Observer → Evolution Forecast. **Четыре текста помечены к замене** и до неё оставлены без изменений: ролик Know Your Consumer #11, меморандум 0412-M (строка «bring me a live Coordinator»), меморандум узла 0558-M и агитка «THE COORDINATOR IS WATCHING». Счёт текстов сохраняется: 12 роликов, 14 агиток, 21 документ ассигнований.
 >
-> Companion-файл к паспорту v2.4. Язык игры — английский; здесь лежат **зафиксированные тексты**: 3 шаблона бланков, 21 документ ассигнований (разделы 1–4) и тексты второй очереди — 12 роликов «Know Your Consumer», 3 квартальных отчёта, агитки, реплики Patch, письма домой, приказы и финальный пакет Storm of the Gate (разделы 5–12). Термины — строго по `ultimate-td-glossary-en.md`.
+> Companion-файл к паспорту v2.4. Язык игры — английский; здесь лежат **зафиксированные тексты**: 3 шаблона бланков, 21 документ ассигнований (разделы 1–4) и тексты второй очереди — 9 роликов «Know Your Consumer» (12 до v1.5), 3 квартальных отчёта, агитки, реплики Patch, письма домой, приказы и финальный пакет Storm of the Gate (разделы 5–12). Термины — строго по `ultimate-td-glossary-en.md`.
 
 ## 0. Правила системы документов (зафиксировано)
 
@@ -463,8 +465,8 @@ Notice of Appropriation No. 12-046
 
 Re: "Hunting Bounties" — premium schedule published.
 
-Remuneration for Categories A and B (Matriarch, Leech, Nurse,
-Neurocoupler) has been increased by fifty percent.¹
+Remuneration for Categories A and B (Matriarch, Leech, Nurse)
+has been increased by fifty percent.¹
 
 The Fund encourages precision. Precision is now measurably
 more lucrative.
@@ -500,9 +502,9 @@ In the event of total loss of the enterprise, this document
 becomes void, together with its holder.
 ```
 
-## 5. The Expedition Network — «Know Your Consumer» ×12 (зафиксировано)
+## 5. The Expedition Network — «Know Your Consumer» ×9 (зафиксировано; ×12 до v1.5)
 
-Правила формата: 20-секундный 2D-ролик при первой встрече с кастой; диктор канала (корпоративная бодрость Sato); одна визуальная гэг-сцена; бегущий мелкий шрифт внизу (сноски Sato в видео). Каждый ролик закрывается идентом **«Stay informed. Stay solvent.»** (в сценариях опущен). Имена каст — только официальные. Каждый ролик учит реальной контригре — это туториалы. Исключение одно: **#11 посвящён не касте, а аномалии** и показывается при её первом возвращении; в кампании без аномалии ролик не выходит.
+Правила формата: 20-секундный 2D-ролик при первой встрече с кастой; диктор канала (корпоративная бодрость Sato); одна визуальная гэг-сцена; бегущий мелкий шрифт внизу (сноски Sato в видео). Каждый ролик закрывается идентом **«Stay informed. Stay solvent.»** (в сценариях опущен). Имена каст — только официальные. Каждый ролик учит реальной контригре — это туториалы.
 
 **#01 Forager (Category E)**
 VO: "Meet the Forager. Individually unremarkable. Collectively, a river. The Forager is the Hunger's most abundant product — and, at four credits a unit, the Fund's most reliable revenue stream. Do not aim. Cover the lane. Machine guns, tesla arcs and cluster shells turn quantity into quantity of a more profitable kind."
@@ -535,31 +537,16 @@ Visual: выстрел винтовки — две половинки с таб�
 Fine print: Both halves are payable at Category C rates. The Fund checked.
 
 **#07 Testudo (Category C)**
-VO: "The Testudo carries a shield that absorbs a fixed number of hits — of any size. A howitzer shell removes one layer. So does a single bullet. We invite you to do the math. Rapid fire strips it in seconds; heavy fire flatters it for minutes. Volume, again, is the answer."
-Visual: счётчик щита «12»: гаубица → 11 (медленно); пулемёт → 11, 10, 9, 8… (быстро).
-Fine print: Shield layers are not depreciable assets.
+VO: "The Testudo. Plated. Note the plates: anything light simply glances off them — a machine gun will keep the Testudo entertained for some time. Anything heavy goes through. A rifle round. A howitzer shell. The Fund suggests you bring one. Slow it, stun it, burn it by all means — but to open it, hit it hard."
+Visual: пулемётная очередь высекает искры из пластин, Тестудо невозмутимо шагает; один снаряд гаубицы — пластина трескается; штамп поверх кадра: THRESHOLD MET.
+Fine print: Ricochets are not refundable. Neither are the plates.
 
 **#08 Leech (Category B)**
-VO: "The Leech does not want your towers. It wants your generators — and everything it drinks, the entire Hunger drinks with it. Note the banner: THE SWARM FEASTS. That is your electricity. Set target priority to Leeches, keep an Aegis near your reactors, and remember: there is no refund. What is drunk is drunk."
-Visual: Пиявка на генераторе как соломинка в стакане; шкала энергии течёт вниз; каждый Фуражир на тропе разгорается в такт.
+VO: "The Leech does not want your towers. It wants your generators — and, failing those, your restorations. It travels beneath the ooze; watch for the ripple. It surfaces at the point nearest its target, and that is your moment. Keep your reactors covered, not your lane. Everything it drinks, the entire Hunger drinks with it. There is no refund. What is drunk is drunk."
+Visual: рябь ползёт по жиже мимо скучающих башен; Пиявка вырывается у самого генератора и присасывается как соломинка в стакане; шкала энергии течёт вниз; каждый Фуражир на тропе разгорается в такт.
 Fine print: Energy theft is not an insurable event. See policy 12-044.
 
-**#09 Neurocoupler (Category B)**
-VO: "The Neurocoupler. It does not fight. It attaches to your rail switches and changes your mind for you. If your defense depends on one perfect route, the Neurocoupler will find it. Build for two routes. Kill it before it latches. Where restored, a Null Emitter silences it entirely."
-Visual: стрелка щёлкает, килбокс пустеет, волна уходит другим путём; Нейрокоплер приподнимает фуражку стрелочника.
-Fine print: Route optimization is the client's responsibility.
-
-**#10 Lithophage (Category C)**
-VO: "The Lithophage. Acid, patience, and a single interest: your unfinished restorations. It will walk past your towers to reach a construction site. Escort your drone. The Fund reminds you that unfinished work is compensated at fifty percent — seventy-five, with insurance."
-Visual: камео Patch — варит руину; к нему идёт Литофаг в слюнявчике; Patch машет.
-Fine print: Patch is not covered. Patch has been told.
-
-**#11 Specimen N (Category: pending)**
-VO: "Specimen N. It survived you once. It returns changed. Read the mutation report before choosing your response. Settle early, Commander: another escape means further growth. Collection earns an appropriation. The Fund would prefer to close this account."
-Visual: карточка Marsh «SPECIMEN N» — один и тот же силуэт в трёх кадрах, каждый крупнее предыдущего; в бухгалтерской строке «Category: ——» мигает курсор; печать Фонда опускается на прозвище гарнизона и вымарывает его.
-Fine print: Category: pending. Uncatalogued assets accrue interest. So does the specimen.
-
-**#12 Matriarch (Boss)**
+**#09 Matriarch (Boss)**
 VO: "The Matriarch. A walking incubator. It produces Foragers as it advances — the wave does not end until she does. Save your superweapon. Concentrate fire. And breathe: the Fund's analysts project a favorable outcome." — пауза — "Projections are monitored."
 Visual: силуэт Матриарха заполняет экран; Patch медленно выкатывается из кадра задним ходом; идент канала звучит чуть фальшиво.
 Fine print: "Favorable" is used here in the accounting sense.
@@ -614,7 +601,6 @@ Third card: чёрная, пустая, две секунды. Затем мел
 
 - Первая реставрация (туториал): "Tap a ruin to restore it! I fly out, the Hunger tries to eat me, you get a substation. Everyone wins!*" — fine print: *Two parties win.
 - Вылет: "Patch is on it! Restoration takes one wave. I'll be fine!"
-- Литофаг рядом: "Oh! A Lithophage! We've met!"
 - Под огнём: "Please continue defending. I am very small."
 - Пиявка на генераторе: "A Leech is drinking from your generator! Patch has no straw. Patch has a welder."
 - Реставрация завершена: "Restored! Ahead of schedule — if we count in waves. We do!"

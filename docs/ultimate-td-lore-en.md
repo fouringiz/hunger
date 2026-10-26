@@ -1,5 +1,7 @@
-# "The Hunger" — Ultimate TD Lore Bible (EN, v1.1)
+# "The Hunger" — Ultimate TD Lore Bible (EN, v1.2)
 
+> **Changes v1.1 → v1.2 (Passport v2.15):** the Neurocoupler caste, rail switches and the Anomalies are out of the game (parked as seeds); the Lithophage is merged into the Leech. New: **the castes before the war** — every caste was a peaceful organ of the pen economy before the Expedition arrived; the incubators repurposed them. Spoiler rule: before Gateway 2, in-game texts describe caste behavior only, never its purpose.
+>
 > **Changes v1.0 → v1.1 (Passport v2.11):** the Coordinator caste is removed from the game. The herd's steering organ is the incubators themselves, reading the battle through the Veins; directed evolution no longer has a body on the lane.
 >
 > This document collects all locked setting canon as of Project Passport v1.1. Game mechanics live in the passport; this is the world and its history only.
@@ -30,7 +32,7 @@ The expedition went through. There was no road back.
 
 - This planet was never a world. It was a **facility** — a single planet-scale mechanism; the Precursors built no cities here.
 - **The Hunger is their creation.** A self-directing biological system that processes worlds into biomass and energy for the grid. It has been running its program for millions of years after its masters vanished.
-- **The artifacts are not weapons but husbandry tools**: the Excisor culls the weak, the Recall Obelisk herds, the Null Emitter pacifies, the Aegis guards the feeding infrastructure. The swarm cannot adapt to them because the leash is written into its genome: the dog does not bite the staff. The Neurocoupler reads the language of the pen as its own. The herd's steering organ is the incubators themselves: they took the shepherds' orders through the Veins, and through the Veins they still listen to the planet. Anomalies are cracks in the leash — individuality emerging where none should exist.
+- **The artifacts are not weapons but husbandry tools**: the Excisor culls the weak, the Recall Obelisk herds, the Null Emitter pacifies, the Aegis guards the feeding infrastructure. The swarm cannot adapt to them because the leash is written into its genome: the dog does not bite the staff. The herd's steering organ is the incubators themselves: they took the shepherds' orders through the Veins, and through the Veins they still listen to the planet. The one clue the player can read before Gateway 2 is a Marsh memorandum: the swarm adapts to everything the Expedition fields — except the Obelisk. Marsh asks why.
 - **The network is pen and lure.** A sedative the swarm was meant to grow into, so that it would stay here, fed and slow. Every restoration the Expedition performs mends a fence — and wakes the herd.
 - **The fate of the shepherds — a schism.** Most departed along the beacon network. A cohort of caretakers stayed to tend the herd — until the program reclassified them as biomass. The first anomaly in the herd's history was the decision to eat the shepherd. The caretakers' final act was the containment protocol: sedate it, keep it here, feed it slowly. And a message for whoever came next: *"don't wake it."*
 - The Expedition is the loudest thing to happen in the pen in a million years.
@@ -47,7 +49,7 @@ The expedition went through. There was no road back.
 ### Threads Reserved for Sequels
 - Where the Precursors went along the network.
 - Why Earth was on their map: the ship on the Pacific floor did not crash by accident.
-- Whether the herd is growing a mind of its own (the Anomalies).
+- Whether the herd is growing a mind of its own (seed: the Anomalies, parked in the passport).
 
 ## 3. The Hunger
 
@@ -59,8 +61,22 @@ Not so much an intelligent technological species as a starving biological swarm 
 - **The economy is an endless cycle:** grow food → grow more swarm → seize territory → grow even more food.
 - **The philosophy is collective.** No individual hoards — everything flows to the hive.
 - **Directed evolution.** The swarm analyzes what kills it and grows countermeasures. There is no observer and never was: every death travels back along the Veins together with whatever caused it, and the incubators read that flow without pause. Both sides feed on death — only the swarm also learns from it. Hence the rule: adaptation cannot be intercepted, only outpaced.
-- **The Leech caste.** Electrotrophs that grazed for millions of years on the dormant reactors of the Precursors — a slow, meager, eternal feeding ground. They latch onto an energy source inductively, lamprey-style, without breaching the casing. Everything they drink flows instantly to the hive: a Leech is not a predator but a straw.
+- **Every caste is a pen organ, repurposed.** For a million years the swarm lived in the pen on a thin ration, and each caste was an organ of that household. There was no war in it. The incubators did not invent soldiers; they re-tailored peaceful functions for a threat. See *The Castes Before the War* below.
 - **The swarm hunts Precursor energy signatures.** To it, an active reactor is not an enemy. It is food.
+
+### The Castes Before the War
+
+> ⚠️ **Spoiler rule.** Until Gateway 2, in-game texts (Marsh memoranda, Know Your Consumer, garrison shouts) describe only what a caste *does* — "carries organics to the vein mouths," "repairs tissue sparingly" — never what it was *for*. The words "herd," "livestock," "household," "pen" do not appear before that beat. The full function of each caste is Sealed Annex material.
+
+- **Forager — the gatherer.** It picked up everything organic on the surface and carried it to the mouths of the Veins. A minimal body — mouth, legs, nothing else — because it had to cost almost nothing. Against humans only its target scent was changed: now it walks toward the loudest energy source on the field, the Gate. Marsh: *"They are not attacking us, Commander. They are collecting us."*
+- **Carapacid — the draft caste.** It broke through collapsed tunnels and overgrowth, laying the pheromone trunk lines for the herd. The small ones always walked behind it, where cave-ins could not reach them. The instinct remains; the shadow it casts against bullets is a side effect of it.
+- **Nurse — the herd's regenerator.** It kept the livestock alive on a starvation ration, patching tissue slowly and cheaply, because an owner gains nothing from animals dying for no reason. A quiet detail for the reveal: the Nurse heals the sound, the Excisor erases the weak. Two sides of one household — which is why the Excisor is the anti-Nurse by definition.
+- **Aeroplankton — the trail keeper.** It hovered above the trunk lines and refreshed the pheromone marking. That is why it flies only along the lane, and low: it is part of the trail and cannot leave it.
+- **Courier — the signal caste.** It ran between incubators where the Veins did not reach, carrying chemical messages. A burst of five to eight is one message split across several bodies so that at least one arrives. It still does the same thing — the message is now a breakthrough.
+- **Polyp — the settler.** The herd's way of occupying new ground quickly: it buds when damaged. Death, for a Polyp, is a form of reproduction — which is why it splits when killed.
+- **Testudo — the warden of the vein mouths.** It shielded the mouths and the incubators from cave-ins with thick plates that shrugged off falling grit and cracked only under a boulder. Small-arms fire is grit.
+- **Leech — the grazer.** Electrotrophs that grazed for millions of years on the dormant reactors of the Precursors — a slow, meager, eternal feeding ground. They latch onto an energy source inductively, lamprey-style, without breaching the casing; everything they drink flows instantly to the hive: a Leech is not a predator but a straw. They travel beneath the ooze of the lane, as they always traveled beneath the pen, and surface only beside their food. A human generator is the first feast in a million years; a restoration site, where old equipment is being woken, smells like the food they were born to.
+- **Matriarch — the walking incubator.** The fixed incubators are grown deep into the Veins; the Matriarch is their mobile form, for ground the Veins never reached. It gives birth as it walks. In war it is sent wherever the swarm meets resistance — a forward factory.
 
 **Names.** In the expedition's trench slang — **"the Hunger."** In the official catalog — "Consumers" (working designation).
 
