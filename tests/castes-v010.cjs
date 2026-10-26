@@ -50,10 +50,12 @@ const cases={
     stepSimulation(SIM_STEP);
     const kids=()=>S.enemies.filter(e=>e.type==='polypoid');
     assert.equal(kids().length,0,'no Polypoid at the death'); assert.equal(S.zygotes.length,6,'six zygotes');
-    assert.ok(S.zygotes.every(z=>z.d===400),'all at the death point, no lane spread');
+    assert.ok(S.zygotes.every(z=>Math.abs(z.d-400)<=POLYP_SCATTER),'scattered within ±POLYP_SCATTER of the death point');
+    const zd=new Map(S.zygotes.map(z=>[z.seq,z.d]));
     assert.ok(!S.zygotes.some(z=>S.enemies.includes(z)),'zygotes are not in S.enemies');
     const credits=S.credits, hatchTicks=[]; let seen=0;
-    for(let k=1;k<=Math.round(3.2/SIM_STEP);k++){ stepSimulation(SIM_STEP); const now=kids().length; assert.ok(now-seen<=1,'at most one per tick'); for(;seen<now;seen++) hatchTicks.push(k); }
+    for(let k=1;k<=Math.round(3.2/SIM_STEP);k++){ stepSimulation(SIM_STEP); const now=kids().length; assert.ok(now-seen<=1,'at most one per tick');
+      for(;seen<now;seen++){ hatchTicks.push(k); const kid=kids()[seen]; assert.ok(Math.abs(kid.d-zd.get(kid.seq))<=ENEMY.polypoid.speed*SIM_STEP+1e-6,'each Polypoid hatches at the d of its own zygote'); } }
     assert.equal(hatchTicks.length,6,'all six hatched');
     POLYP_HATCH.forEach((h,i)=>{ const want=Math.round(h/SIM_STEP); assert.ok(Math.abs(hatchTicks[i]+1-want)<=1,'hatch '+i+' at '+h+' s (tick '+hatchTicks[i]+')'); });
     assert.ok(hatchTicks.every((k,i)=>i===0||k>hatchTicks[i-1]),'strictly one at a time');
@@ -62,6 +64,33 @@ const cases={
     assert.equal(S.credits,credits,'zygotes and hatching give no bounty');
     damage(kids()[0],10000,t); stepSimulation(SIM_STEP);
     assert.equal(kids().length,5,'a Polypoid dies without splitting'); assert.equal(S.zygotes.length,0);
+  `,
+  'the zygote scatter is deterministic per (wave, seq), stratified into one zygote per bin, hatch times are a permutation, different Polyps differ, and the lane ends clamp': `
+    const brood=(wave,seq,d=400)=>{ reset(); S.phase='wave'; S.zygotes=[]; const p=makeEnemy('polyp',wave); p.wave=wave; p.seq=seq; p.d=d; splitBody(p); return S.zygotes.map(z=>({idx:z.idx,offset:z.offset,d:z.d,t:z.t,side:z.side,seq:z.seq})); };
+    assert.deepEqual(brood(7,3),brood(7,3),'same (wave, seq) gives the same offsets and hatch order'); assert.deepEqual(brood(7,3,200),brood(7,3,200).map(z=>({...z})));
+    const bin=2*POLYP_SCATTER/POLYP_SPLIT, patterns=new Set();
+    for(let wave=6;wave<=10;wave++) for(let seq=0;seq<40;seq++){
+      const b=brood(wave,seq); patterns.add(JSON.stringify(b.map(z=>z.offset)));
+      assert.equal(b.length,POLYP_SPLIT);
+      for(const z of b){ assert.ok(z.offset>=-POLYP_SCATTER&&z.offset<=POLYP_SCATTER,'within ±POLYP_SCATTER'); assert.ok(Math.abs(z.side)<=8,'presentation offset within ±8'); }
+      const bins=b.map(z=>Math.min(POLYP_SPLIT-1,Math.floor((z.offset+POLYP_SCATTER)/bin))).sort((x,y)=>x-y);
+      assert.deepEqual(bins,[0,1,2,3,4,5],'every bin holds exactly one zygote (wave '+wave+', seq '+seq+')');
+      assert.deepEqual(b.map(z=>z.t).sort((x,y)=>x-y),[...POLYP_HATCH],'hatch times are a permutation of POLYP_HATCH');
+    }
+    assert.ok(patterns.size>=190,'different Polyps get different patterns ('+patterns.size+' of 200)');
+    assert.notDeepEqual(brood(7,3).map(z=>z.offset),brood(7,4).map(z=>z.offset),'neighbouring Polyps differ');
+    const orders=new Set(); for(let seq=0;seq<40;seq++) orders.add(brood(8,seq).map(z=>z.t).join()); assert.ok(orders.size>10,'the hatch order is shuffled, not always lane order');
+    assert.ok(brood(6,1,5).every(z=>z.d>=0),'clamped at the Mouth'); assert.ok(brood(6,1,GATE_D-3).every(z=>z.d<=GATE_D-20),'clamped short of the Gate');
+  `,
+  'a cannon-radius splash centred on an end zygote of a straight stretch never reaches the opposite end': `
+    const R=TOWER.cannon.splash; let widest=0;
+    for(let wave=6;wave<=9;wave++) for(let seq=0;seq<50;seq++){
+      reset(); S.phase='wave'; S.zygotes=[]; const p=makeEnemy('polyp',wave); p.wave=wave; p.seq=seq; p.d=330; splitBody(p);
+      const zs=[...S.zygotes].sort((a,b)=>a.idx-b.idx), pts=zs.map(z=>posAt(z.d));
+      for(const c of [pts[0],pts[POLYP_SPLIT-1]]) widest=Math.max(widest,pts.filter(q=>Math.hypot(q.x-c.x,q.y-c.y)<=R).length);
+      assert.ok(Math.hypot(pts[0].x-pts[POLYP_SPLIT-1].x,pts[0].y-pts[POLYP_SPLIT-1].y)>R,'opposite ends of the brood are further apart than one shell radius (wave '+wave+', seq '+seq+')');
+    }
+    assert.ok(widest<POLYP_SPLIT,'a shell centred on an end zygote never covers the whole brood (most points covered: '+widest+')');
   `,
   'zygotes are untouched by splash, jets, pools and chains; a howitzer-damage splash at the death point kills no Polypoid, one at the first hatch kills at most two': `
     reset(); S.wave=1; startWave(); S.spawnQueue.length=0; S.phase='wave'; S.credits=9999;

@@ -135,6 +135,7 @@ const ENEMY = {
 const CASTE_SET = BALANCE_PRESET && BALANCE_PRESET.classicCastes ? 'classic' : 'v010';
 const AIR_FROM_WAVE = 5, POLYP_FROM_WAVE = 6;
 const POLYP_SPLIT = 6;                                         // zygotes a dying Polyp bursts into, all at its lane position
+const POLYP_SCATTER = 40;                                      // zygotes land within ±this many lane units of the death point, one per equal bin
 const POLYP_HATCH = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];            // seconds after the Polyp's death at which zygote i hatches a Polypoid
 // DRAFT field-trial parameters; not a campaign weapon-line or balance verdict.
 const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8, marchSpeed:60,
@@ -699,7 +700,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT,POLYP_HATCH};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT,POLYP_HATCH,POLYP_SCATTER};
   if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
@@ -711,7 +712,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,slabFootprint,segmentCrossesRect,leechRoute,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,hatchZygotes,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,slabFootprint,segmentCrossesRect,leechRoute,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,replayHash,splitBody,hatchZygotes,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -861,12 +862,22 @@ function damage(e, amt, tower, source = 'tower') {
     if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp bursts into six zygotes where it died
   }
 }
-// The Polyp leaves six zygotes at its lane position. A zygote is not a body: it is not in S.enemies, so nothing targets
-// or damages it. Zygote i hatches one Polypoid POLYP_HATCH[i] seconds after the death, with the parent's wave and mutations.
+// The Polyp leaves six zygotes scattered along the lane around its death point. A zygote is not a body: it is not in
+// S.enemies, so nothing targets or damages it. The scatter is pseudo-random but deterministic: an xorshift32 stream
+// seeded by a hash of the Polyp's (wave, seq), with no global RNG state. The span [-POLYP_SCATTER, +POLYP_SCATTER] is cut
+// into POLYP_SPLIT equal bins and zygote k lands at a seeded point inside bin k, so no bin is ever empty or doubled; the
+// POLYP_HATCH times go to the zygotes in a seeded permutation. A Polypoid hatches at its own zygote's d.
 function splitBody(e) {
-  for (let i = 0; i < POLYP_SPLIT; i++) {
-    const p = posAt(e.d);
-    S.zygotes.push({type:e.T.splits, idx:i, t:POLYP_HATCH[i], max:POLYP_HATCH[i], d:e.d, x:p.x, y:p.y, wave:e.wave, muts:[...e.muts], seq:(e.seq || 0) * POLYP_SPLIT + i});
+  let x = parseInt(replayHash((e.wave || 0) + ':' + (e.seq || 0)), 16) || 1;
+  const next = () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; };
+  for (let k = 0; k < 4; k++) next();                          // let the seed mix
+  const order = Array.from({length: POLYP_SPLIT}, (_, i) => i);
+  for (let i = POLYP_SPLIT - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  const bin = 2 * POLYP_SCATTER / POLYP_SPLIT;
+  for (let k = 0; k < POLYP_SPLIT; k++) {
+    const offset = -POLYP_SCATTER + (k + next()) * bin, rank = order[k], side = (next() * 2 - 1) * 8;
+    const d = Math.min(Math.max(e.d + offset, 0), GATE_D - 20), p = posAt(d);
+    S.zygotes.push({type:e.T.splits, idx:k, offset, side, t:POLYP_HATCH[rank], max:POLYP_HATCH[rank], d, x:p.x, y:p.y, wave:e.wave, muts:[...e.muts], seq:(e.seq || 0) * POLYP_SPLIT + rank});
   }
 }
 function hatchZygotes(dt) {
@@ -2242,15 +2253,13 @@ function drawPolypBody(e,angle) {
   ctx.strokeStyle='#5a1f6b';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.stroke();
   ctx.restore();
 }
-// Presentation only. The six zygotes of one burst share a lane point; they are drawn as a small cluster (two rows of
-// three: columns ZYGOTE_GAP apart across the lane, rows ZYGOTE_ROW apart along its tangent) so every one is visible and countable. Each is a Forager-sized
-// upright capsule that pulses faster as it nears its hatch tick, then opens (widens, splits along its seam) and fades in
-// the last 0.15 s. Light fill with a dark outline and a bright seam keeps it readable in greyscale against the lane.
-const ZYGOTE_GAP = 9, ZYGOTE_ROW = 13;   // the row step is wider so upright 16 px capsules stay countable on a vertical lane
+// Presentation only. A zygote sits at posAt(its d) plus its seeded sideways offset (z.side, within ±8 px) across the lane
+// tangent. Each is a Forager-sized upright capsule that pulses faster as it nears its hatch tick, then opens (widens,
+// splits along its seam) and fades in the last 0.15 s. Light fill with a dark outline and a bright seam keeps it readable
+// in greyscale against the lane.
 function zygotePose(z) {
   const a = posAt(Math.max(0, z.d - 2)), b = posAt(z.d + 2), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-  const tx = (b.x - a.x) / len, ty = (b.y - a.y) / len, across = ((z.idx % 3) - 1) * ZYGOTE_GAP, along = (Math.floor(z.idx / 3) - 0.5) * ZYGOTE_ROW;
-  return {x: z.x + tx * along - ty * across, y: z.y + ty * along + tx * across};
+  return {x: z.x - (b.y - a.y) / len * z.side, y: z.y + (b.x - a.x) / len * z.side};
 }
 function drawZygote(z) {
   const pose=zygotePose(z), left=Math.max(0,z.t), open=Math.max(0,1-left/0.15), rate=3+5*(1-left/z.max), puls=1+Math.sin(presentationTime*rate+z.idx*1.3)*.06;
