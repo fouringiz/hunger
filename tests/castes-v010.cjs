@@ -1,5 +1,5 @@
 // v0.10 castes: Aeroplankton flies (Cannon and Flamethrower cannot reach it, the Carapacid shadow does not cover it,
-// Turret and Voltaic hit it); Polyp splits where it dies into two Polypoids that do not split again. Legacy presets
+// Turret and Voltaic hit it); Polyp splits where it dies into six Polypoids that do not split again. Legacy presets
 // keep the classic waves.
 'use strict';
 const fs=require('node:fs'), path=require('node:path'), vm=require('node:vm'), assert=require('node:assert/strict');
@@ -41,17 +41,30 @@ const cases={
     const air=makeEnemy('aero',1), shield=makeEnemy('carapacid',1); air.x=350; air.y=270; shield.x=350; shield.y=236; S.enemies=[air,shield];
     fireFlat(t,tstats(t),air); assert.ok(air.hp<air.maxHp&&shield.hp===shield.maxHp,'the round reaches the flyer over the shell');
   `,
-  'a Polyp splits into two Polypoids at its lane position, with its mutations; Polypoids do not split': `
+  'a Polyp splits into six Polypoids at its lane position, with its mutations; Polypoids do not split': `
     reset(); S.wave=6; startWave(); S.spawnQueue.length=0; S.phase='wave';
     const p=makeEnemy('polyp',6); p.wave=6; p.seq=4; p.d=400; Object.assign(p,posAt(400)); p.muts=['keratin']; S.enemies=[p];
     build(SLOTS[2],'turret'); const t=S.towers[0]; t.paused=true;
-    damage(p,10000,t); assert.ok(p.dead); assert.equal(S.births.length,2,'two children queued, not yet on the field');
+    damage(p,10000,t); assert.ok(p.dead); assert.equal(POLYP_SPLIT,6); assert.equal(S.births.length,6,'six children queued, not yet on the field');
+    assert.deepEqual([ENEMY.polypoid.hp,ENEMY.polypoid.speed,ENEMY.polypoid.bounty,ENEMY.polypoid.gateDmg],[40,56,3,1],'pinned verdict numbers');
     stepSimulation(SIM_STEP);
-    const kids=S.enemies.filter(e=>e.type==='polypoid'); assert.equal(kids.length,2,'released after the step');
-    for(const k of kids){ assert.ok(Math.abs(k.d-400)<=6+ENEMY.polypoid.speed*SIM_STEP+1e-6,'near the parent'); assert.equal(k.wave,6); assert.deepEqual(k.muts,['keratin'],'inherits mutations'); }
-    assert.ok(new Set(kids.map(k=>k.seq)).size===2,'distinct spawn indices');
+    const kids=S.enemies.filter(e=>e.type==='polypoid'); assert.equal(kids.length,6,'released after the step');
+    for(const k of kids){ assert.ok(Math.abs(k.d-400)<=15+ENEMY.polypoid.speed*SIM_STEP+1e-6,'near the parent'); assert.equal(k.wave,6); assert.deepEqual(k.muts,['keratin'],'inherits mutations'); }
+    assert.ok(new Set(kids.map(k=>k.seq)).size===6,'distinct spawn indices');
     const before=S.enemies.length; damage(kids[0],10000,t); stepSimulation(SIM_STEP);
-    assert.equal(S.enemies.filter(e=>e.type==='polypoid').length,1,'a Polypoid dies without splitting');
+    assert.equal(S.enemies.filter(e=>e.type==='polypoid').length,5,'a Polypoid dies without splitting');
+  `,
+  'six Polypoids carry less total HP than two parents; a splash shell on the fresh cluster kills more of them than a single flat shot': `
+    reset(); S.wave=1; startWave(); S.spawnQueue.length=0; S.phase='wave'; S.credits=9999;
+    build(SLOTS[2],'turret'); build(SLOTS[5],'cannon'); const tt=S.towers[0], tc=S.towers[1]; tt.paused=true; tc.paused=true;
+    const mk=()=>{ const p=makeEnemy('polyp',1); p.wave=1; p.seq=0; p.d=400; Object.assign(p,posAt(400)); S.enemies=[p]; S.births.length=0; damage(p,10000,tt); stepSimulation(SIM_STEP);
+      return {p,kids:S.enemies.filter(e=>e.type==='polypoid')}; };
+    let r=mk(); assert.equal(r.kids.length,6);
+    assert.ok(r.kids.reduce((a,k)=>a+k.maxHp,0)<2*r.p.maxHp,'the split brood is lighter than two parents');
+    const aim=r.kids[2]; const sh={sx:tc.x,sy:tc.y,tx:aim.x,ty:aim.y,t:0,flight:0.65,tower:tc,dmg:TOWER.cannon.dmg,splash:TOWER.cannon.splash,prime:null};
+    S.shells=[sh]; advanceShells(0.65); const shellKills=r.kids.filter(k=>k.dead).length;
+    r=mk(); const one=r.kids[2]; damage(one,TOWER.turret.dmg,tt); const flatKills=r.kids.filter(k=>k.dead).length;
+    assert.ok(shellKills>flatKills&&shellKills>=2,'splash on the cluster out-kills one flat shot ('+shellKills+' vs '+flatKills+')');
   `,
   'Grounding never makes a flying body a rod; ground bodies keep the every-third cadence and every Carapacid': `
     reset(); S.mutations=['grounding']; S.phase='wave'; S.spawnedThisWave=0;

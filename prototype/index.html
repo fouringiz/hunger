@@ -127,11 +127,12 @@ const ENEMY = {
   // cover it; Turret and Voltaic hit it normally. Polyp splits where it dies into two Polypoids that do not split again.
   aero:        {name:'Aeroplankton', hp:24,  speed:68, r:6,  bounty:6,  gateDmg:1, color:'#8fd3ff', air:true},
   polyp:       {name:'Polyp',       hp:150, speed:30, r:11, bounty:12, gateDmg:3, color:'#b55fcf', splits:'polypoid'},
-  polypoid:    {name:'Polypoid',    hp:55,  speed:44, r:7,  bounty:4,  gateDmg:1, color:'#d48ae0'}
+  polypoid:    {name:'Polypoid',    hp:40,  speed:56, r:7,  bounty:3,  gateDmg:1, color:'#d48ae0'}
 };
 // Which castes the waves carry. Legacy rule presets keep the classic three so their recordings stay verifiable.
 const CASTE_SET = BALANCE_PRESET && BALANCE_PRESET.classicCastes ? 'classic' : 'v010';
 const AIR_FROM_WAVE = 5, POLYP_FROM_WAVE = 6;
+const POLYP_SPLIT = 6;                                         // Polypoids a dying Polyp opens into (lane offsets spread 6 apart, centred)
 // DRAFT field-trial parameters; not a campaign weapon-line or balance verdict.
 const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8, marchSpeed:60,
   retaliation:{forager:10, carapacid:30, leech:14}, retaliationInterval:1, contactRadius:12};
@@ -695,7 +696,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT};
   if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
@@ -854,16 +855,16 @@ function damage(e, amt, tower, source = 'tower') {
       syncGeneratorHum();
     } // freed generator
     S.fx.push({kind:'death', x:e.x, y:e.y, r:e.r, life:0.3, max:0.3, color:e.T.color});
-    if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp opens into two Polypoids where it died
+    if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp opens into six Polypoids where it died
   }
 }
-// The two Polypoids pick up the parent's lane position, wave and mutations. They are queued and released after the
+// The Polypoids pick up the parent's lane position, wave and mutations. They are queued and released after the
 // current step's hits are resolved, so the shot that killed the Polyp does not also hit its children.
 function splitBody(e) {
-  for (const side of [-1, 1]) {
+  for (let i = 0; i < POLYP_SPLIT; i++) {
     const child = makeEnemy(e.T.splits, e.wave || S.wave);
-    child.muts = [...e.muts]; child.rod = false; child.wave = e.wave; child.seq = (e.seq || 0) * 2 + (side > 0 ? 1 : 0);
-    child.d = Math.max(0, e.d + side * 6); const p = posAt(child.d); child.x = p.x; child.y = p.y;
+    child.muts = [...e.muts]; child.rod = false; child.wave = e.wave; child.seq = (e.seq || 0) * POLYP_SPLIT + i;
+    child.d = Math.max(0, e.d + (i - (POLYP_SPLIT - 1) / 2) * 6); const p = posAt(child.d); child.x = p.x; child.y = p.y;
     child.incoming = 0; S.births.push(child);
   }
 }
