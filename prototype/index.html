@@ -2920,6 +2920,17 @@ canvas.addEventListener('pointercancel',()=>{pendingPlacement=null;placementPrev
 
 // ---------------------------------------------------------------- loop
 let last = performance.now();
+// The frame loop survives a renderer exception: the simulation keeps stepping, the first error is kept and shown on the
+// canvas until reload, so a playtester sees a red strip with the stack instead of a silently frozen frame.
+// update() is deliberately not guarded: a simulation that threw is a broken game and must not keep running unnoticed.
+let renderFault = null;
+function drawRenderFault() {
+  ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0); ctx.globalAlpha = 1; ctx.setLineDash([]);
+  const lines = String(renderFault.stack || renderFault).split('\n').slice(0, 4);
+  ctx.fillStyle = 'rgba(96,12,12,0.92)'; ctx.fillRect(0, 0, W, 16 + lines.length*14);
+  text('RENDER ERROR — the game goes on, the picture may be incomplete. Copy the console and attach it with the report.', 8, 12, 11, '#ffd9d9', 'left', '700');
+  lines.forEach((l, i) => text(l.trim().slice(0, 150), 8, 26 + i*14, 11, '#ffecec'));
+}
 function frame(now) {
   // Bound catch-up after a suspended tab; speed changes the tick count, never the tick size.
   const raw = Math.max(0, Math.min(0.25, (now - last) / 1000)); last = now;
@@ -2934,7 +2945,9 @@ function frame(now) {
     }
   } else if(!['verified','error','finished'].includes(replay.mode)) update(raw * S.speed);
   syncGeneratorHum();
-  draw();
+  try { draw(); }
+  catch (err) { if (!renderFault) { renderFault = err; console.error(err); } }
+  if (renderFault) drawRenderFault();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

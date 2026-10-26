@@ -24,5 +24,12 @@ const {loadWorld}=require('../tools/capture-organic-world.cjs');
     assert.ok(Number.isFinite(point.x)&&Number.isFinite(point.y)&&Number.isFinite(height)&&height>0,`${caste}: body point and height are numbers`);
     drawn++;
   }
-  console.log(`caste-markers-draw: ${drawn} caste/marker combinations drawn without throwing`);
+  // The frame loop must outlive a renderer exception: the fault is kept, the strip is drawn and the next frame is armed.
+  run("var rafCalls=0;requestAnimationFrame=()=>{rafCalls++;};var realDraw=draw;draw=()=>{throw new Error('synthetic renderer fault');};");
+  run('frame(16);frame(32);');
+  assert.equal(run('rafCalls'),2,'the loop re-arms after a draw() exception');
+  assert.equal(run('renderFault&&renderFault.message'),'synthetic renderer fault','the first fault is kept');
+  run('draw=realDraw;frame(48);');
+  assert.equal(run('rafCalls'),3,'the loop keeps running once draw() works again');
+  console.log(`caste-markers-draw: ${drawn} caste/marker combinations drawn without throwing; frame loop survives a renderer fault`);
 })().catch(e=>{console.error(e);process.exitCode=1;});
