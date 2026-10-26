@@ -72,8 +72,10 @@ const cases = {
     reset(); build(SLOTS[0], 'generator'); S.phase = 'wave'; S.wave = 1;
     const g = S.towers[0], e = makeEnemy('leech', 1);
     e.d = 140; Object.assign(e, posAt(e.d)); S.enemies.push(e);
-    update(SIM_STEP); assert.equal(e.state, 'seek'); assert.equal(power().prod, 80);
+    update(SIM_STEP); assert.ok(['seek', 'surfacing'].includes(e.state)); assert.equal(power().prod, 80);   // v0.11: a hunt inside surfaceDist surfaces at once; the generator still runs
     e.x = g.x; e.y = g.y; update(SIM_STEP);
+    assert.equal(e.state, 'surfacing'); assert.equal(power().prod, 80);   // v0.11: it surfaces first; the generator still runs
+    for (let i = 0; i < Math.ceil(BUILD_WARMUP_SECONDS / SIM_STEP) + 2; i++) update(SIM_STEP);   // warm-up ticks, the seek tick, the attach tick
     assert.equal(e.state, 'attached'); assert.equal(power().prod, 40);
     damage(e, 10000, null); assert.equal(power().prod, 80);
   `,

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.10</title>
+<title>Ultimate TD — core loop prototype v0.11</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,12 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.11: the Leech hunts beneath the ooze (passport v2.15). From the moment it picks a generator it is submerged:
+// a ripple on the surface, no body for the towers to target; cannon splash, flamer jet, plasma pools and tesla hops
+// landing on bodies next to it bleed through at LEECH_OOZE.collateral. It surfaces LEECH_OOZE.surfaceDist from the
+// generator (120, raised from 60 after the first look at the surfacing point), standing still for BUILD_WARMUP_SECONDS
+// at full damage, then crawls the rest in the open. A wave never
+// sends more Leeches than there are free generators. Leech 130/46/25 -> 200/38/35 (draft). Presets keep the old Leech.
 // v0.10: two castes — Aeroplankton flies along the lane out of reach of Cannon and Flamethrower (Turret and Voltaic
 // only), unaffected by the Carapacid shadow; Polyp splits into two Polypoids where it dies. Legacy presets keep the
 // classic three-caste waves.
@@ -116,7 +122,7 @@ const SLOTS = [[110,160],[250,160],[350,200],[350,340],[250,340],[490,190],[490,
 const ENEMY = {
   forager:     {name:'Forager',     hp:30,  speed:52, r:7,  bounty:5,  gateDmg:1, color:'#ff6b6b'},
   carapacid:   {name:'Carapacid',   hp:340, speed:34, r:18, bounty:40, gateDmg:5, color:'#a83232'},
-  leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'},
+  leech:       {name:'Leech',       hp:BALANCE_PRESET?130:200, speed:BALANCE_PRESET?46:38, r:10, bounty:BALANCE_PRESET?25:35, gateDmg:2, color:'#c77dff'},   // v0.11: 200/38/35 (draft); presets keep 130/46/25
   // v0.10. Aeroplankton flies: Cannon shells and the Flamethrower jet cannot reach it, the Carapacid shadow does not
   // cover it; Turret and Voltaic hit it normally. Polyp splits where it dies into two Polypoids that do not split again.
   aero:        {name:'Aeroplankton', hp:24,  speed:68, r:6,  bounty:6,  gateDmg:1, color:'#8fd3ff', air:true},
@@ -300,6 +306,7 @@ document.addEventListener?.('visibilitychange', () => {
   try { if (document.hidden) audioContext.suspend(); } catch (_) {}
 });
 
+function freeGeneratorCount() { let n = 0; for (const t of S.towers) if (t.type === 'generator' && !t.leeched && !t.selling) n++; return n; }
 function waveDef(n) {
   let f = 8 + 4*n; const caras = n >= 2 ? Math.floor(n/2) : 0; const list = [];
   for (let i = 0; i < caras; i++) {
@@ -307,7 +314,8 @@ function waveDef(n) {
     for (let j = 0; j < 6 && f > 0; j++) { list.push({type:'forager', delay:0.45}); f--; }
   }
   while (f > 0) { list.push({type:'forager', delay:0.55}); f--; }
-  const leeches = n >= 5 ? 1 + Math.floor((n - 5) / 2) : 0;   // Leeches from wave 5
+  let leeches = n >= 5 ? 1 + Math.floor((n - 5) / 2) : 0;     // Leeches from wave 5
+  if (LEECH_OOZE) leeches = Math.min(leeches, freeGeneratorCount());   // v0.11: never more Leeches than free generators
   for (let i = 0; i < leeches; i++) list.splice(3 + i*5, 0, {type:'leech', delay:1.0});
   if (ESCORT_WAVES.includes(n)) {                             // shielded push; kept separate so a silenced schedule still plays the same waves
     const convoy = [{type:'carapacid', delay:1.6},
@@ -344,7 +352,7 @@ function makeEnemy(type, n) {
   const rod = muts.includes('grounding') && !T.air && (type === 'carapacid' || index % ROD_EVERY === ROD_EVERY - 1);   // nothing grounds in the air
   return {type, T, hp:T.hp*mul, maxHp:T.hp*mul, d:0, speed:T.speed, effSpeed:T.speed, r:T.r,
           x:PATH[0][0], y:PATH[0][1], dead:false, incoming:0, dash:0, blockedBy:null,
-          muts, rod, state:'lane', gen:null, feedT:0};
+          muts, rod, state:'lane', gen:null, feedT:0, submerged:false, surfaceT:0};
 }
 function tstats(t) {
   const T = t.T, lv = Math.min(t.level, 3);
@@ -476,7 +484,7 @@ function togglePause(t) {
 }
 function returnLeechToLane(e) {
   if (e.gen) e.gen.leeched = null;
-  e.gen = null;
+  e.gen = null; e.submerged = false; e.surfaceT = 0;
   e.state = 'return';
   let best = Infinity;
   for (const s of SEG) {
@@ -504,6 +512,9 @@ const CARAPACID_SHELTER = {reach:70, gaps:[6,22,36], offsets:[22,23,22], lateral
 // again when the target changes): the shortest path around the slab corners, which is the straight line when it is clear.
 // The target's own slab is not an obstacle: the generator stands on it. Historical presets keep the straight line.
 const LEECH_SLAB_AVOIDANCE = BALANCE_PRESET ? null : {margin:ENEMY.leech.r};
+// v0.11: the submerged hunt. surfaceDist — distance from the generator at which the Leech surfaces; collateral — share of
+// area damage (splash, jet, pool, a tesla hop within collateralR of the ripple) that reaches a submerged body. Draft numbers.
+const LEECH_OOZE = BALANCE_PRESET ? null : {surfaceDist:120, collateral:0.25, collateralR:30};
 function slabFootprint(s, margin) { return {x1:s.x-27-margin, y1:s.y-23-margin, x2:s.x+27+margin, y2:s.y+40+margin}; }
 function segmentCrossesRect(ax, ay, bx, by, r) {                 // open interval: touching an edge or a corner is not crossing
   let t0=0, t1=1; const dx=bx-ax, dy=by-ay;
@@ -685,7 +696,7 @@ function replayRulesFingerprint() {
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE};
-  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;}
+  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -862,12 +873,17 @@ function segHitsCircle(x1,y1,x2,y2,cx,cy,r) {
   const px = x1 + dx*u, py = y1 + dy*u;
   return Math.hypot(px-cx, py-cy) <= r ? u : -1;
 }
+// v0.11: area damage that lands at (x, y) also reaches every submerged Leech within r, at the collateral share.
+function oozeCollateral(x, y, r, amt, tower, except) {
+  if (!LEECH_OOZE || r <= 0) return;
+  for (const o of S.enemies) if (!o.dead && o.submerged && o !== except && Math.hypot(o.x - x, o.y - y) <= r + o.r) damage(o, amt * LEECH_OOZE.collateral, tower);
+}
 // -------- fully automatic targeting: base "furthest along the lane" + three silent rules
 function pickTarget(t, st) {
   const cands = [];
   const ground = t.T.kind === 'arc' || t.T.kind === 'fire';     // shells and the jet cannot reach a flying body
   for (const e of S.enemies) {
-    if (e.dead) continue;
+    if (e.dead || e.submerged) continue;                        // a body beneath the ooze is not a target
     if (ground && e.T.air) continue;
     const dist = Math.hypot(e.x-t.x, e.y-t.y);
     if (dist > st.range) continue;
@@ -886,7 +902,7 @@ function pickTarget(t, st) {
     let best = null, bestN = -1;
     for (const e of pool) {
       let n = 0;
-      for (const o of S.enemies) if (!o.dead && !o.T.air && Math.hypot(o.x-e.x, o.y-e.y) <= t.T.splash) n++;
+      for (const o of S.enemies) if (!o.dead && !o.T.air && !o.submerged && Math.hypot(o.x-e.x, o.y-e.y) <= t.T.splash) n++;
       if (n > bestN || (n === bestN && best && e.d > best.d)) { bestN = n; best = e; }
     }
     return best;
@@ -954,6 +970,7 @@ function fireElectro(t, st, target) {
   let from = {x: t.x, y: t.y}, dmg = st.dmg, cur = hit;
   for (let hop = 0; cur && hop <= st.hops; hop++) {
     damage(cur, dmg, t); struck.push(cur);
+    oozeCollateral(cur.x, cur.y, LEECH_OOZE ? LEECH_OOZE.collateralR : 0, dmg, t, cur);   // v0.11: a hop next to the ripple bleeds through
     S.shots.push({x1:from.x, y1:from.y, x2:cur.x, y2:cur.y, life:0.12, electro:true, blocked: hop === 0 && hit !== target, from:hop ? struck[hop-1] : null, to:cur});
     if (cur.rod) {                                              // Grounding: the rod drinks the charge; the chain ends here
       S.fx.push({kind:'spark', x:cur.x, y:cur.y, r:cur.r + 6, life:0.3, max:0.3, color:'#e0a060'});
@@ -961,7 +978,7 @@ function fireElectro(t, st, target) {
     }
     from = cur; dmg *= (st.falloff || t.T.hopFalloff); let next = null, best = Infinity;
     for (const e of S.enemies) {                                // nearest living body not yet struck, with no lethal charge already reserved
-      if (e.dead || struck.includes(e) || e.hp - e.incoming <= 0) continue;   // hops follow the same anti-overkill rule as every first shot
+      if (e.dead || e.submerged || struck.includes(e) || e.hp - e.incoming <= 0) continue;   // hops follow the same anti-overkill rule as every first shot; nothing beneath the ooze
       const d = Math.hypot(e.x - cur.x, e.y - cur.y);
       if (d <= t.T.hopRange && d < best) { best = d; next = e; }
     }
@@ -983,6 +1000,7 @@ function fireFlame(t, st, target) {
   let shield = false;
   for (const [, e] of hits) {
     const pass = shield && e.type !== 'carapacid' ? FLAME_SHADOW_PASS : 1;
+    if (e.submerged) { damage(e, st.dmg * pass * LEECH_OOZE.collateral, t); continue; }   // v0.11: the jet only warms the ooze; no burn, no slow
     damage(e, st.dmg * pass, t);
     if (st.burnDps > 0) { e.burnUntil = S.time + st.burnTime; e.burnDps = Math.max(e.burnUntil > S.time && e.burnTower === t ? e.burnDps : 0, st.burnDps * pass); e.burnTower = t; }
     if (st.slow) { e.slowUntil = S.time + st.slowTime; e.slowMul = 1 - st.slow * pass; }
@@ -1025,7 +1043,7 @@ function advanceShells(dt) {
     if (sh.t >= sh.flight) {
       sh.done = true;
       if (sh.prime) sh.prime.incoming = Math.max(0, sh.prime.incoming - sh.dmg);   // ledger settles on impact
-      for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg, sh.tower);
+      for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg * (e.submerged ? LEECH_OOZE.collateral : 1), sh.tower);   // v0.11: the blast bleeds through the ooze
       S.fx.push({kind:'boom', x:sh.tx, y:sh.ty, r:sh.splash, life:0.35, max:0.35, color:'#ffae42'});
       if (sh.cluster) for (let j = 0; j < 3; j++) {                 // three fragments per bomblet strike inside its blast area
         const a = sh.cluster.i * 1.3 + j * 2.094, rr = sh.splash * (0.3 + 0.25 * j);
@@ -1073,7 +1091,8 @@ function stepSimulation(dt) {
           const candidateDistance = Math.hypot(t.x-e.x, t.y-e.y);
           if (candidateDistance < distance) { nearest = t; distance = candidateDistance; }
         }
-        if (nearest) { e.state = 'seek'; e.gen = nearest; nearest.leeched = e; e.route = leechRoute(e, nearest); }
+        if (nearest) { e.state = 'seek'; e.gen = nearest; nearest.leeched = e; e.route = leechRoute(e, nearest);
+          if (LEECH_OOZE) { e.submerged = true; playCue('dive', 110, 0.22, 'sine'); } }   // v0.11: the hunt begins beneath the ooze
       }
       if (e.state !== 'lane' && e.blockedBy) { e.blockedBy.target = null; e.blockedBy = null; }
       if (e.state === 'lane') {
@@ -1088,7 +1107,9 @@ function stepSimulation(dt) {
           S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'}); }
       } else if (e.state === 'seek') {
         const L = Math.hypot(e.gen.x - e.x, e.gen.y - e.y);
-        if (L < 20) { e.state = 'attached'; e.feedT = 0; playCue('drain', 145, 0.28, 'triangle'); }
+        if (e.submerged && L <= LEECH_OOZE.surfaceDist) {       // v0.11: surface short of the generator, stand still, take full damage
+          e.submerged = false; e.state = 'surfacing'; e.surfaceT = BUILD_WARMUP_SECONDS; playCue('surface', 180, 0.3, 'triangle');
+        } else if (L < 20) { e.state = 'attached'; e.feedT = 0; playCue('drain', 145, 0.28, 'triangle'); }
         else {
           let step = e.speed * feastMul * dt;
           while (step > 0 && e.route.length) {                  // walk the planned bends; the last point is the generator
@@ -1097,6 +1118,9 @@ function stepSimulation(dt) {
             else { e.x += dx/d * step; e.y += dy/d * step; step = 0; }
           }
         }
+      } else if (e.state === 'surfacing') {                     // v0.11: no movement; the crawl resumes as an open seek
+        e.surfaceT -= dt;
+        if (e.surfaceT <= 0) { e.surfaceT = 0; e.state = 'seek'; }
       } else if (e.state === 'return') {
         const p = posAt(e.returnD), dx = p.x-e.x, dy = p.y-e.y, distance = Math.hypot(dx, dy);
         const step = e.speed * feastMul * dt;
@@ -1146,7 +1170,7 @@ function stepSimulation(dt) {
   for (const e of S.enemies) if (!e.dead && e.burnUntil > S.time) damage(e, e.burnDps * dt, e.burnTower);
   if (S.pools.length) {
     S.pools = S.pools.filter(q => q.until > S.time);
-    for (const q of S.pools) for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x - q.x, e.y - q.y) <= q.r + e.r * 0.5) damage(e, q.dps * dt, q.tower);
+    for (const q of S.pools) for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x - q.x, e.y - q.y) <= q.r + e.r * 0.5) damage(e, q.dps * dt * (e.submerged ? LEECH_OOZE.collateral : 1), q.tower);
   }
   advanceShells(dt);
   S.enemies = S.enemies.filter(e => !e.dead);
@@ -2317,6 +2341,24 @@ function drawGeneratorDrainCue(t) {
     ctx.beginPath(); ctx.arc(0,0,7 + 20*p,0,Math.PI*2); ctx.stroke();
   }
 }
+// v0.11: the submerged Leech is drawn as a moving ripple on the ooze — three rings widening from the body point, a faint
+// wake behind. Readability: the ripple is the only sign of the hunt, so it stays high-contrast against the lane.
+function drawOozeRipple(e) {
+  const heading = e.route && e.route.length ? Math.atan2(e.route[0].y - e.y, e.route[0].x - e.x) : 0;
+  ctx.save();
+  ctx.fillStyle = 'rgba(18,8,30,0.6)'; ctx.beginPath(); ctx.ellipse(e.x, e.y, 7, 3.2, 0, 0, Math.PI * 2); ctx.fill();   // dark core: reads in greyscale too
+  for (let i = 0; i < 3; i++) {
+    const k = ((S.time * 1.4) + i / 3) % 1;
+    ctx.strokeStyle = 'rgba(199,125,255,' + (0.75 * (1 - k)).toFixed(2) + ')'; ctx.lineWidth = 2 - k;
+    ctx.beginPath(); ctx.ellipse(e.x, e.y, 6 + k * 18, 3 + k * 8, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(199,125,255,0.35)'; ctx.lineWidth = 1.5;
+  for (const side of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(e.x, e.y);
+    ctx.lineTo(e.x - Math.cos(heading + side * 0.45) * 22, e.y - Math.sin(heading + side * 0.45) * 11); ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawLeechCue(e) {
   // A feeding connection exists only while attached. Moving Leeches have no pointer/tendril.
   if(e.dead || e.state!=='attached' || !e.gen)return;
@@ -2667,6 +2709,7 @@ function draw() {
     if (actor.tower) { drawTowerBody(actor.tower); continue; }
     const e = actor.enemy;
     if(portalEntryOf(e))continue; // The frozen presentation snapshot owns the body and its disappearance now.
+    if (e.submerged) { drawOozeRipple(e); continue; }          // v0.11: beneath the ooze only the ripple shows — no body, no bar, no markers
     enemyArt(e);
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;

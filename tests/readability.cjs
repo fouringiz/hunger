@@ -41,7 +41,7 @@ const g=S.towers[0],e=makeEnemy('leech',5);e.x=g.x-45;e.y=g.y;S.enemies=[e];`, c
 vm.runInContext('draw()', context);
 assert.equal(vm.runInContext('leechDrainVisuals.get(S.towers[0]).changedAt', context), -Infinity,
   'a newly observed healthy generator does not get a false restore pulse');
-vm.runInContext(`{let i=0;while(S.enemies[0].state!=='attached'&&i++<120)update(SIM_STEP);}`, context);
+vm.runInContext(`{let i=0;while(S.enemies[0].state!=='attached'&&i++<300)update(SIM_STEP);}`, context);   // v0.11: the Leech surfaces for BUILD_WARMUP_SECONDS before the crawl to the latch
 assert.equal(vm.runInContext('S.enemies[0].state', context), 'attached');
 assert.equal(vm.runInContext('S.towers[0].leeched===S.enemies[0] && power().prod===40', context), true,
   'actual attachment drains the generator');
