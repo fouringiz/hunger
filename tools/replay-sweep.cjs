@@ -24,7 +24,7 @@ function makeContext(search='') {
   vm.runInContext(src,ctx,{timeout:10000});
   return ctx;
 }
-// overrides: {hp, growth, turretDmg, cannonDmg, voltaicDmg, evolution:true|false}
+// overrides: {hp, growth, turretDmg, cannonDmg, voltaicDmg, evolution:true|false, buildWarm:seconds}
 // opts.instrument: observe the game through wrappers around damage / fireElectro / stepSimulation. The wrappers call
 // the original functions unchanged and only count; tests pin that an instrumented run ends in the same signature.
 // A replay recorded under a balance preset is replayed under that preset.
@@ -39,6 +39,8 @@ function runCounterfactual(data, overrides={}, opts={}) {
     if(ov.cannonDmg!==undefined) TOWER.cannon.dmg=ov.cannonDmg;
     if(ov.voltaicDmg!==undefined) TOWER.voltaic.dmg=ov.voltaicDmg;
     if(ov.evolution===false) EVOLUTION_WAVES.splice(0, EVOLUTION_WAVES.length);
+    if(ov.buildWarm!==undefined){ const baseBuild=build;           // a new building fights only after this deployment time
+      build=function(slot,type){ const ok=baseBuild(slot,type); if(ok){ slot.tower.warm=ov.buildWarm; slot.tower.warmFrom=ov.buildWarm; } return ok; }; }
     if(ov.hp!==undefined || ov.growth!==undefined){
       const base=makeEnemy;
       makeEnemy=function(type,n){ const e=base(type,n); let m=ov.hp===undefined?1:ov.hp;

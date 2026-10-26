@@ -163,6 +163,10 @@ const EARLY_CALL_BONUS = BALANCE_PRESET && BALANCE_PRESET.earlyCallBonus !== und
 if (BALANCE_PRESET) { TOWER.turret.dmg = BALANCE_PRESET.turretDmg; TOWER.voltaic.dmg = BALANCE_PRESET.voltaicDmg; TOWER.cannon.dmg = BALANCE_PRESET.cannonDmg;
   for (const k in ENEMY) ENEMY[k].hp = Math.round(ENEMY[k].hp * BALANCE_PRESET.enemyHp * 100) / 100; }                   // generator output by level: slot-efficient, not credit-efficient
 const BASE_POWER = 40, PAUSED_DRAW = 0.25, WARMUP = 2.5, BROWNOUT_MULT = 0.6, WAVES = 10;
+// v0.10.1: a new building deploys for BUILD_WARMUP_SECONDS before it fights, the same time its deployment is drawn; the
+// simulation no longer fires while the picture still says "deploying". Resuming from pause keeps WARMUP.
+// Historical presets keep the instant build they were recorded with.
+const BUILD_WARMUP_SECONDS = 1.65, BUILD_WARMUP = BALANCE_PRESET ? 0 : BUILD_WARMUP_SECONDS;
 const RANK_KILLS = [0, 12, 35];
 const SELL_RATE = 0.6, SELL_TIME = 1.8;          // 60% refund, 1.8 s demolition
 const GATE_MAX = 20;
@@ -443,7 +447,7 @@ function build(slot, type) {
   if (type === 'barracks' && !INFANTRY_TRIAL) return false;
   const T = TOWER[type]; if (!T || !slot || slot.tower || S.credits < T.cost) return false;
   S.credits -= T.cost;
-  const t = {type, T, x:slot.x, y:slot.y, level:1, paused:false, warm:0, cd:0, kills:0, angle:-Math.PI/2, slot,
+  const t = {type, T, x:slot.x, y:slot.y, level:1, paused:false, warm:BUILD_WARMUP, warmFrom:BUILD_WARMUP, cd:0, kills:0, angle:-Math.PI/2, slot,
              invested:T.cost, selling:false, sellT:0, leeched:null};
   if (type === 'barracks') t.soldiers = Array.from({length:INFANTRY.soldiers}, (_, i) => ({id:i, hp:INFANTRY.hp, maxHp:INFANTRY.hp, d:nearestPathD(slot.x, slot.y)+(i-1)*18, x:slot.x, y:slot.y, target:null, cd:0, retalCd:0, alive:true, arrived:false}));
   slot.tower = t; S.towers.push(t); S.selected = {kind:'tower', tower:t};
@@ -466,7 +470,7 @@ function upgrade(t, branch) {
 }
 function togglePause(t) {
   if (!t || t.type === 'generator' || t.selling) return false;
-  if (t.paused) { t.paused = false; t.warm = WARMUP; }
+  if (t.paused) { t.paused = false; t.warm = WARMUP; t.warmFrom = WARMUP; }
   else { t.paused = true; if (t.type === 'barracks') releaseBarracks(t, false); }
   return true;
 }
@@ -681,7 +685,7 @@ function replayRulesFingerprint() {
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE};
-  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;}
+  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -1530,7 +1534,7 @@ function weaponMuzzle(t,angle=t.angle) {
   return {x:t.x+m.a*length,y:t.y-14+m.b*length};
 }
 // Presentation observes new tower identities; build/reset and replay fingerprints stay untouched.
-const BUILDING_DEPLOY_SECONDS = 1.65;
+const BUILDING_DEPLOY_SECONDS = BUILD_WARMUP_SECONDS;
 let constructionScene = null, constructionArt = new WeakMap();
 function constructionProgress(t) {
   const event=constructionArt.get(t);
@@ -2172,8 +2176,8 @@ function drawTowerBody(t) {
         text(BRANCHES[t.type][t.branch].name[0], 14, -13, 10, ctx.strokeStyle, 'center', '800'); }
       for (let i = 0; i < rank(t); i++) { ctx.fillStyle = '#ffe66d'; ctx.fillRect(6 + i*6, 16, 4, 4); }       // veterancy stripes
       if (t.paused && !t.selling) text('II', 0, 0, 14, '#e8ecf2', 'center', '800');
-      if (t.warm > 0) { ctx.strokeStyle = '#ffe66d'; ctx.lineWidth = 3; ctx.beginPath();
-        ctx.arc(0, 0, 20, -Math.PI/2, -Math.PI/2 + Math.PI*2*(t.warm/WARMUP)); ctx.stroke(); }
+      if (t.warm > 0 && constructionProgress(t) >= 1) { ctx.strokeStyle = '#ffe66d'; ctx.lineWidth = 3; ctx.beginPath();   // the deployment itself is the cue while it plays
+        ctx.arc(0, 0, 20, -Math.PI/2, -Math.PI/2 + Math.PI*2*(t.warm/(t.warmFrom || WARMUP))); ctx.stroke(); }
     }
     if (t.selling) { ctx.globalAlpha = 1;
       ctx.strokeStyle = '#8a93a6'; ctx.lineWidth = 3; ctx.beginPath();
