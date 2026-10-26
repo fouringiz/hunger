@@ -1,5 +1,5 @@
 // v0.10 castes: Aeroplankton flies (Cannon and Flamethrower cannot reach it, the Carapacid shadow does not cover it,
-// Turret and Voltaic hit it); Polyp splits where it dies into six Polypoids that do not split again. Legacy presets
+// Turret and Voltaic hit it); Polyp bursts where it dies into six zygotes that hatch Polypoids (which do not split again). Legacy presets
 // keep the classic waves.
 'use strict';
 const fs=require('node:fs'), path=require('node:path'), vm=require('node:vm'), assert=require('node:assert/strict');
@@ -41,30 +41,52 @@ const cases={
     const air=makeEnemy('aero',1), shield=makeEnemy('carapacid',1); air.x=350; air.y=270; shield.x=350; shield.y=236; S.enemies=[air,shield];
     fireFlat(t,tstats(t),air); assert.ok(air.hp<air.maxHp&&shield.hp===shield.maxHp,'the round reaches the flyer over the shell');
   `,
-  'a Polyp splits into six Polypoids at its lane position, with its mutations; Polypoids do not split': `
+  'a Polyp bursts into six zygotes at its lane position, not bodies; Polypoids hatch one by one on POLYP_HATCH with the parent mutations': `
     reset(); S.wave=6; startWave(); S.spawnQueue.length=0; S.phase='wave';
     const p=makeEnemy('polyp',6); p.wave=6; p.seq=4; p.d=400; Object.assign(p,posAt(400)); p.muts=['keratin']; S.enemies=[p];
     build(SLOTS[2],'turret'); const t=S.towers[0]; t.paused=true;
-    damage(p,10000,t); assert.ok(p.dead); assert.equal(POLYP_SPLIT,6); assert.equal(S.births.length,6,'six children queued, not yet on the field');
+    damage(p,10000,t); assert.ok(p.dead); assert.equal(POLYP_SPLIT,6); assert.deepEqual(POLYP_HATCH,[0.5,1,1.5,2,2.5,3]);
     assert.deepEqual([ENEMY.polypoid.hp,ENEMY.polypoid.speed,ENEMY.polypoid.bounty,ENEMY.polypoid.gateDmg],[40,56,3,1],'pinned verdict numbers');
     stepSimulation(SIM_STEP);
-    const kids=S.enemies.filter(e=>e.type==='polypoid'); assert.equal(kids.length,6,'released after the step');
-    for(const k of kids){ assert.ok(Math.abs(k.d-400)<=15+ENEMY.polypoid.speed*SIM_STEP+1e-6,'near the parent'); assert.equal(k.wave,6); assert.deepEqual(k.muts,['keratin'],'inherits mutations'); }
-    assert.ok(new Set(kids.map(k=>k.seq)).size===6,'distinct spawn indices');
-    const before=S.enemies.length; damage(kids[0],10000,t); stepSimulation(SIM_STEP);
-    assert.equal(S.enemies.filter(e=>e.type==='polypoid').length,5,'a Polypoid dies without splitting');
+    const kids=()=>S.enemies.filter(e=>e.type==='polypoid');
+    assert.equal(kids().length,0,'no Polypoid at the death'); assert.equal(S.zygotes.length,6,'six zygotes');
+    assert.ok(S.zygotes.every(z=>z.d===400),'all at the death point, no lane spread');
+    assert.ok(!S.zygotes.some(z=>S.enemies.includes(z)),'zygotes are not in S.enemies');
+    const credits=S.credits, hatchTicks=[]; let seen=0;
+    for(let k=1;k<=Math.round(3.2/SIM_STEP);k++){ stepSimulation(SIM_STEP); const now=kids().length; assert.ok(now-seen<=1,'at most one per tick'); for(;seen<now;seen++) hatchTicks.push(k); }
+    assert.equal(hatchTicks.length,6,'all six hatched');
+    POLYP_HATCH.forEach((h,i)=>{ const want=Math.round(h/SIM_STEP); assert.ok(Math.abs(hatchTicks[i]+1-want)<=1,'hatch '+i+' at '+h+' s (tick '+hatchTicks[i]+')'); });
+    assert.ok(hatchTicks.every((k,i)=>i===0||k>hatchTicks[i-1]),'strictly one at a time');
+    for(const k of kids()){ assert.equal(k.wave,6); assert.deepEqual(k.muts,['keratin'],'inherits mutations'); }
+    assert.ok(new Set(kids().map(k=>k.seq)).size===6,'distinct spawn indices'); assert.equal(S.zygotes.length,0);
+    assert.equal(S.credits,credits,'zygotes and hatching give no bounty');
+    damage(kids()[0],10000,t); stepSimulation(SIM_STEP);
+    assert.equal(kids().length,5,'a Polypoid dies without splitting'); assert.equal(S.zygotes.length,0);
   `,
-  'six Polypoids carry less total HP than two parents; a splash shell on the fresh cluster kills more of them than a single flat shot': `
+  'zygotes are untouched by splash, jets, pools and chains; a howitzer-damage splash at the death point kills no Polypoid, one at the first hatch kills at most two': `
     reset(); S.wave=1; startWave(); S.spawnQueue.length=0; S.phase='wave'; S.credits=9999;
     build(SLOTS[2],'turret'); build(SLOTS[5],'cannon'); const tt=S.towers[0], tc=S.towers[1]; tt.paused=true; tc.paused=true;
-    const mk=()=>{ const p=makeEnemy('polyp',1); p.wave=1; p.seq=0; p.d=400; Object.assign(p,posAt(400)); S.enemies=[p]; S.births.length=0; damage(p,10000,tt); stepSimulation(SIM_STEP);
-      return {p,kids:S.enemies.filter(e=>e.type==='polypoid')}; };
-    let r=mk(); assert.equal(r.kids.length,6);
-    assert.ok(r.kids.reduce((a,k)=>a+k.maxHp,0)<2*r.p.maxHp,'the split brood is lighter than two parents');
-    const aim=r.kids[2]; const sh={sx:tc.x,sy:tc.y,tx:aim.x,ty:aim.y,t:0,flight:0.65,tower:tc,dmg:TOWER.cannon.dmg,splash:TOWER.cannon.splash,prime:null};
-    S.shells=[sh]; advanceShells(0.65); const shellKills=r.kids.filter(k=>k.dead).length;
-    r=mk(); const one=r.kids[2]; damage(one,TOWER.turret.dmg,tt); const flatKills=r.kids.filter(k=>k.dead).length;
-    assert.ok(shellKills>flatKills&&shellKills>=2,'splash on the cluster out-kills one flat shot ('+shellKills+' vs '+flatKills+')');
+    const mk=()=>{ const p=makeEnemy('polyp',1); p.wave=1; p.seq=0; p.d=400; Object.assign(p,posAt(400)); S.enemies=[p]; S.zygotes=[]; damage(p,10000,tt); stepSimulation(SIM_STEP); return p; };
+    const polyp=mk(); const shell=()=>{ S.shells=[{sx:tc.x,sy:tc.y,tx:polyp.x,ty:polyp.y,t:0,flight:0.65,tower:tc,dmg:TOWER.cannon.dmg*50,splash:TOWER.cannon.splash,prime:null}]; advanceShells(0.65); };
+    shell(); assert.equal(S.enemies.filter(e=>e.type==='polypoid').length,0); assert.equal(S.zygotes.length,6,'the blast at t=0 finds nothing and leaves every zygote');
+    let k=0; while(!S.enemies.some(e=>e.type==='polypoid')&&k++<200) stepSimulation(SIM_STEP);
+    shell(); assert.ok(S.enemies.filter(e=>e.type==='polypoid'&&e.dead).length<=2,'at the first hatch at most two die');
+    assert.equal(S.zygotes.length,5,'the unhatched zygotes are still pending');
+    S.credits=0; S.gate=GATE_MAX; for(let i=0;i<400;i++) stepSimulation(SIM_STEP); assert.equal(S.zygotes.length,0);
+  `,
+  'a wave stays open while its zygotes are unhatched, and game over clears them; the same input gives the same hatch ticks': `
+    const trial=()=>{ reset(); startWave(); S.spawnQueue.length=0; S.streams[0].queue.length=0; S.phase='wave'; S.credits=9999;
+      build(SLOTS[2],'turret'); const t=S.towers[0]; t.paused=true;
+      const p=makeEnemy('polyp',1); p.wave=1; p.seq=0; p.d=400; Object.assign(p,posAt(400)); S.enemies=[p]; damage(p,10000,t);
+      const ticks=[]; let seen=0, endedBeforeLast=false, k=0;
+      while(S.phase==='wave'&&k++<2000){ stepSimulation(SIM_STEP); const hatched=S.enemies.filter(e=>e.type==='polypoid').length+S.kills-1; while(seen<Math.min(6,hatched)){ ticks.push(k); seen++; }
+        if(S.zygotes.length&&(S.phase!=='wave'||!S.streams.length)) endedBeforeLast=true; for(const e of S.enemies) damage(e,1e6,t); }
+      return {ticks,endedBeforeLast,k}; };
+    const a=trial(), b=trial(); assert.deepEqual(a.ticks,b.ticks,'same input, same hatch ticks'); assert.equal(a.ticks.length,6);
+    assert.ok(!a.endedBeforeLast,'the wave did not end with zygotes pending');
+    assert.ok(a.k>Math.round(POLYP_HATCH[5]/SIM_STEP)-2,'the wave ended only after the last hatch (tick '+a.k+')');
+    reset(); S.phase='wave'; S.gate=0; S.zygotes=[{type:'polypoid',idx:0,t:1,max:1,d:100,x:0,y:0,wave:1,muts:[],seq:0}]; S.enemies=[makeEnemy('forager',1)]; stepSimulation(SIM_STEP);
+    assert.equal(S.phase,'over'); assert.equal(S.zygotes.length,0,'game over clears the zygotes');
   `,
   'Grounding never makes a flying body a rod; ground bodies keep the every-third cadence and every Carapacid': `
     reset(); S.mutations=['grounding']; S.phase='wave'; S.spawnedThisWave=0;
