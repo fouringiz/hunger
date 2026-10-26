@@ -23,7 +23,7 @@
 // at full damage, then crawls the rest in the open. A wave never
 // sends more Leeches than there are free generators. Leech 130/46/25 -> 200/38/35 (draft). Presets keep the old Leech.
 // v0.10: two castes — Aeroplankton flies along the lane out of reach of Cannon and Flamethrower (Turret and Voltaic
-// only), unaffected by the Carapacid shadow; Polyp splits into two Polypoids where it dies. Legacy presets keep the
+// only), unaffected by the Carapacid shadow; Polyp bursts into six zygotes where it dies that hatch Polypoids over time. Legacy presets keep the
 // classic three-caste waves.
 // v0.8: Flamethrower line — a sweeping jet of burning fuel (quarter circle); bodies it touches burn on; a Carapacid
 // in the jet passes only part of the fire. Level 4: Plasma (burning pools on the lane) or Cryojet (slowing coolant).
@@ -124,7 +124,7 @@ const ENEMY = {
   carapacid:   {name:'Carapacid',   hp:340, speed:34, r:18, bounty:40, gateDmg:5, color:'#a83232'},
   leech:       {name:'Leech',       hp:BALANCE_PRESET?130:200, speed:BALANCE_PRESET?46:38, r:10, bounty:BALANCE_PRESET?25:35, gateDmg:2, color:'#c77dff'},   // v0.11: 200/38/35 (draft); presets keep 130/46/25
   // v0.10. Aeroplankton flies: Cannon shells and the Flamethrower jet cannot reach it, the Carapacid shadow does not
-  // cover it; Turret and Voltaic hit it normally. Polyp splits where it dies into two Polypoids that do not split again.
+  // cover it; Turret and Voltaic hit it normally. Polyp bursts where it dies into six zygotes that hatch Polypoids (which do not split again).
   aero:        {name:'Aeroplankton', hp:24,  speed:68, r:6,  bounty:6,  gateDmg:1, color:'#8fd3ff', air:true},
   polyp:       {name:'Polyp',       hp:150, speed:30, r:11, bounty:12, gateDmg:3, color:'#b55fcf', splits:'polypoid'},
   polypoid:    {name:'Polypoid',    hp:40,  speed:56, r:7,  bounty:3,  gateDmg:1, color:'#d48ae0'}
@@ -132,7 +132,8 @@ const ENEMY = {
 // Which castes the waves carry. Legacy rule presets keep the classic three so their recordings stay verifiable.
 const CASTE_SET = BALANCE_PRESET && BALANCE_PRESET.classicCastes ? 'classic' : 'v010';
 const AIR_FROM_WAVE = 5, POLYP_FROM_WAVE = 6;
-const POLYP_SPLIT = 6;                                         // Polypoids a dying Polyp opens into (lane offsets spread 6 apart, centred)
+const POLYP_SPLIT = 6;                                         // zygotes a dying Polyp bursts into, all at its lane position
+const POLYP_HATCH = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0];            // seconds after the Polyp's death at which zygote i hatches a Polypoid
 // DRAFT field-trial parameters; not a campaign weapon-line or balance verdict.
 const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8, marchSpeed:60,
   retaliation:{forager:10, carapacid:30, leech:14}, retaliationInterval:1, contactRadius:12};
@@ -219,7 +220,7 @@ function reset() {
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
-       spawnQueue:[], spawnTimer:0, pools:[], births:[], streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
+       spawnQueue:[], spawnTimer:0, pools:[], births:[], zygotes:[], streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        meleeDamage:0, infantryCasualties:0, infantryBlockedSeconds:0,
        toast:'', toastT:0, accumulator:0};
@@ -696,7 +697,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT,POLYP_HATCH};
   if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
@@ -708,7 +709,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,slabFootprint,segmentCrossesRect,leechRoute,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,slabFootprint,segmentCrossesRect,leechRoute,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,hatchZygotes,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -855,18 +856,28 @@ function damage(e, amt, tower, source = 'tower') {
       syncGeneratorHum();
     } // freed generator
     S.fx.push({kind:'death', x:e.x, y:e.y, r:e.r, life:0.3, max:0.3, color:e.T.color});
-    if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp opens into six Polypoids where it died
+    if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp bursts into six zygotes where it died
   }
 }
-// The Polypoids pick up the parent's lane position, wave and mutations. They are queued and released after the
-// current step's hits are resolved, so the shot that killed the Polyp does not also hit its children.
+// The Polyp leaves six zygotes at its lane position. A zygote is not a body: it is not in S.enemies, so nothing targets
+// or damages it. Zygote i hatches one Polypoid POLYP_HATCH[i] seconds after the death, with the parent's wave and mutations.
 function splitBody(e) {
   for (let i = 0; i < POLYP_SPLIT; i++) {
-    const child = makeEnemy(e.T.splits, e.wave || S.wave);
-    child.muts = [...e.muts]; child.rod = false; child.wave = e.wave; child.seq = (e.seq || 0) * POLYP_SPLIT + i;
-    child.d = Math.max(0, e.d + (i - (POLYP_SPLIT - 1) / 2) * 6); const p = posAt(child.d); child.x = p.x; child.y = p.y;
-    child.incoming = 0; S.births.push(child);
+    const p = posAt(e.d);
+    S.zygotes.push({type:e.T.splits, idx:i, t:POLYP_HATCH[i], max:POLYP_HATCH[i], d:e.d, x:p.x, y:p.y, wave:e.wave, muts:[...e.muts], seq:(e.seq || 0) * POLYP_SPLIT + i});
   }
+}
+function hatchZygotes(dt) {
+  if (!S.zygotes.length) return;
+  const pending = [];
+  for (const z of S.zygotes) {
+    z.t -= dt;
+    if (z.t > 1e-9) { pending.push(z); continue; }
+    const child = makeEnemy(z.type, z.wave || S.wave);
+    child.muts = [...z.muts]; child.rod = false; child.wave = z.wave; child.seq = z.seq;
+    child.d = z.d; child.x = z.x; child.y = z.y; child.incoming = 0; S.enemies.push(child);
+  }
+  S.zygotes = pending;
 }
 function segHitsCircle(x1,y1,x2,y2,cx,cy,r) {
   const dx = x2-x1, dy = y2-y1, L2 = dx*dx + dy*dy; if (L2 === 0) return -1;
@@ -1076,6 +1087,7 @@ function stepSimulation(dt) {
     if (st.timer <= 0) { const s = st.queue.shift(); S.spawnedThisWave = st.spawned; const e = makeEnemy(s.type, st.wave); st.spawned = S.spawnedThisWave; e.seq = st.spawned - 1;
       e.wave = st.wave; S.enemies.push(e); st.timer = s.delay; }
   }
+  hatchZygotes(dt);
   const infantryBrown = power().brown;
   updateInfantry(dt, infantryBrown);
   // enemies
@@ -1177,18 +1189,18 @@ function stepSimulation(dt) {
   S.enemies = S.enemies.filter(e => !e.dead);
   if (S.births.length) { for (const b of S.births) S.enemies.push(b); S.births = []; }
 
-  if (S.gate <= 0) { S.gate = 0; S.phase = 'over'; S.win = false; return; }
+  if (S.gate <= 0) { S.gate = 0; S.phase = 'over'; S.win = false; S.zygotes = []; return; }
   // A wave is complete when its stream has spawned everything and none of its bodies is alive (untagged bodies, placed
   // by tools or tests, hold every wave open). The field is clear when no stream and no body remains.
-  for (const st of [...S.streams]) if (!st.queue.length && !S.enemies.some(e => e.wave === undefined || e.wave === st.wave)) {
+  for (const st of [...S.streams]) if (!st.queue.length && !S.enemies.some(e => e.wave === undefined || e.wave === st.wave) && !S.zygotes.some(z => z.wave === undefined || z.wave === st.wave)) {
     S.streams = S.streams.filter(x => x !== st);
     const live = S.streams[S.streams.length-1]; S.spawnQueue = live ? live.queue : [];   // S.spawnQueue always mirrors the newest live stream
-    const fieldClear = !S.streams.length && !S.enemies.length;
+    const fieldClear = !S.streams.length && !S.enemies.length && !S.zygotes.length;
     if (fieldClear) S.feast = 0;                                 // feast ends with the field
     endWave(st.wave, fieldClear);
     if (S.phase !== 'wave') return;
   }
-  if (S.phase === 'wave' && !S.streams.length && !S.enemies.length && !S.spawnQueue.length) { S.feast = 0; endWave(S.wave, true); }
+  if (S.phase === 'wave' && !S.streams.length && !S.enemies.length && !S.zygotes.length && !S.spawnQueue.length) { S.feast = 0; endWave(S.wave, true); }
 }
 
 // ---------------------------------------------------------------- drawing
@@ -2228,6 +2240,18 @@ function drawPolypBody(e,angle) {
   ctx.strokeStyle='#5a1f6b';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.stroke();
   ctx.restore();
 }
+// Presentation only. A zygote is a small upright capsule on the lane that pulses faster as it nears its hatch tick, then
+// opens (widens, splits along its seam) and fades in the last 0.15 s. Light fill with a dark outline and a bright seam
+// keeps it readable in greyscale against the lane.
+function drawZygote(z) {
+  const left=Math.max(0,z.t), open=Math.max(0,1-left/0.15), rate=3+5*(1-left/z.max), puls=1+Math.sin(presentationTime*rate+z.idx*1.3)*.1;
+  const w=3.4*(1+open*.9)*puls, h=6.5*(1-open*.35)/puls;
+  ctx.save();ctx.translate(z.x,z.y-h*.5);ctx.globalAlpha=1-open*.85;
+  ctx.fillStyle='#f0c8f5';ctx.strokeStyle='#4a1560';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.ellipse(0,0,w,h,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.strokeStyle=open>0?'#ffffff':'#7a2d92';ctx.lineWidth=open>0?1.8:1;ctx.beginPath();ctx.moveTo(0,-h*.8);ctx.lineTo(0,h*.8);ctx.stroke();
+  ctx.restore();
+}
 function drawEnemyBody(e,angle) {
   if(e.T.air){drawAirBody(e,angle);return;}
   if(e.type==='polyp'||e.type==='polypoid'){drawPolypBody(e,angle);return;}
@@ -2691,7 +2715,7 @@ function draw() {
     if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
-  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
+  const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygote.y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
@@ -2701,6 +2725,7 @@ function draw() {
   for (const actor of actors) {
     if(actor.portal){drawPortalEntry(actor.portal);continue;}
     if(actor.platform){platformFront(actor.platform);continue;}
+    if(actor.zygote){drawZygote(actor.zygote);continue;}
     if(actor.gatePart){
       if(actor.gatePart==='field')drawGateField();
       else drawGateJamb(actor.gatePart==='front'?GATE_FRONT:GATE_REAR,actor.gatePart==='front');
