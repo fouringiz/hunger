@@ -1,4 +1,10 @@
-# Polyp designer brief — stage 1 ready for review (2026-10-27)
+# Polyp — user references and silhouette studies (2026-10-27)
+
+## Latest progress
+
+- User supplied seven fusion/body-horror references. Preserved JPEGs and annotated `user-references-v1.html`/`.json` under `assets/art/references/enemies/polyp/`. These take priority for fusion/mood; original biology board is secondary. 23 reference images in total. No permission to add human anatomy inferred.
+- Interpreted the supplied reference selection as steering to proceed with provisional silhouette exploration; this is not approval of a finished concept. Three variants: compact knot, low spread colony, skewed tumbling mass.
+- First built-in image generation rejected after visual inspection: lobes resemble flowers on stalks and are too separated. Saved ignored draft at `reports/generated/polyp-silhouettes/polyp-silhouettes-v1-rejected.png`; exact prompt in `assets/art/references/enemies/polyp/silhouette-prompts-v1.md`. Next correction: dense fused masses, no stalks. No game verification claimed.
 
 ## Task and current state
 
@@ -16,7 +22,7 @@
 
 ## Next step
 
-- Show the completed moodboard for stage-1 approval. On approval, create three distinct black silhouettes, each large and at 50 px, before colored concepts. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
+- Finish provisional three-silhouette study from user-selected references and show for selection before colored concepts. Provide large views and exact 50 px display copies. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
 - Before sprite production, agree atlas cell/frame counts and heading count. Before claiming visual integration, user must supply actual game before/after captures, full frame/close-up/grayscale and full animation cycle; independent visual review is required before merge.
 - Continue intermediate commits and maintain this compact top checkpoint. Earlier results below are historical and do not validate Polyp art.
 

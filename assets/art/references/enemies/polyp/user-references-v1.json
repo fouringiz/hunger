@@ -1,0 +1,65 @@
+[
+  {
+    "id": "U1",
+    "source": "/Users/home/Downloads/34b11466e152310abea99790f02e71bc.jpg",
+    "file": "polyp-tissue-tension-user-v1.jpg",
+    "title": "Натяжение общей оболочки",
+    "take": "Ткань натянута мостами между отдельными объёмами; широкие складки задают направление тяги.",
+    "avoid": "Лица, глаза, носы, зубы.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U2",
+    "source": "/Users/home/Downloads/7ee73be5747564b211aca2ead4fafdd6.jpg",
+    "file": "polyp-misaligned-bodies-user-v1.jpg",
+    "title": "Несогласованные оси тел",
+    "take": "Сросшиеся части сохраняют собственные направления и разную ориентацию.",
+    "avoid": "Гуманоидный торс, голову, суставчатые опорные ноги и шланги.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U3",
+    "source": "/Users/home/Downloads/cd3a70acba292f0b02b8b3903c0d4865.jpg",
+    "file": "polyp-low-mass-user-v1.jpg",
+    "title": "Тяжёлая низкая масса",
+    "take": "Низкий центр тяжести, неровный край и разная длина выступающих частей.",
+    "avoid": "Центральную зубастую пасть, язык и паучьи ноги.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U4",
+    "source": "/Users/home/Downloads/3c47f92d5a19f343625b7664c4f1dc11.jpg",
+    "file": "polyp-conflicting-pulls-user-v1.jpg",
+    "title": "Тяга в разные стороны",
+    "take": "Перепонки и натянутые тяжи связывают разнонаправленные части; силуэт асимметричен.",
+    "avoid": "Вертикального двуногого монстра, рёбра и зубастые отверстия.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U5",
+    "source": "/Users/home/Downloads/c809ea0019f250de3d4a3dd2bc70ed3b.jpg",
+    "file": "polyp-recognizable-colony-user-v1.jpg",
+    "title": "Узнаваемые тела внутри массы",
+    "take": "Ключевой референс: составляющие тела видны внутри целого; масса удерживает чужие конечности.",
+    "avoid": "Человеческие руки, пальцы, двуногую посадку и кровавую фактуру.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U6",
+    "source": "/Users/home/Downloads/5bf3cbfa2390239ae3fb54cf8cfd9946.jpg",
+    "file": "polyp-interlocked-colony-user-v1.jpg",
+    "title": "Взаимное удержание тел",
+    "take": "Ключевой референс: переплетение удерживает отдельные тела в колонии; щупальца Полипа выполняют эту роль.",
+    "avoid": "Человеческую анатомию и вертикальную композицию.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  },
+  {
+    "id": "U7",
+    "source": "/Users/home/Downloads/3f23a680d1af4ce7e5c70a07d23c5433.jpg",
+    "file": "polyp-asymmetric-outline-user-v1.jpg",
+    "title": "Асимметричный внешний контур",
+    "take": "Разные направления, интервалы и длины выступов; масса не выглядит регулярной звездой.",
+    "avoid": "Кисти, голову, суставчатые ноги и высокую посадку.",
+    "role": "user-supplied reference; not approved Polyp anatomy"
+  }
+]

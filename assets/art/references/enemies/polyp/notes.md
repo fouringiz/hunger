@@ -1,6 +1,6 @@
 # Polyp — visual development
 
-Status: stage 1 proposed; awaiting user review. No approved Polyp design yet.
+Status: user supplied seven primary fusion references after the initial moodboard. Proceeding to provisional silhouette studies using this selected direction; no finished silhouette or anatomy approved yet.
 
 Source: user brief `/Users/home/Downloads/polyp-designer-brief.pdf`, 6 pages, dated 2026-10-27. Text extracted and all six pages visually inspected. User clarified that the PDF is the task; intermediate saves are part of carrying it out.
 
@@ -43,3 +43,11 @@ No game changes, tests, captures or browser game checks in this stage. No claim 
 Reference images and previews are stored under ignored `reports/generated/`; only the lightweight board, manifest and notes are committed. External references are not runtime assets or licensed source art for shipping.
 
 Moodboard visual review: all selected images opened in a contact sheet. Removed two weak search results: a distant aquarium shot and a branching basket-star image mislabelled by search metadata. Retained IDs preserve provenance; gaps 08 and 13 are intentional. The final selection contains 16 references.
+
+## User reference direction — 2026-10-27
+
+Primary board: `user-references-v1.html`; provenance: `user-references-v1.json`. Seven supplied JPEGs are preserved without image edits. Together with the 16 secondary references, the collection contains 23 references. User-supplied means reference selection, not approval of human anatomy for Polyp.
+
+U5/U6 anchor recognizable individual bodies and interlocking restraints; U1 anchors stretched tissue bridges; U4/U7 anchor conflicting outward pulls. U2/U3 inform mismatched axes and a low heavy mass. Preserve PDF restrictions: no humans, head/face/paired eyes, joints as primary locomotion, blood or mechanics.
+
+Silhouette candidates (proposed): A compact knot with six folded lobes; B low spread colony with interwoven hydrostatic tentacles; C skewed tumbling mass with unevenly stacked lobes. All at the same top/side game camera. Black fill must read as several joined bodies, even before pale seams are added. Each needs an exact 50-pixel-width view; illustration thumbnails alone do not prove scale.
