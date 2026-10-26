@@ -4,7 +4,8 @@
 
 - User supplied seven fusion/body-horror references. Preserved JPEGs and annotated `user-references-v1.html`/`.json` under `assets/art/references/enemies/polyp/`. These take priority for fusion/mood; original biology board is secondary. 23 reference images in total. No permission to add human anatomy inferred.
 - Interpreted the supplied reference selection as steering to proceed with provisional silhouette exploration; this is not approval of a finished concept. Three variants: compact knot, low spread colony, skewed tumbling mass.
-- First built-in image generation rejected after visual inspection: lobes resemble flowers on stalks and are too separated. Saved ignored draft at `reports/generated/polyp-silhouettes/polyp-silhouettes-v1-rejected.png`; exact prompt in `assets/art/references/enemies/polyp/silhouette-prompts-v1.md`. Next correction: dense fused masses, no stalks. No game verification claimed.
+- Three provisional silhouette candidates produced with built-in image_gen. V1 rejected (flower-like lobes on stalks); V2 compresses the bodies; V3 removes internal shading to show pure silhouettes. Final review candidate: `reports/generated/polyp-silhouettes/polyp-silhouettes-v3.png`; sheet plus measured 50 CSS px views: `reports/generated/polyp-silhouettes/review.html`. All raster drafts ignored. Exact prompts: `assets/art/references/enemies/polyp/silhouette-prompts-v1.md`.
+- Large images visually inspected. Provisional recommendation B for low heavy stance; A risks regular rosette, C risks excess height. Six distinct bodies are not yet unambiguously readable. 50 px browser inspection, actual game comparison, grayscale on ooze and animation are NOT verified. No artistic approval received.
 
 ## Task and current state
 
@@ -22,7 +23,7 @@
 
 ## Next step
 
-- Finish provisional three-silhouette study from user-selected references and show for selection before colored concepts. Provide large views and exact 50 px display copies. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
+- User: choose A/B/C or give direction on the provisional sheet. Refine the selected silhouette to make the six fused bodies clearer, then obtain acceptance before colored concepts. Inspect supplied 50 CSS px views at browser zoom 100%; no in-game claim follows from this sheet. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
 - Before sprite production, agree atlas cell/frame counts and heading count. Before claiming visual integration, user must supply actual game before/after captures, full frame/close-up/grayscale and full animation cycle; independent visual review is required before merge.
 - Continue intermediate commits and maintain this compact top checkpoint. Earlier results below are historical and do not validate Polyp art.
 
