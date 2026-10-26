@@ -12,7 +12,7 @@ const fs=Array.from({length:4},(_,i)=>{const e=makeEnemy('forager',1);e.seq=i;e.
 let run=boot();run(setup+`
 planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'no threat, no gathering');
 build(SLOTS[0],'generator');planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'generator is not a threat');
-sell(S.towers[0]);finishSell(S.towers[0]);build(SLOTS[0],'turret');const t=S.towers[0];t.cd=999;
+sell(S.towers[0]);finishSell(S.towers[0]);build(SLOTS[0],'turret');const t=S.towers[0];t.cd=999;t.warm=0;
 planCarapacidShelter(SIM_STEP,1);assert.equal(fs.filter(e=>e.shelter).length,3,'three separate berths, no unlimited pile');
 assert.equal(new Set(fs.filter(e=>e.shelter).map(e=>e.shelter.slot)).size,3);
 for(let k=0;k<70;k++){
@@ -27,18 +27,18 @@ const oldD=fs[0].d;c.dead=true;stepSimulation(SIM_STEP);assert.ok(fs.every(e=>!e
 for(let i=0;i<60;i++)stepSimulation(SIM_STEP);assert.ok(fs.every(e=>e.shelterOffset<1e-6),'release returns smoothly to route');
 `);
 console.log('PASS threat-based gathering, finite berths, smooth movement, real interception and death release');
-run=boot();run(setup+`build(SLOTS[0],'turret');S.towers[0].cd=999;planCarapacidShelter(SIM_STEP,1);assert.ok(fs[0].shelter);
+run=boot();run(setup+`build(SLOTS[0],'turret');S.towers[0].cd=999;S.towers[0].warm=0;planCarapacidShelter(SIM_STEP,1);assert.ok(fs[0].shelter);
 c.slowUntil=S.time+10;c.slowMul=.4;planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'Cryo releases flock');
 c.slowUntil=0;S.towers[0].paused=true;planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'paused tower does not trigger gathering');
 S.towers[0].paused=false;S.towers[0].selling=true;planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'demolishing tower is not a threat');
 S.towers[0].selling=false;c.d=GATE_D-70;planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'portal approach stays free');
 `);
 console.log('PASS Cryo, inactive towers and portal release');
-run=boot();run(setup+`build(SLOTS[0],'cannon');const t=S.towers[0];t.cd=999;for(let i=0;i<70;i++)stepSimulation(SIM_STEP);
+run=boot();run(setup+`build(SLOTS[0],'cannon');const t=S.towers[0];t.cd=999;t.warm=0;for(let i=0;i<70;i++)stepSimulation(SIM_STEP);
 const f=fs[0],hp=f.hp;S.shells=[{sx:t.x,sy:t.y,tx:f.x,ty:f.y,t:.64,flight:.65,tower:t,dmg:20,splash:40,prime:null}];advanceShells(.02);assert.ok(f.hp<hp,'shelter is not artillery immunity');`);
 console.log('PASS artillery still damages sheltered bodies');
 // Presentation calls may not influence following positions or the resulting game.
-const a=boot(),b=boot();for(const f of [a,b])f(setup+`build(SLOTS[0],'turret');S.towers[0].cd=999;`);
+const a=boot(),b=boot();for(const f of [a,b])f(setup+`build(SLOTS[0],'turret');S.towers[0].cd=999;S.towers[0].warm=0;`);
 for(let i=0;i<120;i++){a('stepSimulation(SIM_STEP)');b('stepSimulation(SIM_STEP);S.enemies.forEach(visualEnemy);presentationTime+=.17;');}
 const snapshot='JSON.stringify(S.enemies.map(e=>[e.d,e.x,e.y,e.hp,e.shelter?.slot,e.shelterOffset]))';assert.equal(a(snapshot),b(snapshot));
 run=boot('?balance=v04');run(setup+`build(SLOTS[0],'turret');planCarapacidShelter(SIM_STEP,1);assert.ok(fs.every(e=>!e.shelter),'historical preset retains original behavior');`);

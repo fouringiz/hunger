@@ -16,7 +16,8 @@ function test(name, run) {
   try { run(); console.log('PASS', name); }
   catch (error) { console.error('FAIL', name, error.stack || error); process.exitCode = 1; }
 }
-function placeSingleSoldier(g, tower, d, hp = 60) {
+function placeSingleSoldier(g, tower, d, hp = 60) {           // a deployed garrison with one soldier already on the lane
+  tower.warm = 0;
   for (const soldier of tower.soldiers) soldier.alive = false;
   const soldier = tower.soldiers[0];
   soldier.alive = true; soldier.hp = hp; soldier.d = d; soldier.x = g.posAt(d).x; soldier.y = g.posAt(d).y - 8;
@@ -61,7 +62,7 @@ test('crossing contact stops an enemy, applies melee damage and timed retaliatio
 });
 
 test('three soldiers hold at most three enemies while a fourth passes', () => {
-  const g=game(); g.reset(); g.build(g.SLOTS[0],'barracks'); const t=g.S.towers[0];
+  const g=game(); g.reset(); g.build(g.SLOTS[0],'barracks'); const t=g.S.towers[0]; t.warm=0;   // deployed, soldiers posted by hand
   const ds=[170,188,206]; t.soldiers.forEach((s,i)=>{s.d=ds[i];s.arrived=true;s.x=g.posAt(ds[i]).x;s.y=g.posAt(ds[i]).y-8;});
   const enemies=ds.map(d=>{const e=g.makeEnemy('carapacid',1);e.d=d-0.5;Object.assign(e,g.posAt(e.d));return e;});
   const extra=g.makeEnemy('carapacid',1);extra.d=ds[2]-0.5;Object.assign(extra,g.posAt(extra.d));
