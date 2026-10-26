@@ -1,5 +1,5 @@
 {
-  "reason": "Approved shelter movement changes simulation; previous visual-task geometry baselines remain unchanged.",
-  "rules": "acedc780",
-  "source": "5dbb50a9"
+  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp). Visual-task geometry baselines remain unchanged.",
+  "rules": "b0925b01",
+  "source": "54e5cb80"
 }
