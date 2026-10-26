@@ -51,3 +51,9 @@ Primary board: `user-references-v1.html`; provenance: `user-references-v1.json`.
 U5/U6 anchor recognizable individual bodies and interlocking restraints; U1 anchors stretched tissue bridges; U4/U7 anchor conflicting outward pulls. U2/U3 inform mismatched axes and a low heavy mass. Preserve PDF restrictions: no humans, head/face/paired eyes, joints as primary locomotion, blood or mechanics.
 
 Silhouette candidates (proposed): A compact knot with six folded lobes; B low spread colony with interwoven hydrostatic tentacles; C skewed tumbling mass with unevenly stacked lobes. All at the same top/side game camera. Black fill must read as several joined bodies, even before pale seams are added. Each needs an exact 50-pixel-width view; illustration thumbnails alone do not prove scale.
+
+## Silhouette study result
+
+Built-in image_gen produced a three-option sheet, now saved under ignored `reports/generated/polyp-silhouettes/polyp-silhouettes-v3.png`. `review.html` shows the sheet and each measured black-body bound at exactly 50 CSS px width using SVG viewports into the original raster (no image edits by code). Browser inspection of these small views remains pending/user-run; no game screenshots taken.
+
+Pass 1 rejected for stalks, flower-like lobes and large separations; pass 2 compresses the bodies; pass 3 changes fill to solid black. Large-sheet review confirms the obvious stalk failure is reduced and no recognizable human heads/hands/faces remain. Provisional preference B for low heavy stance. A risks regular rosette; C risks too much height. Exact six-body readability and separation from a generic tentacled lump remain unresolved, particularly at game scale. Do not mark the concept accepted or move to final colored art/atlases until user selection and refinement.

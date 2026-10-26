@@ -1,5 +1,19 @@
 # Silhouette study prompts
 
+## Attempt 2: compress the colony
+
+Use case: stylized-concept. Create a single wide three-panel silhouette concept sheet, A, B, C, THREE original alien fused-body creatures. Primary reference images: supplied images 1 and 2 show recognizable bodies densely packed and interlocked; use only dense FUSION structure, never human anatomy. Image 3 supplies stretched tissue bridges. Image 4 is a FAILED PREVIOUS GENERATED STUDY: correct its single major failure, flowers on stalks and too much separation.
+Replace the failed anatomy with DENSE, HEAVY, COLLIDING BODIES. Six folded alien disc bodies are crushed directly AGAINST a seventh central carrier. Each folded body is a fleshy curved flattened bag with its own thick tentacles folded and wound around adjacent bags. No stems, no stalks, no petal frills, no mushroom caps, no many little scallops. The constituent bodies must directly touch along broad fusion surfaces; no body floating at end of a tether. A few VERY SMALL irregular negative gaps indicate overlapping folded tentacle loops, but the mass is 90 percent solid. Body boundaries visible as deep OUTER silhouette indentations and different heavy protruding volumes, not six distant satellite heads. Imagine six headless soft marine creatures squeezed, folded and forcibly grafted together, each attempting to crawl away but held down by its neighbours. Only a few short thick tapering tentacles protrude from each compact heap. Two tiny recognizable broken chitin fragments at most, never a shell.
+A: densely interlocked squat oval knot of six uneven folded bodies.
+B: broader, flatter heap with six overlapping heavy bodies, one visibly being dragged sideways under the others.
+C: thick compact lopsided mound, a large folded body slumping over and crushing its neighbours, heavy leaning silhouette.
+All grounded and viewed from the SAME elevated THREE-QUARTER TOP-SIDE camera, ~35 degrees down, like tower defense build platforms. No upright pose. BLACK SOLID FILL with absolutely no grey shading or fine white outlines; white background, only A B C labels at top. Six different broad lobe contours per mass, asymmetrical, not a regular rosette. One large image per panel, NO additional small copies (these will be displayed at exact pixel size separately). Wide sheet with clear gutters and equal body scale.
+Strict avoid: NO flowers, stalks, mushrooms, broccoli, plants, jellyfish, regular starfish, detached satellite bodies, billowing frilled caps. NO human parts, heads, faces, eyes, mouths, teeth, hands, fingers, limbs with elbows/knees, skulls, gore or blood. NO spider/crab body plan, no insect legs, no upright humanoid. This is an alien soft-tissue creature silhouette exploration, fear conveyed by forced fusion of bodies.
+
+## Attempt 3: pure silhouette fill
+
+Edit this concept sheet. Preserve the three creature designs, their EXACT outer silhouettes, all large white holes BETWEEN overlapping bodies, pose, proportions, placement, A B C labels, white background and thin vertical dividers. Change ONLY the fill technique: each creature must be an absolutely uniform PURE BLACK silhouette (#000000). Remove EVERY internal grey gradient, every internal white highlight line, every grey texture, fold line and surface detail. Fill all surface linework with black. Do not change anatomy, do not add or remove tentacles, do not move the creatures. Large negative spaces that are actual holes between bodies stay white; fine scratches/highlight contour lines inside bodies become black. Strict binary black/white silhouette exercise for evaluating small-size readability.
+
 Built-in image_gen, reference-driven generation. First result rejected: flower-like lobes on stalks, too much empty space and weak forced fusion. Not accepted art.
 
 ## Attempt 1
