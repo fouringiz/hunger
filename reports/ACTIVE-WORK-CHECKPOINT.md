@@ -3,7 +3,8 @@
 ## Latest progress
 
 - User explicitly selected B (`б`). Direction B is selected; do not ask A/B/C again. Refined only six-body readability: first refinement still had five visible lobes, second splits rear mass into two. Candidate: `reports/generated/polyp-silhouettes/polyp-b-refinement-v2.png`. Large-view six-lobe count inspected; exact 50 px and in-game checks remain pending.
-- Proceeding to stage 3 concept sheet under the selected B direction: Polyp, Zygote, Polypoid, and death/separation panel. Final color concept is not yet accepted.
+- Stage 3 color concept prepared: `reports/generated/polyp-concept/polyp-concept-b-v2.png`; review page `reports/generated/polyp-concept/review.html` includes the refined B and measured 50 CSS px silhouette. V1 saved before relative-size correction. Built-in image_gen; prompts in `assets/art/references/enemies/polyp/selected-b-prompts.md`. Color concept not yet accepted.
+- Large-sheet inspection: six outer parent lobes and six detached zygotes in separation; pale fusion bridges, headless violet anatomy and paler radial juvenile present. Remaining risks: regular starfish-like Polypoid, some thin web-like seams, weak recognizability of old caste fragments. Exact runtime scale/projection, 50 px browser inspection, actual lane/grayscale and motion remain unverified.
 
 - User supplied seven fusion/body-horror references. Preserved JPEGs and annotated `user-references-v1.html`/`.json` under `assets/art/references/enemies/polyp/`. These take priority for fusion/mood; original biology board is secondary. 23 reference images in total. No permission to add human anatomy inferred.
 - Interpreted the supplied reference selection as steering to proceed with provisional silhouette exploration; this is not approval of a finished concept. Three variants: compact knot, low spread colony, skewed tumbling mass.
@@ -26,7 +27,7 @@
 
 ## Next step
 
-- Complete and show the stage-3 concept sheet using selected B. Await color/anatomy concept acceptance before game integration or atlas production. Inspect supplied 50 CSS px views at browser zoom 100%; no in-game claim follows from this sheet. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
+- User: accept or correct the stage-3 COLOR concept. Then prepare the separate game-size context stage; no animation/atlas work or gameplay changes before the appropriate agreement. Inspect supplied 50 CSS px views at browser zoom 100%; no in-game claim follows from this sheet. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
 - Before sprite production, agree atlas cell/frame counts and heading count. Before claiming visual integration, user must supply actual game before/after captures, full frame/close-up/grayscale and full animation cycle; independent visual review is required before merge.
 - Continue intermediate commits and maintain this compact top checkpoint. Earlier results below are historical and do not validate Polyp art.
 

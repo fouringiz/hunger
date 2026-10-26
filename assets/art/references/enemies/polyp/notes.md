@@ -57,3 +57,15 @@ Silhouette candidates (proposed): A compact knot with six folded lobes; B low sp
 Built-in image_gen produced a three-option sheet, now saved under ignored `reports/generated/polyp-silhouettes/polyp-silhouettes-v3.png`. `review.html` shows the sheet and each measured black-body bound at exactly 50 CSS px width using SVG viewports into the original raster (no image edits by code). Browser inspection of these small views remains pending/user-run; no game screenshots taken.
 
 Pass 1 rejected for stalks, flower-like lobes and large separations; pass 2 compresses the bodies; pass 3 changes fill to solid black. Large-sheet review confirms the obvious stalk failure is reduced and no recognizable human heads/hands/faces remain. Provisional preference B for low heavy stance. A risks regular rosette; C risks too much height. Exact six-body readability and separation from a generic tentacled lump remain unresolved, particularly at game scale. Do not mark the concept accepted or move to final colored art/atlases until user selection and refinement.
+
+## Selected B and color concept — 2026-10-27
+
+User explicitly selected B (`б`); do not re-ask A/B/C. B's low wide direction is accepted as the basis for the next concept stage, not final asset/art acceptance. B refinement v1 still showed five main lobes. V2 split the rear mass, producing two rear, two flank and two front lobes in the large view. Files in `reports/generated/polyp-silhouettes/`; no runtime changes.
+
+Stage 3 proposal: `reports/generated/polyp-concept/polyp-concept-b-v2.png`, viewable with the refined B and 50 CSS px silhouette in `reports/generated/polyp-concept/review.html`. Built-in image_gen; exact prompts in `selected-b-prompts.md`. V1 retained for provenance; v2 corrects the Polypoid/parent display-size relationship. This is approximate illustrated proportion, not calibrated runtime sprite scaling.
+
+Observed in large sheet: six surrounding parent lobes; pale raised tissue bridges; headless soft violet anatomy; lighter unfolded radial Polypoid; six detached pieces surrounding a collapsed central carrier in the separation panel. Selection B remains low/wide. No exact projection or game-scale compliance claimed.
+
+Reasons to reject/refine: Polypoid's six tentacles are still quite regular and the disc may read as a starfish; some seams are thin membranous webs rather than thick raised scar tissue; old Forager/Carapacid inclusions are not clearly identifiable at this scale. Review these with the user before declaring the anatomy final. Pure-black silhouette still hides some body boundaries at small size. Movement, living zygote pulse, continuous hatch sequence, actual lane contrast/grayscale and shared camera with platforms are pending. User owns game checks.
+
+Next: user acceptance or corrections to this COLOR concept, then the separate game-size context stage. Do not start animation/atlases or alter simulation yet.
