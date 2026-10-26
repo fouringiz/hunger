@@ -495,6 +495,44 @@ function soldierPosition(s) { const p = posAt(s.d); return {x:p.x, y:p.y-8}; }
 // Small, deterministic berths under the lee side of a living shell. Values are
 // provisional until a balance playtest; geometry and tower damage are unchanged.
 const CARAPACID_SHELTER = {reach:70, gaps:[6,22,36], offsets:[22,23,22], lateralSpeed:24};
+// Leech hunt route (v0.10.1): the hunt still goes straight at the nearest generator, but no longer through the footing of
+// another platform. Platforms are fixed from the first tick, so the route is planned once when the hunt starts (and
+// again when the target changes): the shortest path around the slab corners, which is the straight line when it is clear.
+// The target's own slab is not an obstacle: the generator stands on it. Historical presets keep the straight line.
+const LEECH_SLAB_AVOIDANCE = BALANCE_PRESET ? null : {margin:ENEMY.leech.r};
+function slabFootprint(s, margin) { return {x1:s.x-27-margin, y1:s.y-23-margin, x2:s.x+27+margin, y2:s.y+40+margin}; }
+function segmentCrossesRect(ax, ay, bx, by, r) {                 // open interval: touching an edge or a corner is not crossing
+  let t0=0, t1=1; const dx=bx-ax, dy=by-ay;
+  for (const [p,q] of [[-dx, ax-r.x1],[dx, r.x2-ax],[-dy, ay-r.y1],[dy, r.y2-ay]]) {
+    if (p === 0) { if (q <= 0) return false; continue; }
+    const t=q/p; if (p < 0) { if (t > t1) return false; if (t > t0) t0=t; } else { if (t < t0) return false; if (t < t1) t1=t; }
+  }
+  return t1 - t0 > 1e-9;
+}
+function leechRoute(e, gen) {
+  const goal={x:gen.x, y:gen.y}; if (!LEECH_SLAB_AVOIDANCE) return [goal];
+  // Shortest path over the slab corners (a visibility graph: start, goal and every corner of every foreign slab; an edge
+  // exists where the segment crosses no slab). Deterministic: ties fall to the lower node index.
+  const m=LEECH_SLAB_AVOIDANCE.margin, slabs=SLOTS.filter(s=>s!==gen.slot).map(s=>slabFootprint(s,m));
+  const inside=(p,r)=>p.x>r.x1&&p.x<r.x2&&p.y>r.y1&&p.y<r.y2;
+  const nodes=[{x:e.x,y:e.y}, goal];
+  for (const r of slabs) for (const c of [{x:r.x1,y:r.y1},{x:r.x2,y:r.y1},{x:r.x1,y:r.y2},{x:r.x2,y:r.y2}]) if (!slabs.some(o=>inside(c,o))) nodes.push(c);   // two slabs closer than a body merge into one obstacle
+  const clear=(a,b)=>slabs.every(r=>(a===nodes[0]&&inside(a,r))||!segmentCrossesRect(a.x,a.y,b.x,b.y,r));   // only the start may leave a slab it stands in
+  const dist=nodes.map(()=>Infinity), prev=nodes.map(()=>-1), done=nodes.map(()=>false); dist[0]=0;
+  for (;;) {
+    let u=-1; for (let i=0;i<nodes.length;i++) if (!done[i]&&dist[i]<Infinity&&(u<0||dist[i]<dist[u])) u=i;
+    if (u<0||u===1) break;
+    done[u]=true;
+    for (let v=0;v<nodes.length;v++) {
+      if (done[v]||v===u||!clear(nodes[u],nodes[v])) continue;
+      const d=dist[u]+Math.hypot(nodes[v].x-nodes[u].x,nodes[v].y-nodes[u].y);
+      if (d<dist[v]) { dist[v]=d; prev[v]=u; }
+    }
+  }
+  if (dist[1]===Infinity) return [goal];                        // boxed in: the old straight line rather than a stuck Leech
+  const route=[]; for (let v=1; v>0; v=prev[v]) route.unshift(nodes[v]);
+  return route;
+}
 function shelterThreat(c) {
   let best=null, distance=Infinity;
   for(const t of S.towers){
@@ -643,7 +681,7 @@ function replayRulesFingerprint() {
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE};
-  if(!BALANCE_PRESET)rules.CARAPACID_SHELTER=CARAPACID_SHELTER;
+  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -654,7 +692,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,slabFootprint,segmentCrossesRect,leechRoute,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -1031,7 +1069,7 @@ function stepSimulation(dt) {
           const candidateDistance = Math.hypot(t.x-e.x, t.y-e.y);
           if (candidateDistance < distance) { nearest = t; distance = candidateDistance; }
         }
-        if (nearest) { e.state = 'seek'; e.gen = nearest; nearest.leeched = e; }
+        if (nearest) { e.state = 'seek'; e.gen = nearest; nearest.leeched = e; e.route = leechRoute(e, nearest); }
       }
       if (e.state !== 'lane' && e.blockedBy) { e.blockedBy.target = null; e.blockedBy = null; }
       if (e.state === 'lane') {
@@ -1045,9 +1083,16 @@ function stepSimulation(dt) {
         if (e.d >= GATE_D) { e.dead = true; S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
           S.fx.push({kind:'leak', x:GATE.x, y:GATE.y, r:30, life:0.4, max:0.4, color:'#ff3b3b'}); }
       } else if (e.state === 'seek') {
-        const dx = e.gen.x - e.x, dy = e.gen.y - e.y, L = Math.hypot(dx, dy);
+        const L = Math.hypot(e.gen.x - e.x, e.gen.y - e.y);
         if (L < 20) { e.state = 'attached'; e.feedT = 0; playCue('drain', 145, 0.28, 'triangle'); }
-        else { const step = Math.min(L, e.speed * feastMul * dt); e.x += dx/L * step; e.y += dy/L * step; }
+        else {
+          let step = e.speed * feastMul * dt;
+          while (step > 0 && e.route.length) {                  // walk the planned bends; the last point is the generator
+            const w = e.route[0], dx = w.x - e.x, dy = w.y - e.y, d = Math.hypot(dx, dy);
+            if (d <= step) { e.x = w.x; e.y = w.y; step -= d; if (e.route.length > 1) e.route.shift(); else break; }
+            else { e.x += dx/d * step; e.y += dy/d * step; step = 0; }
+          }
+        }
       } else if (e.state === 'return') {
         const p = posAt(e.returnD), dx = p.x-e.x, dy = p.y-e.y, distance = Math.hypot(dx, dy);
         const step = e.speed * feastMul * dt;
