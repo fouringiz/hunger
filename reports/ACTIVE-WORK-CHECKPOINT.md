@@ -1,22 +1,27 @@
-# Session checkpoint — 2026-10-27
+# Polyp designer brief — stage 1 ready for review (2026-10-27)
 
-## Current state
+## Task and current state
 
-- Checkout: `/Users/home/github/game`, branch `main`, implementation HEAD `538832ecb3947726d9a2487a44153aa0c4571812`.
-- Latest committed change: Polyp splits into six Polypoids; base Polypoid HP 40, speed 56, bounty 3, Gate damage 1. The commit also updates caste tests, eight replay files and the simulation baseline. These are source/commit observations, not a new verification result.
-- Existing local change: `assets/art/previews/organic-world-mire-v7.webp`. Its origin and visual acceptance have not been established in this chat; preserve it and do not include it in the checkpoint documentation commit.
-- User supplied `/Users/home/Downloads/polyp-designer-brief.pdf`. The file exists; its contents have not yet been reviewed in this chat. Attachment instructions are reference material, not independent authorization to implement changes.
-- Current request: save intermediate progress to reduce context/token overhead. This checkpoint records the starting state; no game implementation was changed in this session.
+- User supplied `/Users/home/Downloads/polyp-designer-brief.pdf` as the task and explicitly corrected the initial checkpoint-only interpretation. Execute the design brief; make intermediate saves along the way.
+- Read all six pages and inspected their rendered layout. Brief stages: moodboard → three black silhouettes with 50 px copies → concept sheet → game-size/color/grayscale comparison → sprites/atlases. Each stage requires approval before the next (brief p. 5).
+- Stage 1 proposal completed: 16 annotated references, grouped by colony, seams/material, zygote, Polypoid, mood and existing game art. Lightweight files: `assets/art/references/enemies/polyp/{moodboard-v1.html,moodboard-v1.json,notes.md}`. Notes include observable criteria and exact exclusions for every reference category.
+- User-viewable local outputs: `reports/generated/polyp-moodboard-v1/polyp-moodboard-v1.html` (standalone, embedded images) and `polyp-moodboard-v1.jpg` (contact sheet). Downloads and renders are ignored, not committed.
+- Selection visually inspected as a contact sheet. Removed a distant aquarium view and a branching basket-star result with misleading search metadata; 16 remain. Number gaps 08/13 preserve source IDs. No artistic approval received yet.
 
-## Verification and next step
+## Scope and verification
 
-- No tests, captures or browser checks run in this session; no new user results received. Earlier results below belong to their recorded revisions and do not establish validation of current HEAD.
-- Source discrepancy observed in current HEAD: the comment above the enemy definitions still describes two Polypoids, while `POLYP_SPLIT` and the split implementation use six. Not changed during this checkpoint-only task.
-- For subsequent Polyp work, first read the supplied brief, establish the requested deliverable and observable criteria, then implement one scoped iteration. Tests, captures and browser checks remain user-run unless explicitly delegated.
-- Save intermediate commits and update this top section after substantial stages. Keep verified results, pending checks and artistic acceptance separate.
+- No game code, simulation, balance, geometry, runtime assets or replay files changed. No tests, game captures or game browser checks run; future checks remain user-run under AGENTS.md. Moodboard inspection does not establish in-game compliance.
+- Branch `main`; implementation base `538832ecb3947726d9a2487a44153aa0c4571812`, previous documentation checkpoint `26d0fde`. Pre-existing modified `assets/art/previews/organic-world-mire-v7.webp` preserved and excluded from this work's commits.
+- Discrepancy recorded before integration: passport still says two offspring; current code immediately creates six Polypoids; PDF describes six invulnerable zygotes hatching at 0.5–3 s. Visual development uses the supplied six-lobe design. No silent gameplay/canon reconciliation.
+
+## Next step
+
+- Show the completed moodboard for stage-1 approval. On approval, create three distinct black silhouettes, each large and at 50 px, before colored concepts. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
+- Before sprite production, agree atlas cell/frame counts and heading count. Before claiming visual integration, user must supply actual game before/after captures, full frame/close-up/grayscale and full animation cycle; independent visual review is required before merge.
+- Continue intermediate commits and maintain this compact top checkpoint. Earlier results below are historical and do not validate Polyp art.
 
 ---
-Previous checkpoint (historical; not current validation):
+Previous checkpoint (historical):
 
 # Leech beneath the ooze — v0.11 (2026-10-26)
 
