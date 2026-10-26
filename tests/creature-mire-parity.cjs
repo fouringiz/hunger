@@ -7,7 +7,10 @@ const {loadWorld}=require('../tools/capture-organic-world.cjs');
   const before=await loadWorld({zone,sourceHtml}),after=await loadWorld({zone});
   const setup="reset();S.phase='wave';S.spawnQueue=[];S.enemies=[makeEnemy('forager',1)];S.enemies[0].d=70;Object.assign(S.enemies[0],posAt(70));";
   for(const world of [before,after])world.run(setup);
-  for(const expr of ['replayRulesFingerprint()','replaySourceFingerprint()','JSON.stringify(PATH)','GATE_D','JSON.stringify(SLOTS)'])assert.equal(after.run(expr),before.run(expr),expr);
+  // Simulation fingerprints follow the approved-simulation baseline (shelter, v0.10 castes); geometry still matches the visual baseline commit.
+  const sim=require('../reports/carapacid-shelter/simulation-baseline.json');
+  assert.equal(after.run('replayRulesFingerprint()'),sim.rules,'rules');assert.equal(after.run('replaySourceFingerprint()'),sim.source,'source');
+  for(const expr of ['JSON.stringify(PATH)','GATE_D','JSON.stringify(SLOTS)'])assert.equal(after.run(expr),before.run(expr),expr);
   for(let frame=0;frame<8;frame++){
    for(const world of [before,after])world.run('for(let tick=0;tick<8;tick++){stepSimulation(SIM_STEP);presentationTime+=SIM_STEP;}draw();');
    const pixels=world=>Buffer.from(world.canvas.getContext('2d').getImageData(0,0,world.canvas.width,world.canvas.height).data);

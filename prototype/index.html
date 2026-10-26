@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.8</title>
+<title>Ultimate TD — core loop prototype v0.10</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,9 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.10: two castes — Aeroplankton flies along the lane out of reach of Cannon and Flamethrower (Turret and Voltaic
+// only), unaffected by the Carapacid shadow; Polyp splits into two Polypoids where it dies. Legacy presets keep the
+// classic three-caste waves.
 // v0.8: Flamethrower line — a sweeping jet of burning fuel (quarter circle); bodies it touches burn on; a Carapacid
 // in the jet passes only part of the fire. Level 4: Plasma (burning pools on the lane) or Cryojet (slowing coolant).
 // Mirror Chitin answers fire dominance.
@@ -48,9 +51,9 @@ const DEBUG_HIT_BOUNDS = typeof location !== 'undefined' && new URLSearchParams(
 // into exported replays, so candidate games never mix with the baseline reference set. Delete a preset once it is
 // accepted into the rules or rejected.
 const BALANCE_PRESETS = {
-  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25, hpGrowth:0.08, earlyCallBonus:0},
+  parityA: {label:'parity A', turretDmg:8.5, voltaicDmg:17, cannonDmg:40, enemyHp:1.25, hpGrowth:0.08, earlyCallBonus:0, classicCastes:true},
   // The campaign rules of prototype v0.4, kept only so v0.4 recordings stay verifiable. Not a playtest candidate.
-  v04:     {label:'v0.4 rules', turretDmg:7, voltaicDmg:14, cannonDmg:45, enemyHp:1, hpGrowth:0.08, earlyCallBonus:0}
+  v04:     {label:'v0.4 rules', turretDmg:7, voltaicDmg:14, cannonDmg:45, enemyHp:1, hpGrowth:0.08, earlyCallBonus:0, classicCastes:true}
 };
 const BALANCE_PRESET_NAME = (() => { if (typeof location === 'undefined') return null;
   const n = new URLSearchParams(location.search).get('balance'); return BALANCE_PRESETS[n] ? n : null; })();
@@ -113,8 +116,16 @@ const SLOTS = [[110,160],[250,160],[350,200],[350,340],[250,340],[490,190],[490,
 const ENEMY = {
   forager:     {name:'Forager',     hp:30,  speed:52, r:7,  bounty:5,  gateDmg:1, color:'#ff6b6b'},
   carapacid:   {name:'Carapacid',   hp:340, speed:34, r:18, bounty:40, gateDmg:5, color:'#a83232'},
-  leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'}
+  leech:       {name:'Leech',       hp:130, speed:46, r:10, bounty:25, gateDmg:2, color:'#c77dff'},
+  // v0.10. Aeroplankton flies: Cannon shells and the Flamethrower jet cannot reach it, the Carapacid shadow does not
+  // cover it; Turret and Voltaic hit it normally. Polyp splits where it dies into two Polypoids that do not split again.
+  aero:        {name:'Aeroplankton', hp:24,  speed:68, r:6,  bounty:6,  gateDmg:1, color:'#8fd3ff', air:true},
+  polyp:       {name:'Polyp',       hp:150, speed:30, r:11, bounty:12, gateDmg:3, color:'#b55fcf', splits:'polypoid'},
+  polypoid:    {name:'Polypoid',    hp:55,  speed:44, r:7,  bounty:4,  gateDmg:1, color:'#d48ae0'}
 };
+// Which castes the waves carry. Legacy rule presets keep the classic three so their recordings stay verifiable.
+const CASTE_SET = BALANCE_PRESET && BALANCE_PRESET.classicCastes ? 'classic' : 'v010';
+const AIR_FROM_WAVE = 5, POLYP_FROM_WAVE = 6;
 // DRAFT field-trial parameters; not a campaign weapon-line or balance verdict.
 const INFANTRY = {cost:110, power:10, soldiers:3, hp:60, damage:8, interval:0.8, marchSpeed:60,
   retaliation:{forager:10, carapacid:30, leech:14}, retaliationInterval:1, contactRadius:12};
@@ -197,7 +208,7 @@ function reset() {
   evolutionCardDismissed = false;
   for (const s of SLOTS) s.tower = null;
   S = {credits:200, gate:GATE_MAX, wave:0, phase:'menu', buildTimer:0, enemies:[], towers:[], shots:[], shells:[], fx:[],
-       spawnQueue:[], spawnTimer:0, pools:[], streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
+       spawnQueue:[], spawnTimer:0, pools:[], births:[], streams:[], rushMutation:null, memoPending:false, evolvedWaves:[], speed:1, selected:null, report:'', kills:0, waveKills:0, waveLeaked:0, time:0, win:false,
        dmg:{flat:0, arc:0, electro:0}, mutations:[], feast:0, stolen:0, spawnedThisWave:0,
        meleeDamage:0, infantryCasualties:0, infantryBlockedSeconds:0,
        toast:'', toastT:0, accumulator:0};
@@ -299,6 +310,16 @@ function waveDef(n) {
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4},
                     {type:'forager', delay:0.4}, {type:'forager', delay:0.4}];
     list.splice(Math.floor(list.length * 0.4), 0, ...convoy); // mid-wave: the stream ahead soaks the targeting
+  }
+  if (CASTE_SET === 'v010') {
+    if (n >= AIR_FROM_WAVE) {                                    // a flight of Aeroplankton mid-wave, growing by one each wave
+      const flight = []; for (let i = 0; i < 3 + (n - AIR_FROM_WAVE); i++) flight.push({type:'aero', delay:0.35});
+      list.splice(Math.floor(list.length * 0.55), 0, ...flight);
+    }
+    if (n >= POLYP_FROM_WAVE) {                                  // Polyps spaced through the wave
+      const polyps = 1 + Math.floor((n - POLYP_FROM_WAVE) / 2);
+      for (let i = 0; i < polyps; i++) list.splice(Math.floor(list.length * (i + 1) / (polyps + 1)), 0, {type:'polyp', delay:1.2});
+    }
   }
   return list;
 }
@@ -621,7 +642,7 @@ function replayRulesFingerprint() {
   const towerRules = INFANTRY_TRIAL ? TOWER : Object.fromEntries(Object.entries(TOWER).filter(([k]) => k !== 'barracks'));
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
-    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS};
+    MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE};
   if(!BALANCE_PRESET)rules.CARAPACID_SHELTER=CARAPACID_SHELTER;
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
@@ -633,7 +654,7 @@ function replayHash(value) {
 }
 function replaySourceFingerprint() {
   const sources=[reset,evolutionMemo,posAt,waveDef,satedBonus,makeEnemy,tstats,rank,isDrained,power,startWave,rushEvolution,endWave,scheduledEvolution,build,upgrade,togglePause,
-    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,update,stepSimulation,performPlayerAction];
+    returnLeechToLane,sell,finishSell,damage,segHitsCircle,pickTarget,fireFlat,fireArc,fireElectro,fireFlame,T_SWEEP,laneEffectiveSpeed,shelterThreat,planCarapacidShelter,shelterLanePosition,advanceShells,splitBody,update,stepSimulation,performPlayerAction];
   return replayHash(sources.map(fn=>fn.toString()).join('\n'));
 }
 function replaySignature() {
@@ -688,7 +709,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -749,7 +770,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.9',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.10',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -780,6 +801,17 @@ function damage(e, amt, tower, source = 'tower') {
       syncGeneratorHum();
     } // freed generator
     S.fx.push({kind:'death', x:e.x, y:e.y, r:e.r, life:0.3, max:0.3, color:e.T.color});
+    if (e.T.splits && S.phase === 'wave') splitBody(e);         // the Polyp opens into two Polypoids where it died
+  }
+}
+// The two Polypoids pick up the parent's lane position, wave and mutations. They are queued and released after the
+// current step's hits are resolved, so the shot that killed the Polyp does not also hit its children.
+function splitBody(e) {
+  for (const side of [-1, 1]) {
+    const child = makeEnemy(e.T.splits, e.wave || S.wave);
+    child.muts = [...e.muts]; child.rod = false; child.wave = e.wave; child.seq = (e.seq || 0) * 2 + (side > 0 ? 1 : 0);
+    child.d = Math.max(0, e.d + side * 6); const p = posAt(child.d); child.x = p.x; child.y = p.y;
+    child.incoming = 0; S.births.push(child);
   }
 }
 function segHitsCircle(x1,y1,x2,y2,cx,cy,r) {
@@ -791,8 +823,10 @@ function segHitsCircle(x1,y1,x2,y2,cx,cy,r) {
 // -------- fully automatic targeting: base "furthest along the lane" + three silent rules
 function pickTarget(t, st) {
   const cands = [];
+  const ground = t.T.kind === 'arc' || t.T.kind === 'fire';     // shells and the jet cannot reach a flying body
   for (const e of S.enemies) {
     if (e.dead) continue;
+    if (ground && e.T.air) continue;
     const dist = Math.hypot(e.x-t.x, e.y-t.y);
     if (dist > st.range) continue;
     if (t.T.minRange && dist < t.T.minRange) continue;
@@ -810,7 +844,7 @@ function pickTarget(t, st) {
     let best = null, bestN = -1;
     for (const e of pool) {
       let n = 0;
-      for (const o of S.enemies) if (!o.dead && Math.hypot(o.x-e.x, o.y-e.y) <= t.T.splash) n++;
+      for (const o of S.enemies) if (!o.dead && !o.T.air && Math.hypot(o.x-e.x, o.y-e.y) <= t.T.splash) n++;
       if (n > bestN || (n === bestN && best && e.d > best.d)) { bestN = n; best = e; }
     }
     return best;
@@ -821,7 +855,7 @@ function pickTarget(t, st) {
 }
 function fireFlat(t, st, target) {
   let hit = target, bestU = 2;
-  if (!st.pierce) for (const c of S.enemies) {  // the Carapacid shadow: a shell body between tower and target takes the hit (the Rifle round passes it)
+  if (!st.pierce && !target.T.air) for (const c of S.enemies) {  // the Carapacid shadow: a shell body between tower and target takes the hit (the Rifle round passes it; a flying target is above it)
     if (c.dead || c === target || c.type !== 'carapacid') continue;
     const u = segHitsCircle(t.x, t.y, target.x, target.y, c.x, c.y, c.r + 3);
     if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
@@ -866,7 +900,7 @@ function fireArc(t, st, target) {
 function fireElectro(t, st, target) {
   // The bolt is a line: a Carapacid in the way intercepts it and takes the hit; the chain continues from the body actually struck.
   let hit = target, bestU = 2;
-  for (const c of S.enemies) {
+  if (!target.T.air) for (const c of S.enemies) {              // a flying target is above the shadow
     if (c.dead || c === target || c.type !== 'carapacid') continue;
     const u = segHitsCircle(t.x, t.y, target.x, target.y, c.x, c.y, c.r + 3);
     if (u >= 0 && u < bestU && u < 0.97) { bestU = u; hit = c; }
@@ -902,7 +936,7 @@ function fireFlame(t, st, target) {
   t.angle = a; t.jetAt = S.time;                                // presentation: the drawn jet follows the sweep
   const tx = t.x + Math.cos(a) * st.range, ty = t.y + Math.sin(a) * st.range;
   const hits = [];
-  for (const e of S.enemies) { if (e.dead) continue; const u = segHitsCircle(t.x, t.y, tx, ty, e.x, e.y, 10 + e.r * 0.5); if (u >= 0) hits.push([u, e]); }
+  for (const e of S.enemies) { if (e.dead || e.T.air) continue; const u = segHitsCircle(t.x, t.y, tx, ty, e.x, e.y, 10 + e.r * 0.5); if (u >= 0) hits.push([u, e]); }
   hits.sort((p, q) => p[0] - q[0]);
   let shield = false;
   for (const [, e] of hits) {
@@ -949,7 +983,7 @@ function advanceShells(dt) {
     if (sh.t >= sh.flight) {
       sh.done = true;
       if (sh.prime) sh.prime.incoming = Math.max(0, sh.prime.incoming - sh.dmg);   // ledger settles on impact
-      for (const e of S.enemies) if (!e.dead && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg, sh.tower);
+      for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x-sh.tx, e.y-sh.ty) <= sh.splash + e.r*0.5) damage(e, sh.dmg, sh.tower);
       S.fx.push({kind:'boom', x:sh.tx, y:sh.ty, r:sh.splash, life:0.35, max:0.35, color:'#ffae42'});
       if (sh.cluster) for (let j = 0; j < 3; j++) {                 // three fragments per bomblet strike inside its blast area
         const a = sh.cluster.i * 1.3 + j * 2.094, rr = sh.splash * (0.3 + 0.25 * j);
@@ -1005,7 +1039,7 @@ function stepSimulation(dt) {
         e.resumeSpeed = sp;
         if (e.blockedBy) sp = 0;
         const prevD = e.d, nextD = e.d + sp * dt;
-        if (!e.blockedBy) { const contact = infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
+        if (!e.blockedBy) { const contact = e.T.air ? null : infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
         e.effSpeed = sp;
         const p = posAt(e.d); e.x = p.x; e.y = p.y;
         if (e.d >= GATE_D) { e.dead = true; S.gate -= e.T.gateDmg; S.waveLeaked++; playCue('gate', 72, 0.34, 'sawtooth');
@@ -1036,7 +1070,7 @@ function stepSimulation(dt) {
     e.effSpeed = sp;
     if (e.blockedBy) sp = 0;
     const prevD = e.d, nextD = e.d + sp * dt;
-    if (!e.blockedBy) { const contact = infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
+    if (!e.blockedBy) { const contact = e.T.air ? null : infantryContact(e, prevD, nextD); if (contact) { e.d = contact.d; e.blockedBy = contact.s; contact.s.target = e; sp = 0; } else e.d = nextD; }
     e.effSpeed = sp;
     const p = posAt(e.d); e.x = p.x; e.y = p.y;
     if(e.type==='forager'&&!BALANCE_PRESET)shelterLanePosition(e,dt);
@@ -1063,10 +1097,11 @@ function stepSimulation(dt) {
   for (const e of S.enemies) if (!e.dead && e.burnUntil > S.time) damage(e, e.burnDps * dt, e.burnTower);
   if (S.pools.length) {
     S.pools = S.pools.filter(q => q.until > S.time);
-    for (const q of S.pools) for (const e of S.enemies) if (!e.dead && Math.hypot(e.x - q.x, e.y - q.y) <= q.r + e.r * 0.5) damage(e, q.dps * dt, q.tower);
+    for (const q of S.pools) for (const e of S.enemies) if (!e.dead && !e.T.air && Math.hypot(e.x - q.x, e.y - q.y) <= q.r + e.r * 0.5) damage(e, q.dps * dt, q.tower);
   }
   advanceShells(dt);
   S.enemies = S.enemies.filter(e => !e.dead);
+  if (S.births.length) { for (const b of S.births) S.enemies.push(b); S.births = []; }
 
   if (S.gate <= 0) { S.gate = 0; S.phase = 'over'; S.win = false; return; }
   // A wave is complete when its stream has spawned everything and none of its bodies is alive (untagged bodies, placed
@@ -2087,7 +2122,27 @@ function drawTowerBody(t) {
       text('SELL', 0, 0, 10, '#e8ecf2', 'center', '800'); }
     ctx.restore();
 }
+// Vector bodies for the v0.10 castes (sprites pending). The Aeroplankton floats above its ground shadow.
+function drawAirBody(e,angle) {
+  ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(0,2,e.r*1.4,e.r*.5,0,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.translate(0,-26+Math.sin(presentationTime*3+e.d*.05)*2);ctx.rotate(angle);
+  ctx.fillStyle='rgba(143,211,255,0.55)';ctx.beginPath();ctx.ellipse(0,0,e.r*1.9,e.r*1.1,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(220,245,255,0.9)';ctx.lineWidth=1.2;ctx.stroke();
+  ctx.strokeStyle='rgba(143,211,255,0.8)';for(let i=-2;i<=2;i++){ctx.beginPath();ctx.moveTo(-e.r*1.2,i*2.2);ctx.lineTo(-e.r*2.4,i*3.4+Math.sin(presentationTime*9+i)*1.5);ctx.stroke();}
+  ctx.fillStyle='#ff6b6b';ctx.beginPath();ctx.arc(e.r*.9,0,2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawPolypBody(e,angle) {
+  const n=e.type==='polyp'?7:4,puls=1+Math.sin(presentationTime*4+e.d*.1)*.04;
+  ctx.save();ctx.scale(puls,1/puls);
+  ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e8ecf2';for(let i=0;i<n;i++){const a=i*Math.PI*2/n+angle;ctx.beginPath();ctx.arc(Math.cos(a)*e.r*.65,Math.sin(a)*e.r*.55,e.r*.22,0,Math.PI*2);ctx.fill();}
+  ctx.strokeStyle='#5a1f6b';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+}
 function drawEnemyBody(e,angle) {
+  if(e.T.air){drawAirBody(e,angle);return;}
+  if(e.type==='polyp'||e.type==='polypoid'){drawPolypBody(e,angle);return;}
   const size=e.type==='carapacid'?65:e.type==='leech'?46:34;
   const trialBody = groundActorSprite(e,angle) || e.type==='forager' && infantrySprite(e.blockedBy && e.blockedBy.retalCd > INFANTRY.retaliationInterval-0.16 ? 3 : 2,0,0,34,Math.cos(angle)<0);
   if(!trialBody && !crawlerSprite(e,angle) && !sprite(e.type==='forager'?0:e.type==='carapacid'?1:2,0,0,size,angle)) {
