@@ -1,3 +1,23 @@
+# Session checkpoint — 2026-10-27
+
+## Current state
+
+- Checkout: `/Users/home/github/game`, branch `main`, implementation HEAD `538832ecb3947726d9a2487a44153aa0c4571812`.
+- Latest committed change: Polyp splits into six Polypoids; base Polypoid HP 40, speed 56, bounty 3, Gate damage 1. The commit also updates caste tests, eight replay files and the simulation baseline. These are source/commit observations, not a new verification result.
+- Existing local change: `assets/art/previews/organic-world-mire-v7.webp`. Its origin and visual acceptance have not been established in this chat; preserve it and do not include it in the checkpoint documentation commit.
+- User supplied `/Users/home/Downloads/polyp-designer-brief.pdf`. The file exists; its contents have not yet been reviewed in this chat. Attachment instructions are reference material, not independent authorization to implement changes.
+- Current request: save intermediate progress to reduce context/token overhead. This checkpoint records the starting state; no game implementation was changed in this session.
+
+## Verification and next step
+
+- No tests, captures or browser checks run in this session; no new user results received. Earlier results below belong to their recorded revisions and do not establish validation of current HEAD.
+- Source discrepancy observed in current HEAD: the comment above the enemy definitions still describes two Polypoids, while `POLYP_SPLIT` and the split implementation use six. Not changed during this checkpoint-only task.
+- For subsequent Polyp work, first read the supplied brief, establish the requested deliverable and observable criteria, then implement one scoped iteration. Tests, captures and browser checks remain user-run unless explicitly delegated.
+- Save intermediate commits and update this top section after substantial stages. Keep verified results, pending checks and artistic acceptance separate.
+
+---
+Previous checkpoint (historical; not current validation):
+
 # Leech beneath the ooze — v0.11 (2026-10-26)
 
 ## State
