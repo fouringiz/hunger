@@ -1,5 +1,7 @@
-# Ultimate TD — Interface Documents (EN, v1.5)
+# Ultimate TD — Interface Documents (EN, v1.6)
 
+> **Изменения v1.5 → v1.6 (паспорт v2.16):** ролик Know Your Consumer **#06 Polyp** переписан под зиготы: яйца на тропе, вылупление по очереди, выжженная земля на месте вылупления.
+>
 > **Изменения v1.4 → v1.5 (паспорт v2.15):** ролики Know Your Consumer **#09 Neurocoupler, #10 Lithophage и #11 Specimen N сняты** (касты и аномалии убраны из игры), Matriarch стал **#09**, серия ×9; **#07 Testudo** переписан под порог урона, **#08 Leech** — под движение под жижей и приоритет генератор → руина (и без «set target priority», которого нет с v2.5). Notice of Appropriation 12-046 — без Neurocoupler. Реплика Patch про Литофага снята.
 >
 > **Изменения v1.3 → v1.4 (паспорт v2.13):** ролик Know Your Consumer #11 сокращён до формата 20 секунд и учит читать рапорт о мутации вместо универсального «смени оружие»; P.S. меморандума 0558-M переписан — выбор мутации зависит от игрока, срок — нет (убрано противоречие с правилом выбора по урону и преждевременная уверенность в авторе расписания).
@@ -532,9 +534,9 @@ Visual: гаубица стреляет по Курьеру, которого у
 Fine print: Ammunition expended on Category D targets is audited.
 
 **#06 Polyp (Category C)**
-VO: "The Polyp. Kill one, receive two. The Fund would like to stress that this is not a promotion. Single heavy shots are the Polyp's preferred way to die — it dies twice. Area damage and burning ground finish what the first shot started. Splash responsibly."
-Visual: выстрел винтовки — две половинки с табличками BOGO; кассетный залп — конфетти.
-Fine print: Both halves are payable at Category C rates. The Fund checked.
+VO: "The Polyp. Kill one, receive six — eventually. When it dies, it leaves eggs on your lane, and the eggs are not for shooting. They hatch one by one, and every one runs. Do not wait for the brood; meet it. Burning ground where the Polyp fell finishes what the first shot started. Splash responsibly, and on schedule."
+Visual: Полип падает, на тропе шесть стеклянных капсул; винтовка бьёт в капсулу, пуля звякает и отскакивает; капсулы трескаются по очереди, из каждой выскакивает бегун; затем лужа Плазмы на том же месте — каждый новый бегун вылупляется прямо в огонь.
+Fine print: Zygotes are not billable until hatched. The Fund has asked. Daughter bodies are payable at Category E rates.
 
 **#07 Testudo (Category C)**
 VO: "The Testudo. Plated. Note the plates: anything light simply glances off them — a machine gun will keep the Testudo entertained for some time. Anything heavy goes through. A rifle round. A howitzer shell. The Fund suggests you bring one. Slow it, stun it, burn it by all means — but to open it, hit it hard."
