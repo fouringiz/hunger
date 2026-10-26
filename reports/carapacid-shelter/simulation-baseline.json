@@ -1,5 +1,5 @@
 {
-  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp), then v0.10.1: Grounding never makes a flying body a rod; the Leech hunt bends around foreign slab footings. Visual-task geometry baselines remain unchanged.",
-  "rules": "51c7714f",
-  "source": "c8528d8f"
+  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp), then v0.10.1: Grounding never makes a flying body a rod; the Leech hunt bends around foreign slab footings; a new building deploys for 1.65 s before it fights. Visual-task geometry baselines remain unchanged.",
+  "rules": "7f0627a4",
+  "source": "2382174d"
 }
