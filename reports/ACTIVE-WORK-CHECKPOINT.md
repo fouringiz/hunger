@@ -1,3 +1,13 @@
+# Polyp — five requested corrections in progress (2026-10-27)
+
+- User accepted prior image's wet violet flesh, visible pale seams, embedded Carapacid plates and lighter radial facehugger-inspired Polypoid. User reports acceptable 50 px seam readability and grayscale contrast on the reviewed prior concept; no new game capture supplied. This does not validate subsequent revisions.
+- Requested corrections: six clearly folded discs around carrier; each juvenile's tentacles tucked against its own disc rather than noisy protrusions; soft tapering ends, no hooks; visible ragged seam remnant on juvenile; add Zygote.
+- Parent pass 1 had only five readable discs and was rejected (`reports/generated/polyp-feedback/01-five-lobes-rejected.png`). Pass 2 reveals sixth rear disc (`02-six-lobes.png`); count inspected at large size, not game size. Six constituent bodies should each have six arms, mostly hidden in folds; the image cannot certify the hidden anatomical count.
+- Next: remove hooked tips and tuck remaining parent protrusions; then separate juvenile seam-remnant pass; then add Zygote. Preserve accepted material, plates, palette and basic juvenile form. No game code/tests/captures/browser checks run.
+
+---
+Earlier checkpoint, preserved as history:
+
 # Polyp — exact user prompt variant (2026-10-27)
 
 ## Current request and saved output
