@@ -1,6 +1,12 @@
-# Polyp — user references and silhouette studies (2026-10-27)
+# Polyp A — mixed body parts / facehugger-inspired Polypoid (2026-10-27)
 
 ## Latest progress
+
+- LATEST DIRECT USER REQUEST: `а. полип сшит из разных частей тел других тварей. используй лицехвата для вдохновения полипоида`. Current direction is A, superseding previously recorded B. Parent composition is heterogeneous salvaged body parts, not six near-identical folded sacs. User approves direction, not final generated art.
+- Generated new two-subject concept with built-in image_gen: `reports/generated/polyp-concept/polyp-concept-a-assemblage-v1.png`; viewer `reports/generated/polyp-concept/review-a-assemblage.html`. Exact prompt and inspection: `assets/art/references/enemies/polyp/selected-a-assemblage-prompt.md`. Draft raster ignored, prior B work retained.
+- Large-image inspection: heterogeneous ribbed tissue, smooth sac, membrane and recognisable shell fragments with thick pale fusion seams; juvenile has a separate flat body and long arched grasping appendages. Parent height/projection, claw-like juvenile tips, six separable regions, game-scale/grayscale and motion remain unverified. No tests/game captures/browser game checks run. Acceptance pending.
+
+## Prior direction (superseded by current A correction)
 
 - User explicitly selected B (`б`). Direction B is selected; do not ask A/B/C again. Refined only six-body readability: first refinement still had five visible lobes, second splits rear mass into two. Candidate: `reports/generated/polyp-silhouettes/polyp-b-refinement-v2.png`. Large-view six-lobe count inspected; exact 50 px and in-game checks remain pending.
 - Stage 3 color concept prepared: `reports/generated/polyp-concept/polyp-concept-b-v2.png`; review page `reports/generated/polyp-concept/review.html` includes the refined B and measured 50 CSS px silhouette. V1 saved before relative-size correction. Built-in image_gen; prompts in `assets/art/references/enemies/polyp/selected-b-prompts.md`. Color concept not yet accepted.
@@ -27,9 +33,9 @@
 
 ## Next step
 
-- User: accept or correct the stage-3 COLOR concept. Then prepare the separate game-size context stage; no animation/atlas work or gameplay changes before the appropriate agreement. Inspect supplied 50 CSS px views at browser zoom 100%; no in-game claim follows from this sheet. Use six folded bodies around a seventh carrier, soft radial/asymmetric anatomy, no head/face/paired eyes, thick pale seams in later color stage.
-- Before sprite production, agree atlas cell/frame counts and heading count. Before claiming visual integration, user must supply actual game before/after captures, full frame/close-up/grayscale and full animation cycle; independent visual review is required before merge.
-- Continue intermediate commits and maintain this compact top checkpoint. Earlier results below are historical and do not validate Polyp art.
+- User: review current A mixed-part concept. Further revisions should preserve heterogeneous construction and low grasping Polypoid, not revert to six cloned sacs or broad starfish rays. No A/B/C selection question needed.
+- After anatomy acceptance, align zygote/separation sheet to the heterogeneous body construction; retain six offspring without changing game behavior in this art task. Then user-run actual game-scale/gray/lane/camera validation. Current image is a concept, not a game capture or verified final asset.
+- Confirm atlas layout and heading/frame counts before sprites. Save intermediate commits; preserve pre-existing `assets/art/previews/organic-world-mire-v7.webp` change. No runtime files or simulation changed.
 
 ---
 Previous checkpoint (historical):
