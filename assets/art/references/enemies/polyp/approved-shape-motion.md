@@ -1,12 +1,20 @@
 # Approved material, subtle silhouette adjustment, changing body
 
+## User approval — 2026-10-27
+
+User replied `принимаю` after receiving the revised still and six-pose movement study. The silhouette correction, established heterogeneous materials/parts and the changing-body motion direction are now artistically accepted. Do not ask for the same concept approval again.
+
+Durable accepted references: `polyp-shape-approved-v1.webp` and `polyp-motion-approved-v1.webp`. Lossless copies of the reviewed images; provenance and source hashes in `approved-v1.json`. All intermediate source renders remain ignored.
+
+This approval does not certify interpolated movement, frame registration, cycle seam, ground contacts, runtime scale, camera or grayscale on the lane. The limitations below remain implementation work, not a request to reopen the accepted design.
+
 ## Motion study result
 
 Six illustrative phases saved at `reports/generated/polyp-approved-shape-motion/motion-keyframes-v1.png`. Review page in the same directory: `review.html`, with original/edited concepts, entire storyboard and manually stepped/playable keyframes. The player is a storyboard flipbook, not interpolated animation or runtime code.
 
 Large-sheet inspection: phases 02–03 extend the front membrane/body envelope; 04 gathers; 05 extends a different flank; 06 approaches the starting configuration. Ribbed tissue, bronze fragments, smooth sac and pale seams remain visually recognizable. Parent body envelope visibly changes; this is more than rotating fixed appendages.
 
-Unresolved: keyframes are not registered production frames; framing/part geometry vary slightly, contact stability is unproven, phase 06 is not an exact seam match to 01, and the stretched foreground in 03 may read as an additional smooth sac. No smoothness, mass conservation, non-sliding contact or in-game cycle claim. Source art approved by user; these new edits/poses are pending acceptance.
+Unresolved: keyframes are not registered production frames; framing/part geometry vary slightly, contact stability is unproven, phase 06 is not an exact seam match to 01, and the stretched foreground in 03 may read as an additional smooth sac. No smoothness, mass conservation, non-sliding contact or in-game cycle claim. Source art and these edits/poses are now accepted by the user; implementation limitations remain.
 
 Implementation intent for a future approved animation: overlapping slow deformation phases, changing projection origins, separate extension/traction/reabsorption envelopes; rigid plate transforms follow local soft-body deformation. Avoid uniform whole-sprite scale/bob as the primary motion. Gameplay route/collision/balance must remain unchanged unless explicitly requested. Do not treat this note as implemented code.
 
@@ -42,7 +50,7 @@ Local inputs preserved under ignored `reports/generated/polyp-approved-shape-mot
 
 ## Shape edit
 
-Built-in image_gen output: `reports/generated/polyp-approved-shape-motion/shape-after-v1.png`. Large-sheet comparison: wider foreground extension, left membrane drawn outward, stronger ribbed upper contour, preserved heterogeneous identity. Juvenile appearance remains visually consistent; no byte-identical preservation claim. The change is intentionally modest. Artistically accepted source does not automatically approve this edit.
+Built-in image_gen output: `reports/generated/polyp-approved-shape-motion/shape-after-v1.png`. Large-sheet comparison: wider foreground extension, left membrane drawn outward, stronger ribbed upper contour, preserved heterogeneous identity. Juvenile appearance remains visually consistent; no byte-identical preservation claim. The change is intentionally modest. This edit was subsequently accepted by the user (see approval above).
 
 ### Exact prompt
 
