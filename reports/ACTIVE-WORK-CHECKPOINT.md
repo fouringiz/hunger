@@ -1,16 +1,19 @@
-# Polyp — approved attached concept, subtle A silhouette and changing form (2026-10-27)
+# Polyp — revised silhouette and motion concept ACCEPTED (2026-10-27)
 
 ## Latest direct request and progress
 
+- User explicitly replied `принимаю` to the revised silhouette and six-keyframe motion study. ARTISTIC DIRECTION ACCEPTED. Do not ask to approve these same images again; this does not certify smooth/runtime animation.
+- Durable lossless accepted references now tracked: `assets/art/references/enemies/polyp/polyp-shape-approved-v1.webp` and `polyp-motion-approved-v1.webp`. Source provenance/hashes: `approved-v1.json`. No resizing or artistic changes during archival conversion.
+
 - User resumed work after stopping, explicitly approved the attached heterogeneous Polyp/Polypoid concept (`тут прекрасно все`) and requested a small shift toward the attached silhouette sheet plus continuously changing shape while moving: protrusions emerge, body stretches. Use the attached mixed-part image as the approved source; do not replace it with another concurrent six-identical-lobe concept. A is the previously selected silhouette guide.
-- Source and shape reference preserved in ignored `reports/generated/polyp-approved-shape-motion/{approved-before.png,silhouette-reference.png}`. New still: `shape-after-v1.png`. Modest contour change: projecting upper ribbed section, wider front fold/extension, stronger irregular outline. Material, recognizable parts, thick seams and juvenile appearance retained visually. New still pending user review.
+- Source and shape reference preserved in ignored `reports/generated/polyp-approved-shape-motion/{approved-before.png,silhouette-reference.png}`. New still: `shape-after-v1.png`. Modest contour change: projecting upper ribbed section, wider front fold/extension, stronger irregular outline. Material, recognizable parts, thick seams and juvenile appearance retained visually. New still and motion direction accepted by user.
 - New six-phase motion concept: `motion-keyframes-v1.png`; `review.html` shows before/after, full sheet and a stepped/playable storyboard. This is NOT smooth animation or game implementation. Steps: compact → front extension → stretch → gather → opposite-side extension → recover. Exact prompts/criteria/inspection: `assets/art/references/enemies/polyp/approved-shape-motion.md`.
 - Inspected generated full sheets. Body-envelope changes and different extension origins are visible. Pending: registration, interpolated continuity, exact 06→01 match, stable ground contacts, apparent extra sac during stretch, actual 40–50 px/grayscale/camera checks. No tests, game captures or browser game verification run. The player itself has not been browser-verified.
 - Intermediate shape checkpoint `1cc488b`. No runtime, simulation, collision, PATH/GATE_D or balance change. Pre-existing modified `assets/art/previews/organic-world-mire-v7.webp` preserved. Heavy drafts remain ignored.
 
 ## Next step
 
-- Show revised still and movement concept for user feedback. Once poses are accepted, prepare continuous deformation/animation using the same recognizable body parts; local extension and retraction rhythms should overlap, not just whole-body bob/scale. Preserve approximate mass and rigid shell fragments, ensure planted contacts do not slide.
+- Next production stage: prepare continuous deformation/animation using the accepted body parts and motion direction; local extension/retraction rhythms should overlap, not just whole-body bob/scale. Preserve approximate mass and rigid shell fragments, ensure planted contacts do not slide. Agree atlas direction/frame/cell layout before sprite production under the original brief. No animation or runtime change was made in this approval-recording turn.
 - User performs real-game capture/testing under AGENTS.md. Concept approval does not establish runtime readability or a complete animation cycle. Keep intermediate saves.
 
 ---

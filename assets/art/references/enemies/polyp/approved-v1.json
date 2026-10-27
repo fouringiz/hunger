@@ -1,0 +1,30 @@
+{
+  "status": "user-approved concept and motion direction",
+  "user_confirmation": "принимаю",
+  "date": "2026-10-27",
+  "scope": "Revised still and six keyframe motion concept; not smooth animation, runtime integration or gameplay verification",
+  "files": [
+    {
+      "file": "polyp-shape-approved-v1.webp",
+      "source": "reports/generated/polyp-approved-shape-motion/shape-after-v1.png",
+      "source_sha256": "bd46498baae865b383a437b7f7eb66776d9644e6cf9ce2305b537589ff1293a1",
+      "saved_sha256": "52fe929d2e61b5e93d6e9957895d2735384948e8e414c67efb76fb0efa170ff2",
+      "size": [
+        1536,
+        1024
+      ],
+      "storage": "lossless WebP; no artistic edits or resizing"
+    },
+    {
+      "file": "polyp-motion-approved-v1.webp",
+      "source": "reports/generated/polyp-approved-shape-motion/motion-keyframes-v1.png",
+      "source_sha256": "4d68b1b503ae1f0aacfdd4994c8d04d341f90f6317ddd51c7a1f5ecca511ce43",
+      "saved_sha256": "d4f78466f098cf50a60d947289e95fcae38332796f780a50e26028d0d5ae7a71",
+      "size": [
+        1536,
+        1024
+      ],
+      "storage": "lossless WebP; no artistic edits or resizing"
+    }
+  ]
+}

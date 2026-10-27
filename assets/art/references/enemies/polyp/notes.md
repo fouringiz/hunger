@@ -77,3 +77,7 @@ Latest direct user request selects A and defines Polyp as sewn from DIFFERENT BO
 Polypoid: facehugger-inspired low body, tense arched grasping appendages and rapid crawling feel, translated to the original radial form. User did not request a literal facehugger or authorize human anatomy.
 
 New two-subject study: `reports/generated/polyp-concept/polyp-concept-a-assemblage-v1.png`; viewer `reports/generated/polyp-concept/review-a-assemblage.html`. Exact prompt and critical review: `selected-a-assemblage-prompt.md`. Prior B studies retained as history. No game code changed. Pending user response before further concept or runtime stages.
+
+## Accepted current direction — 2026-10-27
+
+User explicitly accepted the revised heterogeneous Polyp still and six-phase changing-body motion concept (`принимаю`). Current accepted references: `polyp-shape-approved-v1.webp`, `polyp-motion-approved-v1.webp`; exact scope in `approved-v1.json` and `approved-shape-motion.md`. These supersede earlier pending-review statements for this direction. Keep the approved mixed-part appearance and shape-changing locomotion. Smooth animation and actual game validation are still pending.
