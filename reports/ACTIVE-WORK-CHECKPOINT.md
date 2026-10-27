@@ -1,3 +1,14 @@
+# Polyp — latest four corrections, amorphous protrusions (2026-10-27)
+
+- Latest direct user feedback accepts palette/material, pale seams, Carapacid inclusions, radial flat pale juvenile and grayscale contrast ON THE PREVIOUS CONCEPT. Requests: six distinct body parts at 50 px; parent protrusions must extend/retract from DIFFERENT body locations, not fixed tentacles; visible torn juvenile seam; identifiable detached Zygote.
+- Reused previously saved `reports/generated/polyp-feedback/02-six-lobes.png` as six-part baseline. This prior work was inspected, not newly generated in this turn. New sequential image_gen passes in `reports/generated/polyp-amorphous-feedback/`: `01-parent-protrusions.png`, `02-juvenile-seam.png`, `03-three-forms.png`.
+- Large-image inspection: six broad parent regions, greatly reduced fixed thin fringe with two broad continuous protrusions; juvenile pink ragged flap is visible; zygote is a detached kidney-shaped blue-violet body part with a matching torn pale fringe. Six-part 50 px readability and new grayscale have NOT been confirmed; prior user approval does not transfer automatically. Concept sheet relative zygote size is illustrative, not an exact runtime scale proof.
+- Remaining current step: six-phase concept storyboard demonstrating protrusion extension/retraction at different locations. Static reference phases are not an actual animation or game validation. No code, tests, game captures or browser game checks.
+- Exact prompts: `assets/art/references/enemies/polyp/amorphous-feedback-prompts.md`. Preserve pre-existing modified `assets/art/previews/organic-world-mire-v7.webp`. Draft images remain ignored. Save intermediate commits.
+
+---
+Earlier checkpoint (historical; latest direct feedback above governs):
+
 # Polyp — five requested corrections in progress (2026-10-27)
 
 - User accepted prior image's wet violet flesh, visible pale seams, embedded Carapacid plates and lighter radial facehugger-inspired Polypoid. User reports acceptable 50 px seam readability and grayscale contrast on the reviewed prior concept; no new game capture supplied. This does not validate subsequent revisions.
