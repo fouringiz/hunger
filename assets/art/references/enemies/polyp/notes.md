@@ -14,7 +14,7 @@ Source: user brief `/Users/home/Downloads/polyp-designer-brief.pdf`, 6 pages, da
 
 The brief explicitly requires each stage to be approved before the next. The first concrete approval item is the completed moodboard, not permission to start research.
 
-## Observable criteria, before implementation
+## Original PDF criteria (anatomical construction amended below by user)
 
 - Polyp: six distinguishable folded bodies around a seventh carrier; reads as a forced colony rather than one animal. Thick raised pale-pink fusion seams separate the lobes at 40–50 px on a 960×540 canvas.
 - Lobes: folded discs held to the carrier by their own tentacles, sewn/interwoven with neighbours. Unequal volume and orientation, no face/head/paired eyes or bilateral animal layout.
@@ -69,3 +69,11 @@ Observed in large sheet: six surrounding parent lobes; pale raised tissue bridge
 Reasons to reject/refine: Polypoid's six tentacles are still quite regular and the disc may read as a starfish; some seams are thin membranous webs rather than thick raised scar tissue; old Forager/Carapacid inclusions are not clearly identifiable at this scale. Review these with the user before declaring the anatomy final. Pure-black silhouette still hides some body boundaries at small size. Movement, living zygote pulse, continuous hatch sequence, actual lane contrast/grayscale and shared camera with platforms are pending. User owns game checks.
 
 Next: user acceptance or corrections to this COLOR concept, then the separate game-size context stage. Do not start animation/atlases or alter simulation yet.
+
+## Current user correction: A, mixed body parts
+
+Latest direct user request selects A and defines Polyp as sewn from DIFFERENT BODY PARTS of other creatures. This supersedes the earlier construction as six similar folded juveniles, and the B selection recorded by intervening work. Use A as current silhouette direction. Do not treat disparate parts as cosmetic inserts on six repeated sacs. Different material, shape and orientation must carry the body structure itself.
+
+Polypoid: facehugger-inspired low body, tense arched grasping appendages and rapid crawling feel, translated to the original radial form. User did not request a literal facehugger or authorize human anatomy.
+
+New two-subject study: `reports/generated/polyp-concept/polyp-concept-a-assemblage-v1.png`; viewer `reports/generated/polyp-concept/review-a-assemblage.html`. Exact prompt and critical review: `selected-a-assemblage-prompt.md`. Prior B studies retained as history. No game code changed. Pending user response before further concept or runtime stages.
