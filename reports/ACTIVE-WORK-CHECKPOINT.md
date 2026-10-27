@@ -1,3 +1,20 @@
+# Polyp — exact user prompt variant (2026-10-27)
+
+## Current request and saved output
+
+- User supplied a complete positive prompt and negative list for a SINGLE Polyp: six curled discs around one swollen carrier, short tendrils hugging the mass, thick pale-pink raised seams, scattered perforated amber plates, wet bruised violet flesh, neutral grey background, top-down three-quarter strategy-game view. This latest exact specification governs the new variant; do not substitute the earlier heterogeneous-parts prompt.
+- Submitted the prompt and negative verbatim to built-in image_gen with no reference images or extra creative constraints. Saved local draft: `reports/generated/polyp-concept/polyp-user-prompt-v1.png`. Exact text and inspection: `assets/art/references/enemies/polyp/polyp-user-prompt-v1.md`.
+- Large-image inspection: six peripheral folded bodies around central sac, wrapped short appendages, pale tissue connections and amber fragments present. No text or recognisable human anatomy. Awaiting user judgment on this variant; plate coverage and regular ring composition are review points.
+- No game code/behavior/runtime assets changed. Tests, actual game captures, 40–50 px readability, grayscale against the lane, camera matching and movement remain unverified. Existing modified `assets/art/previews/organic-world-mire-v7.webp` is unrelated and preserved. Draft raster remains ignored.
+
+## Next step
+
+- User reviews the exact-prompt Polyp image. Follow their correction or acceptance before further concept stages; do not ask for A/B/C again. Prior Polypoid and mixed-part concepts remain historical candidates, not accepted final designs.
+- Continue intermediate saves and user-owned game checks. No final artistic or in-game acceptance claimed.
+
+---
+Prior direction and study history (superseded for the current Polyp prompt):
+
 # Polyp A — mixed body parts / facehugger-inspired Polypoid (2026-10-27)
 
 ## Latest progress
