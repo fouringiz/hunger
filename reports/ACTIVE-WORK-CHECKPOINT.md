@@ -1,3 +1,30 @@
+# Polyp — continuous-motion preview prepared, user checks pending (2026-10-28)
+
+## Current work
+
+- User authorized continuous animation after accepting the still and six-phase motion direction, then asked to continue. Built a separate single-view mesh-deformation study; game code untouched.
+- Output: `reports/generated/polyp-continuous-motion/review.html`. Source cutout `cutout-v1.png` was generated with built-in image_gen from the accepted image, inspected as a large still and found to have alpha; subtle painted detail changes remain possible. Draft raster/HTML are ignored.
+- Implementation: `tools/polyp-motion-rig.cjs`, `tools/polyp-motion-viewer.js`, `tools/build-polyp-motion-preview.cjs`. Local tissue fields, two rigid plate patches, four staggered contacts, provisional 5.2 s loop. Contacts lie on actual mesh vertices. Body uses one texture, no cross-faded keyframe slideshow. Neutral ground scroll reveals traction; pause/scrub/speed, original pose, mesh, contacts, grayscale and 50 px view included.
+- Builder executed successfully to create the HTML. NO math tests, browser checks, screenshots or game captures run by the agent. User-run agreement remains in force. No claim of verified smoothness, no slipping or game readiness.
+- Check script: `tools/check-polyp-motion.cjs`; covers loop position/velocity, stance world points, rendered anchors, rigid patch distances, local proportion changes and sampled mesh foldovers. Negative controls must catch whole-body breathing, slipping static art and six-pose stepping.
+- Known limits: single-mesh deformation cannot invent hidden/new anatomy; source may drift from accepted paint; actual contact placement, rubber-like distortion, runtime readability/camera and performance unverified. Final multi-direction atlas layout still not agreed. No simulation/restamp needed.
+- Notes and exact source-extraction prompt: `assets/art/references/enemies/polyp/continuous-motion-v1.md`. Preserve pre-existing modified `assets/art/previews/organic-world-mire-v7.webp`.
+
+## Next step — user verification
+
+From repository root:
+
+```sh
+node --check tools/polyp-motion-viewer.js
+node tools/check-polyp-motion.cjs
+open reports/generated/polyp-continuous-motion/review.html
+```
+
+User watches complete cycles and reports output/errors or visual defects. Analyze and fix without weakening criteria. Rebuild with `node tools/build-polyp-motion-preview.cjs` after edits. Only after motion acceptance and source agreement proceed toward final sprites/actual game integration, with the required real before/after game captures, camera/grayscale checks and independent review.
+
+---
+Previous checkpoint (accepted artistic direction; implementation remains separate):
+
 # Polyp — revised silhouette and motion concept ACCEPTED (2026-10-27)
 
 ## Latest direct request and progress
