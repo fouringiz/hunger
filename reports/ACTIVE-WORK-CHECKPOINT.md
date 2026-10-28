@@ -1,3 +1,15 @@
+# Polyp — directional amoeba crawl sheet prepared (2026-10-28)
+
+- Latest direct request: six painted frames, ONE row, creature flows RIGHT via pseudopod planting and whole-body pull. Front/rear always asymmetric; radial flower/explosion is explicitly prohibited for living motion (user says it signifies death). This overrides the prior open radial colony sheet for living crawl. Keep older artifact as history only, not accepted locomotion.
+- Output: `reports/generated/polyp-directional-crawl/sheet-v1.png`; supplied reference archived beside it. Built-in image_gen, one pass using only the latest appearance reference. Exact prompt and criterion-by-criterion limits: `assets/art/references/enemies/polyp/directional-crawl-sheet-v1.md`.
+- Visible illustration: six unlabelled poses on grey, recognizable flesh/seams/sac/amber fragments, rightward reach in 2–3, lengthwise stretched flesh in 3, rightward mass transfer and rear trailing in 4, gathered 5–6; no radial open hub. User acceptance pending.
+- Exact <=1.5 envelope, 50 px-high whole-sheet silhouette readability, occluded six-lobe identity/count, shared anchor registration and smooth-cycle continuity remain unverified. No tests/browser/game captures run. Static drawing does not establish runtime behavior.
+- Source PNG stays ignored as an unapproved heavy concept. Small prompt/checkpoint files tracked. No runtime/simulation/balance changes. Prior rig revision still awaits user rerun; no new PASS claim. Unrelated organic-world-mire-v7.webp untouched.
+- Next: user reviews directional sheet and supplies specific feedback/acceptance. If integrated later, follow actual-game before/after captures, camera/grayscale/50 px/full-cycle checks and second visual review. Do not reintroduce radial flower spreading as a living crawl.
+
+---
+Previous checkpoint:
+
 # Polyp — painted six-frame colony crawl sheet prepared (2026-10-28)
 
 - Latest direct request: draw a horizontal six-frame sheet using supplied appearance and spreading-silhouette references. Persistent six heterogeneous lobes, pink seams, amber organic shell; colony spreads and gathers, no walking, same camera/light/scale, <=1.5 resting envelope, light grey background, no text. This turn produces that image, not a further mesh-rig patch.
