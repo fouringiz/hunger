@@ -1,3 +1,15 @@
+# Polypoid — toward-viewer run sheet prepared (2026-10-28)
+
+- Latest request: FRONT+ABOVE, run toward viewer/DOWN, six poses. Both required in EACH: raised arm closer/larger tip overhanging front rim, never away; long/large near catching arms vs short/small far pushing arms. Flat disk leans viewerward, six jointless/no-hook tentacles, changed heights/arm curves in adjacent phases. Same elevated camera/scale/overhead light, grey/no labels.
+- Selected output: `reports/generated/polypoid-run-toward/sheet-v3.png`; v1/v2/input archived beside it. Built-in image_gen three passes: direction, raised foreground placement, add missing sixth support. Exact prompts/limits: `assets/art/references/enemies/polyp/polypoid-run-toward-sheet-v1.md`.
+- Final tool-output illustration: two small far arms + three large near supports + one raised foreground arm in each pose; all raised tips closer/lower/overhanging, no rear antenna; low/high clearance and stance changes. Same pale disk/seam/material, no faces evident. User acceptance pending; soft curled tip/no-hook interpretation and speed/asynchrony remain artistic review items.
+- No tests/browser/game captures/thumbnail/grayscale/registered full-loop/contact checks run. Static sheet does not establish smooth run/no sliding or exact camera/light/scale/identity. No runtime/simulation/balance changes. Previous mesh-rig candidate still awaits user rerun.
+- Heavy PNGs ignored, small notes/checkpoint tracked. Older headings and unrelated organic-world-mire-v7.webp modification preserved.
+- Next: user reviews both direction cues/anatomy/running-readability. Later integration needs actual-game before/after captures, full cycle/contact, camera/grayscale/scale/readability checks and independent visual review.
+
+---
+Previous checkpoint:
+
 # Polypoid — away-running perspective revision v2 prepared (2026-10-28)
 
 - Latest user clarification: BEHIND+ABOVE, flee UP. BOTH cues mandatory each pose: raised arm bows away with far tip partly self-occluded, NEVER back at viewer; far/up arms visibly short/small vs near/down pushing arms. Same scale/camera, six smooth tentacles, flat disk, overhead material/light, no labels. Adjacent poses need varied all-arm positions/height and away-leaning disk.
