@@ -1326,13 +1326,31 @@ function staggerOf(e) {
     v = {off:(u * 2 - 1) * room, k:0.92 + 0.16 * w, phase:w}; staggerCache.set(e, v); }
   return v;
 }
+// Large bodies on the lane take the centre line. A small body whose lane position lies inside a large body's footprint
+// (along: half its drawn length in lane units, across: half its drawn body width) is pushed outward on its own side,
+// smoothly with the distance along the lane, so the stream appears to flow around it. Air bodies hover over everything.
+const LANE_LARGE_BODY = {carapacid:{along:30, across:16}, polyp:{along:22, across:14}, leech:{along:24, across:9}};
+function onLaneVisual(e) { return (e.state === 'lane' || e.state === undefined) && Number.isFinite(e.d); }
+function laneOffset(e) {
+  e = simOf(e);
+  if (!onLaneVisual(e) || LANE_LARGE_BODY[e.type]) return 0;
+  const v = staggerOf(e), fade = e.type === 'forager' ? Math.max(0, 1 - Math.abs(e.shelterOffset || 0) / 4) : 1;   // a sheltering Forager keeps its shelter spot
+  let need = 0;
+  if (!e.T.air) for (const b of S.enemies) {
+    const big = LANE_LARGE_BODY[b.type];
+    if (!big || b.dead || b.submerged || !onLaneVisual(b)) continue;
+    const t = 1 - Math.abs(b.d - e.d) / big.along; if (t <= 0) continue;
+    need = Math.max(need, (big.across + e.r * .6) * t * t * (3 - 2 * t));
+  }
+  const side = v.off > 0 || (v.off === 0 && v.phase >= .5) ? 1 : -1;
+  return side * Math.min(LANE_HALF_VISUAL - e.r * .5, Math.max(Math.abs(v.off), need)) * fade;
+}
 function visualEnemy(e) {
   if (e.__sim) return e;
   const v = staggerOf(e);
   let x = e.x, y = e.y;
-  if ((e.state === 'lane' || e.state === undefined) && Number.isFinite(e.d)) { const a = posAt(e.d + 4), b = posAt(e.d), L = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-    const fade=e.type==='forager'?Math.max(0,1-Math.abs(e.shelterOffset||0)/4):e.type==='carapacid'?0:1;
-    x += -(a.y - b.y) / L * v.off*fade; y += (a.x - b.x) / L * v.off*fade; }
+  if (onLaneVisual(e)) { const a = posAt(e.d + 4), b = posAt(e.d), L = Math.hypot(a.x - b.x, a.y - b.y) || 1, off = laneOffset(e);
+    x += -(a.y - b.y) / L * off; y += (a.x - b.x) / L * off; }
   return Object.assign(Object.create(e), {x, y, __sim:e, __k:v.k});
 }
 // Where a tracer meets a body: the drawn position, dead or alive. The killing shot must land on the drawn body too,
@@ -1365,8 +1383,8 @@ function observePortalEntries(){
     if(lane&&!(e.dead&&e.d<GATE_D)&&Number.isFinite(e.d)&&e.d>=PORTAL_ENTRY_D&&!portalByBody.has(e)){
       const fraction=old&&e.d>old.d?Math.max(0,Math.min(1,(PORTAL_ENTRY_D-old.d)/(e.d-old.d))):1;
       const at=old?old.at+(presentationTime-old.at)*fraction:presentationTime;
-      const p=posAt(PORTAL_ENTRY_D),q=posAt(PORTAL_ENTRY_D-1),L=Math.hypot(p.x-q.x,p.y-q.y)||1,stagger=staggerOf(e);
-      const hit={x:p.x-(p.y-q.y)/L*stagger.off,y:p.y+(p.x-q.x)/L*stagger.off};
+      const p=posAt(PORTAL_ENTRY_D),q=posAt(PORTAL_ENTRY_D-1),L=Math.hypot(p.x-q.x,p.y-q.y)||1,stagger=staggerOf(e),off=laneOffset(e);
+      const hit={x:p.x-(p.y-q.y)/L*off,y:p.y+(p.x-q.x)/L*off};
       const heading=enemyHeading(e),visual=visualEnemy(e);
       const snapshot={...e,x:0,y:0,d:PORTAL_ENTRY_D,__k:stagger.k,muts:e.muts.slice()};
       const pose=e.type==='forager'&&foragerMireReady()?{...foragerMirePose(visual,heading)}:null;
@@ -2262,7 +2280,8 @@ function drawAirBody(e,angle) {
 // width is the drawn width of the reference pose (right, frame 1); refWidth is its opaque width in cell px; scale is
 // the bake's source-to-cell scale, used only to match the hatching juvenile to the Polypoid it becomes.
 // Gait is driven by distance like the other crawlers: the Polyp loops frames 1-5 (6 repeats 1) in ~1.75 s at base speed,
-// the Polypoid runs all six in ~0.5 s.
+// the Polypoid runs all six in ~0.5 s. Each body starts at its own phase and runs its own tempo (0.9-1.1x the cycle
+// length), both from replayHash(wave:seq), so neighbours never crawl in lockstep.
 const POLYP_FAMILY={
   polyp:{art:()=>polypArt,columns:6,rows:5,width:48,refWidth:128,top:62,scale:.41463,loop:[0,1,2,3,4],cycle:1.75,deathRow:4,deathFrames:3},
   polypoid:{art:()=>polypoidArt,columns:6,rows:4,width:34,refWidth:224,top:30,scale:.64522,loop:[0,1,2,3,4,5],cycle:.5},
@@ -2277,14 +2296,21 @@ function polypCellSize(type){const spec=POLYP_FAMILY[type];return spec.width*POL
 function polypDraw(type,col,row,size){
   ctx.drawImage(POLYP_FAMILY[type].art(),col*POLYP_CELL,row*POLYP_CELL,POLYP_CELL,POLYP_CELL,-size/2,-size*POLYP_BASE/POLYP_CELL,size,size);
 }
-let polypMotionScene=null,polypMotion=new WeakMap();
+let polypMotionScene=null,polypMotion=new WeakMap(),polypGait=new WeakMap();
+function polypGaitOf(e){
+  let g=polypGait.get(e);
+  // FNV of keys that differ in their last character differs only by a multiple of the FNV prime (neighbouring seq got
+  // phases 0.006 apart); the murmur3 finalizer spreads every input bit over the phase and tempo bits.
+  if(!g){let h=parseInt(replayHash((e.wave||0)+':'+(e.seq||0)),16);h^=h>>>16;h=Math.imul(h,0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h=(h^h>>>16)>>>0;g={phase:(h&0xffff)/65536,tempo:.9+.2*((h>>>16)&0xffff)/65535};polypGait.set(e,g);}
+  return g;
+}
 function polypFamilyPose(e,angle){
   if(polypMotionScene!==S){polypMotionScene=S;polypMotion=new WeakMap();}
   const body=simOf(e),spec=POLYP_FAMILY[e.type],x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=Number.isFinite(e.d)?e.d:0;
   let p=polypMotion.get(body);
   if(!p){p={x,y,d,distance:Math.max(0,d)};polypMotion.set(body,p);}
   else{p.distance+=e.state==='lane'||e.state===undefined?Math.abs(d-p.d):Math.hypot(x-p.x,y-p.y);p.x=x;p.y=y;p.d=d;}
-  const stride=e.T.speed*spec.cycle,phase=(p.distance/stride+staggerOf(body).phase)%1;
+  const own=polypGaitOf(body),stride=e.T.speed*spec.cycle*own.tempo,phase=(p.distance/stride+own.phase)%1;
   return {row:(Math.round(angle/(Math.PI/2))%4+4)%4,frame:spec.loop[Math.min(spec.loop.length-1,Math.floor(phase*spec.loop.length))]};
 }
 // A dying Polyp leaves the simulation in the same update; its burst is a frozen presentation snapshot at the drawn death
