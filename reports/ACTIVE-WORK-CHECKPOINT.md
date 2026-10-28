@@ -1,3 +1,15 @@
+# Polyp — away-from-camera crawl sheet prepared (2026-10-28)
+
+- Latest user request: same six-phase sheet and creature, now crawls AWAY into depth toward SCREEN UP. Layout remains six frames in ONE horizontal row. Same elevated three-quarter camera/scale, strictly overhead light, light grey, no text; no radial spreading.
+- Output: `reports/generated/polyp-away-crawl/sheet-v1.png`; input archived alongside. Built-in image_gen, one pass from user-attached rightward cycle. Exact prompt and limits: `assets/art/references/enemies/polyp/away-crawl-sheet-v1.md`.
+- Generated illustration shows upward leading reach in 2–3, stretched lengthwise body, lower-screen trailing tissue in 4 and compact 5–6. Six complete poses, recognizable pink seams/blue sac/folds/amber pieces, no radial flower hub. User acceptance pending.
+- Strict overhead illumination, camera/scale consistency, hidden six-lobe identity, <=1.5 envelope and registered displacement remain review/unmeasured items. No tests/browser/game captures/50 px/grayscale/continuous animation checks run. No claim of game readiness or verified motion.
+- Heavy draft PNG ignored; small notes/checkpoint tracked. No runtime/simulation/balance changes; prior rig correction still awaiting user rerun. Unrelated organic-world-mire-v7.webp untouched.
+- Next: user reviews away-heading sheet; follow specific feedback. Preserve heading distinction and overhead light. Runtime integration later still needs game captures, full-cycle/camera/grayscale/readability evidence and independent visual review.
+
+---
+Previous checkpoint:
+
 # Polyp — directional amoeba crawl sheet prepared (2026-10-28)
 
 - Latest direct request: six painted frames, ONE row, creature flows RIGHT via pseudopod planting and whole-body pull. Front/rear always asymmetric; radial flower/explosion is explicitly prohibited for living motion (user says it signifies death). This overrides the prior open radial colony sheet for living crawl. Keep older artifact as history only, not accepted locomotion.
