@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.12</title>
+<title>Ultimate TD — core loop prototype v0.13</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,10 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.13 (presentation only, rules and source fingerprints unchanged): the Polyp, its zygotes and the Polypoid are drawn
+// from baked atlases (assets/hunger-polyp-v1.webp, hunger-polypoid-v1.webp, hunger-zygote-v1.webp). The Polyp crawls in four
+// directions and bursts in three frames where it dies; a zygote rests and pulses, then hatches over its last 0.15 s; the
+// Polypoid runs in four directions. The sheets' ground shadows were removed offline and no shadow is drawn in code.
 // v0.12: the Polyp bursts into six zygotes where it dies; zygote i hatches a Polypoid (40 HP, speed 56, bounty 3, gate 1)
 // POLYP_HATCH[i] seconds later. Zygotes are not bodies: untargetable, untouched by damage, and they keep their wave open.
 // v0.11: the Leech hunts beneath the ooze (passport v2.15). From the moment it picks a generator it is submerged:
@@ -767,7 +771,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12','prototype-v0.13'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -828,7 +832,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.12',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.13',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -1234,6 +1238,12 @@ const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
 if (carapacidShelterArt) carapacidShelterArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-carapacid-shelter-v1.webp';
 const leechMireArt = typeof Image === 'undefined' ? null : new Image();
 if (leechMireArt) leechMireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-mire-v1.webp';
+const polypArt = typeof Image === 'undefined' ? null : new Image();
+if (polypArt) polypArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-polyp-v1.webp';
+const polypoidArt = typeof Image === 'undefined' ? null : new Image();
+if (polypoidArt) polypoidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-polypoid-v1.webp';
+const zygoteArt = typeof Image === 'undefined' ? null : new Image();
+if (zygoteArt) zygoteArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-zygote-v1.webp';
 const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
 if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
 const foragerMireArt = typeof Image === 'undefined' ? null : new Image();
@@ -1384,12 +1394,14 @@ function enemyHeading(e) {
 const AIR_HOVER = 26;                                  // drawAirBody lifts the body this far above its shadow
 function enemyBodyHeight(e) {
   if (e.T.air) return AIR_HOVER + e.r*1.1 + 2;
+  if ((e.type === 'polyp' || e.type === 'polypoid') && polypFamilyReady(e.type)) return polypCellSize(e.type)*(POLYP_BASE-POLYP_FAMILY[e.type].top)/POLYP_CELL;
   if (e.type === 'polyp' || e.type === 'polypoid') return e.r + 2;
   if (e.type === 'forager' && foragerMireReady()) return 44;
   return groundActorMetrics(e.type).height;
 }
 function enemyBodyPoint(e) {
   if (e.T.air) return {x:e.x, y:e.y - AIR_HOVER};
+  if ((e.type === 'polyp' || e.type === 'polypoid') && polypFamilyReady(e.type)) return {x:e.x, y:e.y - enemyBodyHeight(e)*.48};
   if (e.type === 'polyp' || e.type === 'polypoid') return {x:e.x, y:e.y};
   return {x:e.x, y:e.y - groundActorMetrics(e.type).height*.48};
 }
@@ -2245,7 +2257,54 @@ function drawAirBody(e,angle) {
   ctx.fillStyle='#ff6b6b';ctx.beginPath();ctx.arc(e.r*.9,0,2,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
+// v0.13: the Polyp family is drawn from baked atlases (tools/bake-polyp-family.cjs; frame tables beside each atlas).
+// One scale and one ground anchor (cell x 128, y 208) per family; rows right/down/left/up, left mirrored offline.
+// width is the drawn width of the reference pose (right, frame 1); refWidth is its opaque width in cell px; scale is
+// the bake's source-to-cell scale, used only to match the hatching juvenile to the Polypoid it becomes.
+// Gait is driven by distance like the other crawlers: the Polyp loops frames 1-5 (6 repeats 1) in ~1.75 s at base speed,
+// the Polypoid runs all six in ~0.5 s.
+const POLYP_FAMILY={
+  polyp:{art:()=>polypArt,columns:6,rows:5,width:48,refWidth:128,top:62,scale:.41463,loop:[0,1,2,3,4],cycle:1.75,deathRow:4,deathFrames:3},
+  polypoid:{art:()=>polypoidArt,columns:6,rows:4,width:34,refWidth:224,top:30,scale:.64522,loop:[0,1,2,3,4,5],cycle:.5},
+  zygote:{art:()=>zygoteArt,columns:5,rows:1,width:14,refWidth:92,scale:.30024,hatch:.15}
+};
+const POLYP_CELL=256,POLYP_BASE=208,POLYP_DEATH_TIME=.3;   // the burst plays over the existing 0.3 s death effect time
+function polypFamilyReady(type){
+  const spec=POLYP_FAMILY[type],art=spec&&spec.art();
+  return !!(art&&art.complete&&art.naturalWidth>=POLYP_CELL*spec.columns&&art.naturalHeight>=POLYP_CELL*spec.rows);
+}
+function polypCellSize(type){const spec=POLYP_FAMILY[type];return spec.width*POLYP_CELL/spec.refWidth;}
+function polypDraw(type,col,row,size){
+  ctx.drawImage(POLYP_FAMILY[type].art(),col*POLYP_CELL,row*POLYP_CELL,POLYP_CELL,POLYP_CELL,-size/2,-size*POLYP_BASE/POLYP_CELL,size,size);
+}
+let polypMotionScene=null,polypMotion=new WeakMap();
+function polypFamilyPose(e,angle){
+  if(polypMotionScene!==S){polypMotionScene=S;polypMotion=new WeakMap();}
+  const body=simOf(e),spec=POLYP_FAMILY[e.type],x=Number.isFinite(e.x)?e.x:0,y=Number.isFinite(e.y)?e.y:0,d=Number.isFinite(e.d)?e.d:0;
+  let p=polypMotion.get(body);
+  if(!p){p={x,y,d,distance:Math.max(0,d)};polypMotion.set(body,p);}
+  else{p.distance+=e.state==='lane'||e.state===undefined?Math.abs(d-p.d):Math.hypot(x-p.x,y-p.y);p.x=x;p.y=y;p.d=d;}
+  const stride=e.T.speed*spec.cycle,phase=(p.distance/stride+staggerOf(body).phase)%1;
+  return {row:(Math.round(angle/(Math.PI/2))%4+4)%4,frame:spec.loop[Math.min(spec.loop.length-1,Math.floor(phase*spec.loop.length))]};
+}
+// A dying Polyp leaves the simulation in the same update; its burst is a frozen presentation snapshot at the drawn death
+// point (as the portal entry is): three frames over POLYP_DEATH_TIME, nothing else. The zygotes are the simulation's own.
+let polypDeathScene=null,polypAlive=new Set(),polypDeaths=[];
+function observePolypDeaths(){
+  if(polypDeathScene!==S){polypDeathScene=S;polypAlive=new Set();polypDeaths=[];}
+  polypDeaths=polypDeaths.filter(event=>presentationTime-event.at<POLYP_DEATH_TIME);
+  const alive=new Set(S.enemies.filter(e=>e.type==='polyp'&&!e.dead));
+  for(const e of polypAlive)if(!alive.has(e)&&e.dead&&e.d<GATE_D&&polypFamilyReady('polyp')){
+    const v=visualEnemy(e);polypDeaths.push({at:presentationTime,x:v.x,y:v.y,k:v.__k||1});
+  }
+  polypAlive=alive;
+}
+function drawPolypDeath(event){
+  const spec=POLYP_FAMILY.polyp,frame=Math.min(spec.deathFrames-1,Math.floor((presentationTime-event.at)/POLYP_DEATH_TIME*spec.deathFrames));
+  ctx.save();ctx.translate(event.x,event.y);ctx.scale(event.k,event.k);polypDraw('polyp',frame,spec.deathRow,polypCellSize('polyp'));ctx.restore();
+}
 function drawPolypBody(e,angle) {
+  if(polypFamilyReady(e.type)){const pose=polypFamilyPose(e,angle);polypDraw(e.type,pose.frame,pose.row,polypCellSize(e.type));return;}
   const n=e.type==='polyp'?7:4,puls=1+Math.sin(presentationTime*4+e.d*.1)*.04;
   ctx.save();ctx.scale(puls,1/puls);
   ctx.fillStyle=e.T.color;ctx.beginPath();ctx.ellipse(0,0,e.r*1.15,e.r*.95,angle,0,Math.PI*2);ctx.fill();
@@ -2261,7 +2320,19 @@ function zygotePose(z) {
   const a = posAt(Math.max(0, z.d - 2)), b = posAt(z.d + 2), len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
   return {x: z.x - (b.y - a.y) / len * z.side, y: z.y + (b.x - a.x) / len * z.side};
 }
+// v0.13: the resting zygote is atlas frame 1, pulsing 1 ± 0.05 faster toward its hatch; frames 2-5 play over the last
+// spec.hatch seconds while the drawing grows to the scale at which the juvenile in frame 5 matches the Polypoid that
+// replaces it on the hatch tick.
 function drawZygote(z) {
+  if(polypFamilyReady('zygote')){
+    const spec=POLYP_FAMILY.zygote,pose=zygotePose(z),left=Math.max(0,z.t),size=polypCellSize('zygote');
+    const grown=POLYP_FAMILY.polypoid.scale*polypCellSize('polypoid')/(spec.scale*size);
+    let frame=0,k;
+    if(left>spec.hatch)k=1+Math.sin(presentationTime*(3+5*(1-left/z.max))+z.idx*1.3)*.05;
+    else{const u=1-left/spec.hatch;frame=1+Math.min(3,Math.floor(u*4));k=1+(grown-1)*u*u;}
+    ctx.save();ctx.translate(pose.x,pose.y);ctx.scale(k,k);polypDraw('zygote',frame,0,size);ctx.restore();
+    return;
+  }
   const pose=zygotePose(z), left=Math.max(0,z.t), open=Math.max(0,1-left/0.15), rate=3+5*(1-left/z.max), puls=1+Math.sin(presentationTime*rate+z.idx*1.3)*.06;
   const w=4.5*(1+open*.9)*puls, h=8*(1-open*.35)/puls;
   ctx.save();ctx.translate(pose.x,pose.y-h*.9);ctx.globalAlpha=1-open*.85;
@@ -2283,7 +2354,7 @@ function enemyArt(e) {
   const angle=enemyHeading(e);
   ctx.save();ctx.translate(e.x,e.y);
   if(e.__k) ctx.scale(e.__k,e.__k);                                   // own size within ±8%
-  if((e.type!=='forager'||!foragerMireReady())&&!creatureMireReady(e)){
+  if((e.type!=='forager'||!foragerMireReady())&&!creatureMireReady(e)&&!polypFamilyReady(e.type)){   // the Polyp sheets' shadows were removed on purpose
     ctx.fillStyle='#00000065';ctx.beginPath();ctx.ellipse(0,0,e.r+2,Math.max(2,e.r*.2),0,0,Math.PI*2);ctx.fill();
   }
   drawEnemyBody(e,angle);
@@ -2684,6 +2755,7 @@ function drawPortalEntry(event){
 }
 function draw() {
   observePortalEntries();
+  observePolypDeaths();
   observeConstruction();
   buttons = [];
   ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);
@@ -2735,6 +2807,7 @@ function draw() {
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygotePose(zygote).y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
+  for(const event of polypDeaths)actors.push({y:event.y,polypDeath:event});
   if (INFANTRY_TRIAL) {
     for (const t of S.towers) if (t.type==='barracks' && !t.selling) for (const soldier of t.soldiers) if (soldier.alive) actors.push({y:soldierPresentationPoint(soldier,t).y,soldier,tower:t});
   }
@@ -2742,6 +2815,7 @@ function draw() {
   actors.sort((a,b)=>a.y-b.y);
   for (const actor of actors) {
     if(actor.portal){drawPortalEntry(actor.portal);continue;}
+    if(actor.polypDeath){drawPolypDeath(actor.polypDeath);continue;}
     if(actor.platform){platformFront(actor.platform);continue;}
     if(actor.zygote){drawZygote(actor.zygote);continue;}
     if(actor.gatePart){
@@ -2836,6 +2910,7 @@ function draw() {
     ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = 'rgba(255,174,66,0.25)'; ctx.beginPath(); ctx.arc(sh.tx, sh.ty, 6, 0, Math.PI*2); ctx.fill(); }
   for (const f of S.fx) { if(f.kind==='leak')continue; // Blue teleport owns this visual; the simulation leak event stays intact.
+    if(f.kind==='death'&&f.color===ENEMY.polyp.color&&polypFamilyReady('polyp'))continue;   // the atlas burst owns the Polyp's death
     const k = f.life / f.max; ctx.globalAlpha = k; ctx.strokeStyle = f.color; ctx.lineWidth = 2;
     if (f.kind === 'frag') { ctx.beginPath(); ctx.moveTo(f.x, f.y - 22*k); ctx.lineTo(f.x, f.y); ctx.stroke();   // a fragment streaks down
       ctx.fillStyle = f.color; ctx.beginPath(); ctx.arc(f.x, f.y, f.r*(1.6-k), 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; continue; }

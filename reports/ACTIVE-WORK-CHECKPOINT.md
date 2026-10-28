@@ -1,3 +1,16 @@
+# Polyp family atlases integrated — prototype v0.13 (2026-10-28)
+
+- Branch `codex/polyp-family-atlases`. Presentation only. `tools/bake-polyp-family.cjs` (sibling of the crawl bake for one-row, variable-frame sheets on grey matte) bakes `assets/hunger-{polyp,polypoid,zygote}-v1.webp` + `.frames.json`: border flood by colour distance with a soft unblended edge, boundary-connected desaturated-darker shadow removal, enclosed matte pockets >=600 px, one scale + ground anchor (128,208) per family, left = mirrored right, lossless WebP via `encode-creature-atlas.py`.
+- Documented exceptions (tool + frame table): death clip resized once x0.7725 so its frame 1 matches crawl frame 1 (the source draws it 1.29x wider); burst frames 2-3 use smaller shadow-inclusive pockets and shadow chroma 10; zygote frame 5 anchored on the juvenile, not the husk.
+- Game: atlas draw for Polyp (distance-driven, loop frames 1-5, 1.75 s at base speed, 48 px), Polypoid (0.5 s, 34 px), zygote (14 px at rest, pulse 1±0.05 with rising rate; frames 2-5 over the last 0.15 s, growing to Polypoid scale); death = frozen 3-frame snapshot over 0.3 s at the drawn death point, generic Polyp death ring hidden; no code shadow. Vector bodies remain the fallback without atlases. Replay exports tagged prototype-v0.13 (validator accepts it; test updated).
+- Verified by the agent (user asked for these checks): `npm test` all passed incl. new `tests/polyp-family-art.cjs`; rules 9d3c412e / source 5750d1fe equal `reports/carapacid-shelter/simulation-baseline.json`; `tools/restamp-replays.cjs` dry run: 0 to re-stamp. Frames from `node tools/capture-polyp-family.cjs` -> `reports/generated/polyp-family/{before,after}-*` (colour + greyscale), reviewed by the agent.
+- Known defects: small notch in the lavender lobe and faint grey traces under two lobes in burst frame 3; tiny dark contact dots under some Polypoid feet (down row); hatch->Polypoid hand-over shifts sideways ~7 lane units (zygote side offset vs Polypoid lane stagger) and the husk vanishes; zygotes are visible under the 0.3 s burst; the map has no leftward lane, so the left crawl was captured with a forced heading.
+- Not verified: game opened from disk (`file://`) in a real browser with a console check; independent second review of the frames (required before merge).
+- Next: user review of frames, browser check from disk, second-look review, PR.
+
+---
+Previous checkpoint:
+
 # Polyp family — eight selected source sheets archived (2026-10-28)
 
 - User explicitly requested eight named PNGs in `assets/art/sources/`. Copied the latest selected versions byte-for-byte; PNG headers/dimensions read and destination SHA-256 matched each source. No resizing, repainting, slicing, background removal or runtime integration.

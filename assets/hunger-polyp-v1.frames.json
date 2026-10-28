@@ -1,0 +1,653 @@
+{
+ "version": 1,
+ "kind": "polyp",
+ "atlas": "hunger-polyp-v1.webp",
+ "cell": 256,
+ "columns": 6,
+ "rows": 5,
+ "anchor": [
+  128,
+  208
+ ],
+ "angleConvention": "clockwise screen angle, zero=right; left is the mirrored right",
+ "scale": 0.41463,
+ "notes": "One scale and one ground anchor for the whole family (a clip with clipScale is additionally resized once as a whole, see its note). Matte and generated ground shadows removed offline; the game adds no shadow. Presentation only, not a collision shape.",
+ "clips": [
+  {
+   "clip": "crawl",
+   "direction": "right",
+   "row": 0,
+   "frames": 6,
+   "source": "assets/art/sources/polyp-crawl-right-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "note": "frame 6 duplicates frame 1 and is skipped in the loop",
+   "split": "between largest silhouettes",
+   "shadowPixelsRemoved": 23660,
+   "background": [
+    196,
+    195,
+    195
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      65,
+      100,
+      128,
+      108
+     ],
+     "sourceRect": [
+      27,
+      231,
+      309,
+      262
+     ]
+    },
+    {
+     "x": 256,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      63,
+      101,
+      147,
+      107
+     ],
+     "sourceRect": [
+      363,
+      232,
+      354,
+      258
+     ]
+    },
+    {
+     "x": 512,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      43,
+      110,
+      201,
+      98
+     ],
+     "sourceRect": [
+      701,
+      231,
+      484,
+      238
+     ]
+    },
+    {
+     "x": 768,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      29,
+      113,
+      177,
+      95
+     ],
+     "sourceRect": [
+      1127,
+      247,
+      426,
+      230
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      45,
+      109,
+      142,
+      99
+     ],
+     "sourceRect": [
+      1534,
+      249,
+      342,
+      239
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      74,
+      105,
+      107,
+      103
+     ],
+     "sourceRect": [
+      1897,
+      240,
+      260,
+      250
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "crawl",
+   "direction": "down",
+   "row": 1,
+   "frames": 6,
+   "source": "assets/art/sources/polyp-crawl-down-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "note": "frame 6 duplicates frame 1 and is skipped in the loop",
+   "split": "empty columns",
+   "shadowPixelsRemoved": 40335,
+   "background": [
+    195,
+    195,
+    196
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      60,
+      74,
+      135,
+      134
+     ],
+     "sourceRect": [
+      32,
+      186,
+      327,
+      325
+     ]
+    },
+    {
+     "x": 256,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      58,
+      37,
+      135,
+      171
+     ],
+     "sourceRect": [
+      391,
+      161,
+      327,
+      414
+     ]
+    },
+    {
+     "x": 512,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      60,
+      7,
+      132,
+      201
+     ],
+     "sourceRect": [
+      751,
+      107,
+      319,
+      486
+     ]
+    },
+    {
+     "x": 768,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      57,
+      22,
+      136,
+      186
+     ],
+     "sourceRect": [
+      1080,
+      125,
+      328,
+      451
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      58,
+      65,
+      146,
+      143
+     ],
+     "sourceRect": [
+      1430,
+      172,
+      352,
+      346
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      61,
+      72,
+      134,
+      136
+     ],
+     "sourceRect": [
+      1825,
+      196,
+      324,
+      328
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "crawl",
+   "direction": "left",
+   "row": 2,
+   "frames": 6,
+   "source": "assets/art/sources/polyp-crawl-right-v1.png (mirrored)",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "note": "frame 6 duplicates frame 1 and is skipped in the loop",
+   "split": "between largest silhouettes",
+   "shadowPixelsRemoved": 23660,
+   "background": [
+    196,
+    195,
+    195
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      63,
+      100,
+      128,
+      108
+     ],
+     "sourceRect": [
+      27,
+      231,
+      309,
+      262
+     ]
+    },
+    {
+     "x": 256,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      46,
+      101,
+      147,
+      107
+     ],
+     "sourceRect": [
+      363,
+      232,
+      354,
+      258
+     ]
+    },
+    {
+     "x": 512,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      12,
+      110,
+      201,
+      98
+     ],
+     "sourceRect": [
+      701,
+      231,
+      484,
+      238
+     ]
+    },
+    {
+     "x": 768,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      50,
+      113,
+      177,
+      95
+     ],
+     "sourceRect": [
+      1127,
+      247,
+      426,
+      230
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      69,
+      109,
+      142,
+      99
+     ],
+     "sourceRect": [
+      1534,
+      249,
+      342,
+      239
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      75,
+      105,
+      107,
+      103
+     ],
+     "sourceRect": [
+      1897,
+      240,
+      260,
+      250
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "crawl",
+   "direction": "up",
+   "row": 3,
+   "frames": 6,
+   "source": "assets/art/sources/polyp-crawl-up-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "note": "frame 6 duplicates frame 1 and is skipped in the loop",
+   "split": "empty columns",
+   "shadowPixelsRemoved": 44516,
+   "background": [
+    195,
+    194,
+    194
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      60,
+      62,
+      141,
+      146
+     ],
+     "sourceRect": [
+      29,
+      241,
+      342,
+      352
+     ]
+    },
+    {
+     "x": 256,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      59,
+      29,
+      143,
+      179
+     ],
+     "sourceRect": [
+      405,
+      144,
+      344,
+      432
+     ]
+    },
+    {
+     "x": 512,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      68,
+      4,
+      126,
+      204
+     ],
+     "sourceRect": [
+      784,
+      83,
+      305,
+      493
+     ]
+    },
+    {
+     "x": 768,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      66,
+      27,
+      120,
+      181
+     ],
+     "sourceRect": [
+      1129,
+      124,
+      290,
+      437
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      64,
+      65,
+      131,
+      143
+     ],
+     "sourceRect": [
+      1470,
+      151,
+      316,
+      346
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      62,
+      60,
+      132,
+      148
+     ],
+     "sourceRect": [
+      1832,
+      176,
+      320,
+      359
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "death",
+   "row": 4,
+   "frames": 3,
+   "source": "assets/art/sources/polyp-death-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3
+   ],
+   "note": "seams flare, lobes part, full burst; source frames 4-5 are reference only. The death sheet draws the Polyp 1.29x wider than the crawl sheets, so the whole clip is resized once to match its frame 1 to crawl frame 1 (no size jump at death); frames 2-3 keep their size relative to frame 1",
+   "split": "empty columns",
+   "clipScale": 0.7725,
+   "shadowPixelsRemoved": 60115,
+   "background": [
+    193,
+    193,
+    192
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 1024,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      62,
+      90,
+      128,
+      118
+     ],
+     "sourceRect": [
+      13,
+      186,
+      400,
+      370
+     ]
+    },
+    {
+     "x": 256,
+     "y": 1024,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      62,
+      89,
+      125,
+      125
+     ],
+     "sourceRect": [
+      426,
+      178,
+      391,
+      391
+     ]
+    },
+    {
+     "x": 512,
+     "y": 1024,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      44,
+      82,
+      166,
+      136
+     ],
+     "sourceRect": [
+      826,
+      149,
+      520,
+      426
+     ]
+    }
+   ]
+  }
+ ]
+}
