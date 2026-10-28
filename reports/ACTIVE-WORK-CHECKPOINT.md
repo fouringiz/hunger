@@ -1,3 +1,14 @@
+# Follow-up on PR #67: Polyp gait de-sync and lateral flow-around (2026-10-28)
+
+- Presentation only, same branch. Polyp/Polypoid gait phase and tempo (0.9-1.1x cycle length) from replayHash(wave:seq) passed through a murmur3 finalizer: raw FNV of `6:0`/`6:1` differs only by the FNV prime, which put neighbouring phases 0.006 apart (measured 30% differing frames; 0 lockstep pairs of 60 after the fix).
+- `laneOffset(e)`: Carapacid, Polyp and Leech on the lane are drawn on the centre line; small ground bodies inside a large body's footprint (`LANE_LARGE_BODY` along/across, lane units) are pushed out on their own hash side with a smooth falloff, capped at LANE_HALF_VISUAL - r/2; air bodies and sheltering Foragers are not pushed. Portal entry uses the same offset. Depth sort is unchanged (it already used the drawn foot y).
+- Verified by the agent: `npm test` all passed incl. new `tests/lane-flow-stagger.cjs` (fails on the pre-fix hash and on no-push); fingerprints 9d3c412e / 5750d1fe at baseline; restamp dry run 0. Crowd frames (2 Polyps + 18 Foragers): `reports/generated/polyp-family/{before,after}-crowd-*`.
+- Known limitation: Foragers pushed to the far side are drawn behind the ~40 px tall Polyp and are mostly hidden by it; the lane is narrower than the Polyp sprite, so there is no room to clear it fully.
+- Still not verified: `file://` browser console check; independent second review of the frames.
+
+---
+Previous checkpoint:
+
 # Polyp family atlases integrated — prototype v0.13 (2026-10-28)
 
 - Branch `codex/polyp-family-atlases`. Presentation only. `tools/bake-polyp-family.cjs` (sibling of the crawl bake for one-row, variable-frame sheets on grey matte) bakes `assets/hunger-{polyp,polypoid,zygote}-v1.webp` + `.frames.json`: border flood by colour distance with a soft unblended edge, boundary-connected desaturated-darker shadow removal, enclosed matte pockets >=600 px, one scale + ground anchor (128,208) per family, left = mirrored right, lossless WebP via `encode-creature-atlas.py`.

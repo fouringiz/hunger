@@ -13,7 +13,7 @@ const CROP=[110,110],PX=2,ZOOM=3;   // crop in lane units around the body; devic
 
 async function scenes(world){
  const {canvas,run}=world,rows={},step=dt=>{run(`update(${dt});presentationTime+=${dt};`);const before=run('replaySignature()');run('draw();');assert.equal(run('replaySignature()'),before,'rendering is read-only');};
- const shoot=(scene,at)=>{(rows[scene]||(rows[scene]=[])).push(crop(canvas,at));};
+ const shoot=(scene,at,size,above)=>{(rows[scene]||(rows[scene]=[])).push(crop(canvas,at,size,above));};
  const where=code=>JSON.parse(run(`JSON.stringify((()=>{${code}})())`));
  // Lane points whose tangent is closest to each screen direction, away from the lane ends and the Gate.
  const lanes=where(`const best={};for(let d=60;d<GATE_D-120;d+=2){const p=posAt(d+4),q=posAt(d),a=Math.atan2(p.y-q.y,p.x-q.x);
@@ -50,14 +50,18 @@ async function scenes(world){
  for(let i=0;i<4;i++){step(.15/4);shoot('hatch',z);}                              // frames 2-5 of the first hatch
  step(2/60);shoot('hatch',z);                                                      // the Polypoid has replaced it
  assert.ok(first>0.15,'the first hatch leaves a resting phase');
+ // Crowd: two Polyps and a Forager stream overtaking them on the same stretch, wide crop, six samples 0.25 s apart.
+ run(field+`S.enemies=[${body('polyp',d-20,4)},${body('polyp',d+25,5)},`+Array.from({length:18},(_,i)=>body('forager',d-110+i*13,20+i)).join(',')+'];draw();');
+ const centre=where(`return posAt(${d});`);
+ for(let i=0;i<6;i++){for(let k=0;k<15;k++)step(1/60);shoot('crowd',centre,[250,130],.55);}
  return {rows,lanes};
 }
-function crop(canvas,at){
- const w=CROP[0]*PX,h=CROP[1]*PX,c=createCanvas(w,h);
- c.getContext('2d').drawImage(canvas,Math.round((at.x-CROP[0]/2)*PX),Math.round((at.y-CROP[1]*.72)*PX),w,h,0,0,w,h);return c;
+function crop(canvas,at,size=CROP,above=.72){
+ const w=size[0]*PX,h=size[1]*PX,c=createCanvas(w,h);
+ c.getContext('2d').drawImage(canvas,Math.round((at.x-size[0]/2)*PX),Math.round((at.y-size[1]*above)*PX),w,h,0,0,w,h);return c;
 }
 function sheet(cells,file){
- const w=CROP[0]*PX,h=CROP[1]*PX,out=createCanvas(w*cells.length,h*2),g=out.getContext('2d');
+ const w=cells[0].width,h=cells[0].height,out=createCanvas(w*cells.length,h*2),g=out.getContext('2d');
  cells.forEach((c,i)=>{g.drawImage(c,i*w,0);g.drawImage(c,i*w,h);});
  const img=g.getImageData(0,h,out.width,h),p=img.data;
  for(let k=0;k<p.length;k+=4){const l=Math.round(.299*p[k]+.587*p[k+1]+.114*p[k+2]);p[k]=p[k+1]=p[k+2]=l;}
