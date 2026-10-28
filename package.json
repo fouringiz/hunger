@@ -3,7 +3,8 @@
   "private": true,
   "description": "Ultimate TD prototype: tests and art tools. The game itself needs no install.",
   "scripts": {
-    "test": "for f in tests/*.cjs; do node \"$f\" >/dev/null || { echo \"FAIL $f\"; exit 1; }; done; echo 'all tests passed'"
+    "test": "for f in tests/*.cjs; do node \"$f\" >/dev/null || { echo \"FAIL $f\"; exit 1; }; done; echo 'all tests passed'",
+    "test:slow": "for f in tests/slow/*.cjs; do node \"$f\" >/dev/null || { echo \"FAIL $f\"; exit 1; }; done; echo 'all slow tests passed'"
   },
   "devDependencies": {
     "@napi-rs/canvas": "1.0.10"

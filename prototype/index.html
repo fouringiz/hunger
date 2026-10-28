@@ -16,6 +16,10 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.14 (presentation only, rules and source fingerprints unchanged): the Leech's hunt beneath the skin, its surfacing and
+// the wound it leaves are drawn from assets/hunger-leech-surfacing-v1.webp. Under the skin and in surfacing frames 1-2 it
+// lies on a ground layer under the platforms, towers and units; frames 3-8 stand on the unit layer; frame 8 hands over to
+// the crawl atlas and leaves a wound decal that heals and fades over 8 s of simulation time.
 // v0.13 (presentation only, rules and source fingerprints unchanged): the Polyp, its zygotes and the Polypoid are drawn
 // from baked atlases (assets/hunger-polyp-v1.webp, hunger-polypoid-v1.webp, hunger-zygote-v1.webp). The Polyp crawls in four
 // directions and bursts in three frames where it dies; a zygote rests and pulses, then hatches over its last 0.15 s; the
@@ -771,7 +775,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12','prototype-v0.13'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12','prototype-v0.13','prototype-v0.14'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -832,7 +836,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.13',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.14',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -1238,6 +1242,8 @@ const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
 if (carapacidShelterArt) carapacidShelterArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-carapacid-shelter-v1.webp';
 const leechMireArt = typeof Image === 'undefined' ? null : new Image();
 if (leechMireArt) leechMireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-mire-v1.webp';
+const leechSurfacingArt = typeof Image === 'undefined' ? null : new Image();
+if (leechSurfacingArt) leechSurfacingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-surfacing-v1.webp';
 const polypArt = typeof Image === 'undefined' ? null : new Image();
 if (polypArt) polypArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-polyp-v1.webp';
 const polypoidArt = typeof Image === 'undefined' ? null : new Image();
@@ -1312,6 +1318,132 @@ function groundActorMetrics(type) {
   const width=type==='carapacid'?58:type==='leech'?43:34;
   return {index,r,width,height:r[3]/r[2]*width};
 }
+// v0.14 (presentation only): the Leech's hunt beneath the skin, its surfacing and the wound it leaves, drawn from
+// assets/hunger-leech-surfacing-v1.webp (tools/bake-leech-surfacing.cjs; frame table beside it). Row 0: emergence frames
+// 1-8, column 8 = frame 8's wound alone; row 1: wound frames 1-4. Every cell is anchored at its wound centre.
+// px: game px per emergence cell px — frame 8's lying worm (214.5 cell px) as long as the crawl atlas body (160 of 256
+// cell px drawn at 80). handoff: where the crawl body is drawn from the wound when frame 8 hands over (frame 8's worm centre
+// and ground line minus the crawl cell's; mirrored with the clip); it fades out over handoffFade units of crawl.
+// woundPx: game px per wound cell px, so wound frame 1 matches frame 8's wound (skirt half-width 66 vs 183 source px).
+// The clip only topples right; a hunt heading left plays it mirrored. Timings read simulation time (S.time, e.surfaceT).
+const LEECH_SURFACING = {cell:256, columns:9, rows:2, anchor:[84,199], woundAnchor:[112,78], px:50/214.5, woundPx:.1263,
+  handoff:{dx:14.1, dy:8.2}, handoffFade:30,
+  underFrame:.35, underDissolve:.15, underTilt:.5, foreshorten:.6, flash:.15, flashDark:.45,
+  woundStart:.4, wound:[2.0, .8, 2.2, 2.0], woundDissolve:.5, woundFade:1.0,
+  woundTone:[[.62,.25], [.6,.28], [.55,.32], [.42,.38]]};   // per wound frame [opacity, darkening]: a decal never outshines a Leech in greyscale
+function leechSurfacingReady() {
+  const L=LEECH_SURFACING;
+  return !!(leechSurfacingArt&&leechSurfacingArt.complete&&leechSurfacingArt.naturalWidth>=L.cell*L.columns&&leechSurfacingArt.naturalHeight>=L.cell*L.rows);
+}
+function leechWoundLife() { const L=LEECH_SURFACING; return L.wound.reduce((a,b)=>a+b,0)+L.woundFade; }
+function leechEmergenceFrame(e) {
+  return Math.max(0,Math.min(7,Math.floor((BUILD_WARMUP_SECONDS-e.surfaceT)/BUILD_WARMUP_SECONDS*8)));
+}
+function leechFacesLeft(e) { return !!(e.gen&&e.gen.x<e.x); }
+// Watches the simulation from draw(): the collateral hits a submerged Leech takes, and the end of each surfacing, which
+// leaves a wound decal at the surfacing point (independent of the Leech from then on) and hands the body over to the crawl.
+let leechSurfacingScene=null,leechWatch=new Map(),leechWounds=[],leechHandoff=new WeakMap();
+function observeLeechSurfacing() {
+  if(leechSurfacingScene!==S){leechSurfacingScene=S;leechWatch=new Map();leechWounds=[];leechHandoff=new WeakMap();}
+  leechWounds=leechWounds.filter(w=>S.time-w.at<leechWoundLife()&&w.at<=S.time+1e-9);
+  const alive=new Set();
+  for(const e of S.enemies){
+    if(e.type!=='leech'||e.dead)continue;
+    alive.add(e);let rec=leechWatch.get(e);
+    if(!rec){rec={hp:e.hp,flashAt:-Infinity,surf:null};leechWatch.set(e,rec);}
+    if(e.submerged&&e.hp<rec.hp)rec.flashAt=S.time;
+    rec.hp=e.hp;
+    if(e.state==='surfacing')rec.surf={x:e.x,y:e.y,endAt:S.time+e.surfaceT,left:leechFacesLeft(e),k:staggerOf(e).k};
+    else if(rec.surf){
+      const s=rec.surf;rec.surf=null;
+      leechWounds.push({x:s.x,y:s.y,at:Math.min(s.endAt,S.time),left:s.left,k:s.k});
+      leechHandoff.set(e,{x:s.x,y:s.y,left:s.left});
+    }
+  }
+  for(const e of leechWatch.keys())if(!alive.has(e))leechWatch.delete(e);
+}
+// The crawl body starts where frame 8 left the lying worm and joins the simulation point over the first units of crawl.
+function leechHandoffOffset(e) {
+  const h=leechHandoff.get(simOf(e));
+  if(!h||e.submerged||e.state==='surfacing'||e.state==='lane')return null;
+  const f=Math.max(0,1-Math.hypot(e.x-h.x,e.y-h.y)/LEECH_SURFACING.handoffFade);if(f<=0)return null;
+  const L=LEECH_SURFACING,k=staggerOf(e).k;return {x:(h.left?-1:1)*L.handoff.dx*k*f,y:L.handoff.dy*k*f};
+}
+function leechCell(g,col,row,px,anchor) {
+  const L=LEECH_SURFACING;
+  g.drawImage(leechSurfacingArt,col*L.cell,row*L.cell,L.cell,L.cell,-anchor[0]*px,-anchor[1]*px,L.cell*px,L.cell*px);
+}
+// Ground-layer drawings that dissolve between cells are composed on their own layer ('lighter' sums premultiplied colour,
+// so A*(1-u) + B*u is an exact blend with no see-through dip), optionally darkened, then laid on the ground.
+const LEECH_LAYER_SPAN=96,LEECH_LAYER_RES=4;let leechBlendLayer=null;
+function drawLeechBlend(parts,x,y,{left=false,tilt=0,dark=0,k=1,alpha=1}={}) {
+  if(!leechBlendLayer){leechBlendLayer=document.createElement('canvas');leechBlendLayer.width=leechBlendLayer.height=LEECH_LAYER_SPAN*LEECH_LAYER_RES;}
+  const g=leechBlendLayer.getContext('2d'),half=LEECH_LAYER_SPAN/2;
+  g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.clearRect(0,0,leechBlendLayer.width,leechBlendLayer.height);
+  g.setTransform(LEECH_LAYER_RES,0,0,LEECH_LAYER_RES,half*LEECH_LAYER_RES,half*LEECH_LAYER_RES);g.globalCompositeOperation='lighter';
+  for(const p of parts)if(p.alpha>0){g.globalAlpha=Math.min(1,p.alpha);leechCell(g,p.col,p.row,p.px,p.anchor);}
+  g.globalAlpha=1;
+  if(dark>0){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(0,0,0,'+dark+')';g.fillRect(-half,-half,LEECH_LAYER_SPAN,LEECH_LAYER_SPAN);}
+  g.globalCompositeOperation='source-over';
+  const f=LEECH_SURFACING.foreshorten;
+  ctx.save();ctx.translate(x,y);
+  if(tilt){ctx.scale(1,f);ctx.rotate(tilt);ctx.scale(1,1/f);}                 // a turn on the ground plane, not in the picture
+  ctx.scale(left?-k:k,k);ctx.globalAlpha*=alpha;ctx.drawImage(leechBlendLayer,-half,-half,LEECH_LAYER_SPAN,LEECH_LAYER_SPAN);ctx.restore();
+}
+// Under the skin: emergence frames 1-2 loop, underFrame seconds each, the last underDissolve of each dissolving into the
+// other. The bulge faces the hunt: mirrored for a leftward heading, the rest turned on the ground plane but no further
+// than underTilt — a sprite drawn for one camera cannot turn upright features toward the viewer (one camera for the map).
+// A collateral hit darkens it for LEECH_SURFACING.flash seconds.
+function drawLeechUnderSkin(e) {
+  const L=LEECH_SURFACING,heading=e.route&&e.route.length?Math.atan2(e.route[0].y-e.y,e.route[0].x-e.x):0;
+  const left=Math.cos(heading)<0,residual=left?Math.atan2(Math.sin(heading),-Math.cos(heading)):heading;
+  const tilt=Math.max(-L.underTilt,Math.min(L.underTilt,residual))*(left?-1:1);
+  const t=(S.time+staggerOf(e).phase*2*L.underFrame)%(2*L.underFrame),frame=t<L.underFrame?0:1,into=t%L.underFrame;
+  const u=Math.max(0,(into-(L.underFrame-L.underDissolve))/L.underDissolve);
+  const rec=leechWatch.get(simOf(e)),dark=rec&&S.time-rec.flashAt<L.flash?L.flashDark:0;
+  drawLeechBlend([{col:frame,row:0,px:L.px,anchor:L.anchor,alpha:1-u},{col:1-frame,row:0,px:L.px,anchor:L.anchor,alpha:u}],e.x,e.y,{left,tilt,dark,k:staggerOf(e).k});
+}
+// The wound decal: frame 8's wound dissolves into wound frame 1 over woundStart, the four frames hold for wound[i] each with
+// a woundDissolve into the next, then the scar fades over woundFade and the decal is removed (leechWoundLife in all).
+// The decal is toned per frame (woundTone: lower opacity, darker) so its greyscale contrast against the ground stays below
+// a crawling Leech's; the pale scar is toned most. Frame 8's own wound starts untoned, so the hand-off does not flicker.
+function drawLeechWound(w) {
+  const L=LEECH_SURFACING,t=S.time-w.at,cell=(i,alpha)=>({col:i,row:1,px:L.woundPx,anchor:L.woundAnchor,alpha});
+  const parts=[];let end=0;
+  for(let i=0;i<4;i++){
+    const start=end;end+=L.wound[i];if(t>=end&&i<3)continue;
+    const into=Math.max(0,(t-(end-L.woundDissolve))/L.woundDissolve);
+    if(i<3&&into>0){parts.push(cell(i,1-into),cell(i+1,into));}
+    else if(i===3&&t>=end){parts.push(cell(3,Math.max(0,1-(t-end)/L.woundFade)));}
+    else parts.push(cell(i,1));
+    if(i===0&&t<L.woundStart){const u=t/L.woundStart;parts[0].alpha*=u;parts.push({col:8,row:0,px:L.px,anchor:L.anchor,alpha:1-u});}
+    break;
+  }
+  // Tone = the frames' tones weighted by their share of the blend; the untoned start cell counts as [1, 0].
+  const tone=p=>p.row===1?L.woundTone[p.col]:[1,0],weight=parts.reduce((a,p)=>a+p.alpha,0)||1;
+  const alpha=parts.reduce((a,p)=>a+p.alpha*tone(p)[0],0)/weight,dark=parts.reduce((a,p)=>a+p.alpha*tone(p)[1],0)/weight;
+  drawLeechBlend(parts,w.x,w.y,{left:w.left,k:w.k,alpha,dark});
+}
+// The ground layer lies under the platforms, towers and every unit: wound decals, the hunt beneath the skin and the first
+// two surfacing frames (the bulge has not broken the skin yet).
+function drawLeechGround() {
+  if(!leechSurfacingReady())return;
+  for(const w of leechWounds)drawLeechWound(w);
+  for(const e of S.enemies){
+    if(e.type!=='leech'||e.dead||portalEntryOf(e))continue;
+    if(e.submerged)drawLeechUnderSkin(e);
+    else if(e.state==='surfacing'&&leechEmergenceFrame(e)<2){
+      const L=LEECH_SURFACING,k=staggerOf(e).k;
+      ctx.save();ctx.translate(e.x,e.y);ctx.scale(leechFacesLeft(e)?-k:k,k);leechCell(ctx,leechEmergenceFrame(e),0,L.px,L.anchor);ctx.restore();
+    }
+  }
+}
+// Surfacing frames 3-8 stand on the unit layer at the surfacing point, evenly over BUILD_WARMUP_SECONDS, no dissolve.
+function drawLeechEmergence(e) {
+  const frame=leechEmergenceFrame(e);if(frame<2)return;
+  const L=LEECH_SURFACING,k=e.__k||1;
+  ctx.save();ctx.translate(e.x,e.y);ctx.scale(leechFacesLeft(e)?-k:k,k);leechCell(ctx,frame,0,L.px,L.anchor);ctx.restore();
+}
 // Presentation only. Bodies are drawn spread across the lane instead of in single file: each body gets a fixed sideways
 // offset within the lane, a size within ±8% and its own gait phase, all derived from its spawn index, so frames repeat
 // exactly. Simulation coordinates are untouched; everything drawn for a body (sprite, markers, tracks, tracers) reads the
@@ -1351,6 +1483,7 @@ function visualEnemy(e) {
   let x = e.x, y = e.y;
   if (onLaneVisual(e)) { const a = posAt(e.d + 4), b = posAt(e.d), L = Math.hypot(a.x - b.x, a.y - b.y) || 1, off = laneOffset(e);
     x += -(a.y - b.y) / L * off; y += (a.x - b.x) / L * off; }
+  if (e.type === 'leech') { const h = leechHandoffOffset(e); if (h) { x += h.x; y += h.y; } }
   return Object.assign(Object.create(e), {x, y, __sim:e, __k:v.k});
 }
 // Where a tracer meets a body: the drawn position, dead or alive. The killing shot must land on the drawn body too,
@@ -2184,6 +2317,7 @@ function terrain() {
   if(!worldLiveArt){worldLiveArt=document.createElement('canvas');worldLiveArt.width=W*WORLD_RASTER_SCALE;worldLiveArt.height=H*WORLD_RASTER_SCALE;}
   drawLivingSurface();
   ctx.drawImage(worldLiveArt,0,0,W,H);
+  drawLeechGround();
   if(worldPlatformArt)ctx.drawImage(worldPlatformArt,0,0,W,H);
   if(worldPulseArt){ctx.save();ctx.globalAlpha=.35;ctx.drawImage(worldPulseArt,0,0,W,H);ctx.restore();}
 }
@@ -2782,6 +2916,7 @@ function drawPortalEntry(event){
 function draw() {
   observePortalEntries();
   observePolypDeaths();
+  observeLeechSurfacing();
   observeConstruction();
   buttons = [];
   ctx.setTransform(scale*dpr, 0, 0, scale*dpr, 0, 0);
@@ -2853,8 +2988,8 @@ function draw() {
     if (actor.tower) { drawTowerBody(actor.tower); continue; }
     const e = actor.enemy;
     if(portalEntryOf(e))continue; // The frozen presentation snapshot owns the body and its disappearance now.
-    if (e.submerged) { drawOozeRipple(e); continue; }          // v0.11: beneath the ooze only the ripple shows — no body, no bar, no markers
-    enemyArt(e);
+    if (e.submerged) { if (!leechSurfacingReady()) drawOozeRipple(e); continue; }   // v0.11: beneath the ooze no body, no bar, no markers; v0.14: the ground layer drew it
+    if (e.type === 'leech' && e.state === 'surfacing' && leechSurfacingReady()) drawLeechEmergence(e); else enemyArt(e);
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }

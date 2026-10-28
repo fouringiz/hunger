@@ -216,4 +216,4 @@ async function main(){
   console.log('Baked '+path.relative(ROOT,output)+': scale '+frames.scale+', '+frames.clips.map(c=>c.clip+(c.direction?':'+c.direction:'')+' ['+c.split+', shadow px '+c.shadowPixelsRemoved+']').join(', '));}
 }
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
-module.exports={bakeFamily,familyConfig,removeMatte,extractRow};
+module.exports={bakeFamily,familyConfig,removeMatte,extractRow,encoderPython};
