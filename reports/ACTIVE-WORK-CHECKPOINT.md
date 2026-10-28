@@ -1,3 +1,27 @@
+# Polyp family — eight selected source sheets archived (2026-10-28)
+
+- User explicitly requested eight named PNGs in `assets/art/sources/`. Copied the latest selected versions byte-for-byte; PNG headers/dimensions read and destination SHA-256 matched each source. No resizing, repainting, slicing, background removal or runtime integration.
+- Set contains 8 sheets / 46 illustrated frames: 3 parent crawl directions, parent death, zygote hatch, 3 juvenile run directions. Early radial living-crawl concept and superseded image versions excluded.
+- Archival copy integrity confirmed only. All previously documented artistic, animation, game-camera/readability and runtime limitations remain; copying does not validate them. No tests/browser checks/game captures run. No simulation change or replay restamp required.
+- Unrelated modified `assets/art/previews/organic-world-mire-v7.webp` remains untouched.
+- Latest user message ends with `затем:` and contains no subsequent instruction. Save request is complete; await the missing continuation. Do not infer conversion, integration, publishing or other next steps.
+
+## Saved files and provenance
+
+| Destination in assets/art/sources | Source in reports/generated | Dimensions | SHA-256 |
+| --- | --- | --- | --- |
+| `polyp-crawl-right-v1.png` | `polyp-directional-crawl/sheet-v1.png` | 2172×724 | `748bb0fd6cd471eac7c1d9a526ecdba1ea6ea2fa8ffc0380dab824cefcb61299` |
+| `polyp-crawl-up-v1.png` | `polyp-away-crawl/sheet-v1.png` | 2172×724 | `acdb868139a4400dc5e8201df540c2f276fb4ca1c42513b165ad7ad528e5bb56` |
+| `polyp-crawl-down-v1.png` | `polyp-toward-crawl/sheet-v1.png` | 2172×724 | `b5d70011218cca15e2d15852ce4370a75ef4f5acb70f307e9eeaf5397523f003` |
+| `polyp-death-v1.png` | `polyp-death/sheet-v2.png` | 2172×724 | `d32a01869090da57415222b7de4ddf4b9e2810f79152572ab9adeafda7bea448` |
+| `zygote-hatch-v1.png` | `zygote-emergence/sheet-v2.png` | 2172×724 | `13532b17c53b2b7e7ecb7c39ab221de561b45dff303ec5db1c767d0a9471ca20` |
+| `polypoid-run-right-v1.png` | `polypoid-run-right/sheet-v3.png` | 2172×724 | `37658fd1b3e35010dfa9f368119c3238048675df1ae2ce9298ef3e40b7d08039` |
+| `polypoid-run-up-v1.png` | `polypoid-run-away/sheet-v2.png` | 2172×724 | `50134a49db2d34efcce40aa9664bfd9cb8fb3f8cd7ecc45bab666e5142e3c1f6` |
+| `polypoid-run-down-v1.png` | `polypoid-run-toward/sheet-v3.png` | 2172×724 | `315fa2d5240df4a539bf43ec563717a3e9f8c999a34fb1f1881d9b2220a2eeff` |
+
+---
+Previous checkpoint:
+
 # Polyp — five-frame death/disassembly sheet prepared (2026-10-28)
 
 - Latest request: exact rest/material reference + exact open-pose reference as FRAME3. Five stages: limp seam flash → strand/seam rupture → radial opening of six lobes/carrier collapse → six curled live pieces fall → six separate zygote-like ragged glowing-seam chunks at unequal distances around dark dead carrier. Elevated three-quarter camera, same scale/overhead light, grey/no labels, no eggs/blood/metal/body parts. Radial opening explicitly belongs to DEATH; remains forbidden for living crawl.
