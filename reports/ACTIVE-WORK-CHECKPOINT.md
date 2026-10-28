@@ -1,6 +1,7 @@
 # Flamethrower art integration — checks pending (2026-10-29)
 
 - Branch `codex/flamethrower-art`, baseline `58c1e8eeb350927ec16a2723eecb91171a71f718`. User approved the concept in this chat, then explicitly requested integration. Approval of the resulting gameplay appearance remains pending.
+- Implementation saved in `7a57198`; no tests, gameplay captures or browser checks have been run for it.
 - `assets/hunger-flamethrower-v1.png` (768×256 RGBA) + `.frames.json`: stationary foundation, overhead weapon head/nozzle, upright tank. Generated separation and approved concept remain in ignored `reports/generated/flamethrower/`; only the final atlas is committed. Reproduction: `tools/bake-flamethrower.cjs`; design/provenance and review criteria in `assets/art/flamethrower-v1.md`.
 - Renderer: fixed 44×34 foundation, continuous projected upper yaw, two upright tanks sorted around the head; orange/cyan pilot; muzzle follows the drawn nozzle. Vector loading/failure fallback, no new runtime pixel reads. Existing flamer deployment/pause/sale behavior retained. No combat/balance/route/platform edits; simulation fingerprints are to be compared by the user-run capture, no restamp claimed or performed.
 - Agent completed: generated/packed final atlas, opened and inspected that asset, reviewed source diff. This does NOT establish gameplay appearance or test success.
