@@ -1947,7 +1947,7 @@ function drawFlamethrower(t,p=1) {
   const tank=p=>{
     if(tankLift<=0)return;
     // Tank base sits four pixels below the head plane; its tall sides never inherit the yaw matrix.
-    const y=p.y+22*(1-tankLift);
+    const y=p.y+44*(1-tankLift);
     if(!part(2,p.x-5.5,y-18,11,22)){
       ctx.fillStyle='#a95823';roundRect(p.x-5.5,y-18,11,22,4);ctx.fill();
       ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5,y-12,11,2);ctx.fillRect(p.x-5.5,y-3,11,2);
@@ -1956,7 +1956,7 @@ function drawFlamethrower(t,p=1) {
   tanks.filter(p=>p.y<=FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
   const m=weaponProjection(t.angle);
   if(lift>0)for(const z of [3,0]){
-    ctx.save();ctx.translate(0,FLAMER_ART.mountY+22*(1-lift)+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+    ctx.save();ctx.translate(0,FLAMER_ART.mountY+42*(1-lift)+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
     if(z)ctx.filter='brightness(0.38)';
     let drawn=false;
     if(barrel>=1)drawn=part(1,-13,-13,42,28);
