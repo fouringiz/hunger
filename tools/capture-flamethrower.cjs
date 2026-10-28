@@ -40,6 +40,7 @@ async function capture(zone,label,sourceHtml){
 }
 async function main(){
   fs.mkdirSync(OUT,{recursive:true});
+  if(process.argv.includes('--flamethrower-deployment'))return deploymentMain();
   const arg=process.argv.indexOf('--before'),rev=arg<0?BASE:process.argv[arg+1];
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
   for(const zone of ['mire','ember']){
@@ -54,6 +55,23 @@ async function main(){
   const p=JSON.parse(world.run('JSON.stringify({x:SLOTS[2].x,y:SLOTS[2].y})'));
   g.drawImage(crop(shot(world),p.x,p.y),160,0);save(c,'reference-and-game');
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{whole,whole-gray,turn-game,turn-zoom,sweep-*-game,sweep-*-zoom,states-game,states-zoom}.png and reference-and-game.png; simulation fingerprints unchanged.');
+}
+async function deploymentMain(){
+  const before=execFileSync('git',['show','9ea29bb:prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+  for(const zone of ['mire','ember'])for(const label of ['before','after']){
+    const w=await loadWorld({zone,sourceHtml:label==='before'?before:null});
+    w.run("reset();S.phase='build';S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;observeConstruction();");
+    const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})')),cells=[];
+    for(const time of [0,.1,.25,.4,.6,.8,1,1.2,1.4,1.6,1.65,1.8]){
+      w.run(`presentationTime=${time};`);cells.push(crop(shot(w),at.x,at.y));
+      if([0,.8,1.8].includes(time)){save(w.canvas,`${label}-${zone}-deploy-whole-${time}`);save(gray(w.canvas),`${label}-${zone}-deploy-whole-gray-${time}`);}
+    }
+    sheet(cells,`${label}-${zone}-deploy`);
+    w.run('sell(S.towers[0]);observeConstruction();');const sale=[];
+    for(const q of [1,.85,.7,.55,.4,.25,.1,0]){w.run(`S.towers[0].sellT=SELL_TIME*${q};`);sale.push(crop(shot(w),at.x,at.y));}
+    sheet(sale,`${label}-${zone}-retract`);
+  }
+  console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{deploy,retract}-{game,zoom}.png and deployment whole/gray views. Review full assembly and retraction independently of the fire effect.');
 }
 module.exports={main};
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});

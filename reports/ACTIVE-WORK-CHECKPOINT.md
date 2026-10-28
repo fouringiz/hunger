@@ -1,4 +1,11 @@
-# Flamethrower art integration — checks pending (2026-10-29)
+# Flamethrower follow-up — deployment and fire requested, checks pending (2026-10-29)
+
+- User reported the missing deployment animation. This was an omission in the initial integration, not a verified visual success. Added registration in the shared observer and constant-scale assembly/reverse sale poses; first real jet ends the presentation build if needed. Static model baseline: `9ea29bb`.
+- Deployment criteria: fixed foundation, vertical tanks emerging/spreading, head rising from the socket, nozzle telescoping, exact ready-pose handoff, reverse sale from partial progress. Modified only drawing/observer code; no combat or balance changes.
+- Expanded existing building/salvage checks and prepared `node tools/capture-organic-world.cjs --flamethrower-deployment` (Mire/Ember, full assembly/retraction, whole colour/grayscale and zoom). None run. No deployment captures exist yet; visual completion is pending user output and frame inspection.
+- User additionally requested animated flame. It will be a separate visual iteration and capture; implementation is next.
+
+Previous integration state:
 
 - Branch `codex/flamethrower-art`, baseline `58c1e8eeb350927ec16a2723eecb91171a71f718`. User approved the concept in this chat, then explicitly requested integration. Approval of the resulting gameplay appearance remains pending.
 - Implementation saved in `7a57198`; no tests, gameplay captures or browser checks have been run for it.

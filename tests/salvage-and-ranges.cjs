@@ -1,11 +1,11 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-function boot(){const calls=[],images=[],handlers={};class Image{constructor(){this.complete=true;this.naturalWidth=768;images.push(this);}}const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...args)=>calls.push([k,...args]);if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=(...args)=>calls.push([k,...args]));}});const canvas={getContext:()=>ctx,style:{},addEventListener(type,fn){handlers[type]=fn;},getBoundingClientRect:()=>({left:0,top:0})};const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:'?infantry=1'},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});vm.runInContext(source,c);return {run:x=>vm.runInContext(x,c),calls,images,handlers};}
+function boot(){const calls=[],images=[],handlers={};class Image{constructor(){this.complete=true;this.naturalWidth=768;this.naturalHeight=256;images.push(this);}}const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...args)=>calls.push([k,...args]);if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=(...args)=>calls.push([k,...args]));}});const canvas={getContext:()=>ctx,style:{},addEventListener(type,fn){handlers[type]=fn;},getBoundingClientRect:()=>({left:0,top:0})};const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:'?infantry=1'},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});vm.runInContext(source,c);return {run:x=>vm.runInContext(x,c),calls,images,handlers};}
 const cue=boot();cue.run("reset();S.credits=1000;build(SLOTS[0],'generator');const e=makeEnemy('leech',5);e.gen=S.towers[0];");
 for(const state of ['lane','seek','return']){cue.calls.length=0;cue.run(`e.state='${state}';drawLeechCue(e);`);assert.equal(cue.calls.length,0,'a moving Leech must not draw a tendril');}
 cue.calls.length=0;cue.run("e.state='attached';drawLeechCue(e)");assert.ok(cue.calls.some(c=>c[0]==='lineTo'),'a real feeding connection remains visible');
 console.log('PASS Leech cues only while feeding');
-for(const type of ['turret','cannon','voltaic','generator','barracks']){
+for(const type of ['turret','cannon','voltaic','generator','barracks','flamer']){
  const r=boot();r.run(`reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);
  const saved=r.run('replaySignature()');r.run('drawTowerBody(S.towers[0]);');assert.equal(r.run('replaySignature()'),saved,'sale rendering cannot refund or remove a tower');
  const phases=[];for(const remaining of [1.8,1.2,.6,.05]){r.calls.length=0;r.run(`S.towers[0].sellT=${remaining};drawTowerBody(S.towers[0]);`);phases.push(JSON.stringify(r.calls.filter(c=>c[0]==='drawImage').map(c=>c.slice(2))));}
@@ -13,7 +13,7 @@ for(const type of ['turret','cannon','voltaic','generator','barracks']){
  r.run('S.towers[0].sellT=SELL_TIME;const beforeCredits=S.credits;update(SELL_TIME-SIM_STEP);');assert.equal(r.run('S.towers.length'),1,'refund remains delayed until the removal tick');assert.equal(r.run('S.credits===beforeCredits'),true);
  r.run('update(SIM_STEP*2)');assert.equal(r.run('S.towers.length'),0);assert.equal(r.run('S.credits>beforeCredits'),true);
 }
-console.log('PASS all five sale animations and unchanged refund/removal timing');
+console.log('PASS all six sale animations and unchanged refund/removal timing');
 for(const type of ['turret','cannon','voltaic'])for(const level of [1,3]){
  const ranges=boot();
  ranges.run(`reset();S.phase='build';const t={...SLOTS[0],type:'${type}',T:TOWER['${type}'],level:${level}};S.selected={kind:'tower',tower:t};`);

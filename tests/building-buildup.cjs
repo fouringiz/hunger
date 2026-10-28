@@ -36,7 +36,7 @@ final.draws.length=0;final.run('drawTowerBody(S.towers[0]);');const animatedEnd=
 final.draws.length=0;final.run('constructionArt=new WeakMap();drawTowerBody(S.towers[0]);');assert.deepEqual(final.draws,animatedEnd,'completed construction uses exactly the normal sprite draws');
 console.log('PASS rendered/headless combat equivalence, missing-asset fallback and exact normal-pose handoff');
 
-for(const type of ['turret','cannon','voltaic','generator','barracks']){
+for(const type of ['turret','cannon','voltaic','generator','barracks','flamer']){
  const b=boot(type);b.run('observeConstruction()');assert.equal(b.run('constructionProgress(S.towers[0])'),0,type+' registers placement');
  const snapshot=b.run('replaySignature()');
  for(const time of [.2,.6,1,1.4,2])b.run(`presentationTime=${time};draw();`);
@@ -44,7 +44,7 @@ for(const type of ['turret','cannon','voltaic','generator','barracks']){
  assert.deepEqual(b.cues.map(c=>c[0]).filter(c=>c.includes('-deploy-')),[1,2,3].map(i=>type+'-deploy-'+i));
  b.draws.length=0;b.run('drawTowerBody(S.towers[0])');const final=b.draws.slice();
  b.draws.length=0;b.run('constructionArt=new WeakMap();drawTowerBody(S.towers[0])');assert.deepEqual(b.draws,final,type+' hands off to normal artwork');
- const absent=boot(type);absent.run('lowBuildingArt.complete=false;structureArt.complete=false;voltaicArt.complete=false;');
+ const absent=boot(type);absent.run('lowBuildingArt.complete=false;structureArt.complete=false;voltaicArt.complete=false;flamerArt.complete=false;');
  for(const time of [0,.3,.8,1.3,2])assert.doesNotThrow(()=>absent.run(`presentationTime=${time};draw();`),type+' has a missing-art fallback');
  if(['cannon','voltaic'].includes(type)){
    const battle=boot(type);battle.run("observeConstruction();S.phase='wave';S.wave=1;const e=makeEnemy('carapacid',1);e.d=180;Object.assign(e,posAt(e.d));S.enemies=[e];update(SIM_STEP);draw();");
@@ -59,7 +59,19 @@ assert.equal(troops.run('soldierPresentationPoint(S.towers[0].soldiers[0],S.towe
 const troopsState=troops.run('replaySignature()');troops.run('presentationTime=1.6;');assert.equal(troops.run('soldierPresentationPoint(S.towers[0].soldiers[0],S.towers[0]).visible'),true,'the open entrance releases soldiers');
 assert.equal(troops.run('replaySignature()'),troopsState,'entrance animation never moves physical soldiers');
 troops.run("S.towers[0].soldiers[0].target=makeEnemy('forager',1);observeConstruction();");assert.equal(troops.run('constructionProgress(S.towers[0])'),1,'engaged infantry reveals the ready Barracks immediately');
-console.log('PASS all five deployments, exact final poses, missing art, combat/drain interruption and Barracks exit parity');
+console.log('PASS all six deployments, exact final poses, missing art, combat/drain interruption and Barracks exit parity');
+const flamer=boot('flamer');flamer.run('observeConstruction();');
+const stages=[];
+for(const time of [0,.3,.7,1.1,1.5,1.65]){
+ flamer.draws.length=0;flamer.run(`presentationTime=${time};observeConstruction();drawTowerBody(S.towers[0]);`);
+ stages.push(JSON.stringify(flamer.draws));
+}
+assert.equal(new Set(stages).size,6,'Flamethrower must visibly assemble, not show the finished sprite throughout');
+const fired=boot('flamer');fired.run("observeConstruction();S.phase='wave';S.wave=1;const target=makeEnemy('carapacid',1);target.x=S.towers[0].x+50;target.y=S.towers[0].y;S.time=.3;fireFlame(S.towers[0],tstats(S.towers[0]),target);observeConstruction();");
+assert.equal(fired.run('constructionProgress(S.towers[0])'),1,'a real fuel jet reveals the assembled nozzle even if the presentation clock lags');
+const interrupted=boot('flamer');interrupted.run('observeConstruction();presentationTime=.6;observeConstruction();const partial=constructionProgress(S.towers[0]);sell(S.towers[0]);observeConstruction();');
+assert.equal(interrupted.run('constructionArt.get(S.towers[0]).saleFrom'),interrupted.run('partial'),'early sale retracts from the current pose');
+console.log('PASS Flamethrower distinct assembly stages, first-jet handoff and early-sale continuity');
 const route=boot('barracks');route.run("reset();S.phase='build';S.credits=10000;build(SLOTS[3],'barracks');while(S.towers[0].warm>0)update(SIM_STEP);for(let i=0;i<120;i++)update(SIM_STEP);observeConstruction();");
 const routeState=route.run('replaySignature()');
 for(let i=0;i<=100;i++){

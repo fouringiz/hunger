@@ -10,7 +10,8 @@ The approval covers the concept, not the assembled gameplay appearance.
 - Foundation: 44×34 game units, same planted footprint as the other guns. Head: 42×28 in the projected ground plane, pivot (13,13), mounting height 12. Two tanks: 11×22, mounted at head-plane offsets (-8,±13); each stays upright, sorted behind/in front of the head by its projected depth.
 - Exact continuous yaw uses existing `weaponProjection`, not discrete directional frames. Muzzle is 29 units along the projected head centreline. Pilot is orange for base/Plasma, cyan for Cryojet, dimmed when paused/selling.
 - Loading/failed images retain a vector fallback. New rendering never reads canvas pixels.
-- Scope: presentation only. Combat, balance, sweep, warmup, route, Gate distance and platform positions were not edited. Existing flamer construction/pause/sale behavior is retained; no new deployment animation.
+- Scope: presentation only. Combat, balance, sweep, warmup, route, Gate distance and platform positions were not edited.
+- Deployment follow-up: the initial integration omitted the common deployment observer. Flamer now registers placement; upright tanks emerge and spread, the head rises behind the socket edge and the nozzle telescopes out at constant scale. It uses the existing 1.65 s presentation duration and shared construction sounds. Sale runs the same pose backwards from its current progress; the first actual jet forces the final assembled pose if the view clock lags. No new pause animation.
 
 ## Observable acceptance criteria
 
@@ -31,6 +32,7 @@ All gameplay evidence is pending user execution and frame review.
 ```sh
 npm test
 node tools/capture-organic-world.cjs --flamethrower
+node tools/capture-organic-world.cjs --flamethrower-deployment
 open prototype/index.html
 ```
 
@@ -39,3 +41,5 @@ The capture command uses `loadWorld` from `capture-organic-world.cjs`, compares 
 In the disk browser, build a Flamethrower, let it fire, pause/resume, and check Plasma/Cryojet with the console open. No `SecurityError`, missing image or drawing exception should appear. Node captures and mocked canvas errors do not establish this browser result.
 
 Tests and game capture have NOT been run by the agent. No before/after gameplay images exist yet. Inspect the actual frames before claiming visual completion; a second independent review is required before merging a visual PR.
+
+Deployment is a separate iteration: compare `before/after-*-deploy-{game,zoom}.png`, `*-retract-{game,zoom}.png`, plus whole colour/grayscale views. Baseline `9ea29bb` is the known bad static model. Reject popping at assembly completion, detached parts, ground sliding, inconsistent camera or lost readability; an early sale must retract from the partial assembly without first flashing the complete tower. The expanded building/salvage tests are prepared, not run.

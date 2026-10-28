@@ -1774,17 +1774,18 @@ function buildingPauseProgress(t){
 function observeConstruction() {
   if(constructionScene!==S){constructionScene=S;constructionArt=new WeakMap();}
   for(const t of S.towers){
-    if(!['turret','cannon','voltaic','generator','barracks'].includes(t.type))continue;
+    if(!['turret','cannon','voltaic','generator','barracks','flamer'].includes(t.type))continue;
     let event=constructionArt.get(t);
     if(!event){
       // A missing segmented atlas keeps the existing complete legacy/vector building visible.
-      const partsReady=t.type==='turret'||t.type==='cannon'||lowBuildingArt&&lowBuildingArt.complete&&lowBuildingArt.naturalWidth;
+      const partsReady=t.type==='flamer'?flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768&&flamerArt.naturalHeight>=256:t.type==='turret'||t.type==='cannon'||lowBuildingArt&&lowBuildingArt.complete&&lowBuildingArt.naturalWidth;
       event={at:presentationTime,done:!partsReady,interrupted:!partsReady,stage:0};constructionArt.set(t,event);
     }
     // Combat keeps its existing timing. A fired or selling weapon must be visibly assembled.
     if(t.selling && event.saleFrom===undefined)event.saleFrom=constructionProgress(t);
     const engaged=t.type==='barracks' && t.soldiers.some(s=>s.target || !s.alive || s.hp<s.maxHp);
-    if(t.selling || weaponFeedback.has(t) || engaged || isDrained(t) || S.phase==='over'){event.done=true;event.interrupted=true;continue;}
+    const firingJet=t.type==='flamer'&&t.jetAt!==undefined;
+    if(t.selling || weaponFeedback.has(t) || firingJet || engaged || isDrained(t) || S.phase==='over'){event.done=true;event.interrupted=true;continue;}
     if(event.done)continue;
     const p=constructionProgress(t),stage=p>=.94?3:p>=.54?2:p>=.12?1:0;
     if(stage>event.stage){
@@ -1903,6 +1904,7 @@ function drawBarracksDeployment(p) {
 function drawBuildingDeployment(t,p) {
   if(p>=1)return false;
   if(t.type==='turret'||t.type==='cannon')return drawWeaponDeployment(t,p);
+  if(t.type==='flamer'){drawFlamethrower(t,p);return true;}
   if(t.type==='voltaic')drawTeslaDeployment(p);
   else if(t.type==='generator')drawGeneratorDeployment(p);
   else if(t.type==='barracks')drawBarracksDeployment(p);
@@ -1932,32 +1934,56 @@ function soldierPresentationPoint(s,t) {
   return {...ground,visible:true};
 }
 
-function drawFlamethrower(t) {
+function drawFlamethrower(t,p=1) {
   const ready=flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768&&flamerArt.naturalHeight>=256;
   const part=(n,x,y,w,h)=>{if(!ready)return false;try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[n],x,y,w,h);return true;}catch(_){return false;}};
   if(!part(0,-22,-17,44,34)){
     ctx.fillStyle='#2b2a22';roundRect(-22,-17,44,34,5);ctx.fill();ctx.strokeStyle='#827855';ctx.lineWidth=1.5;ctx.stroke();
   }
-  const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y));
+  const lift=deploymentStep(p,.3,.78),tankLift=deploymentStep(p,.14,.5),spread=deploymentStep(p,.32,.6),barrel=deploymentStep(p,.65,.94);
+  const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y*(.3+.7*spread)));
+  // Parts rise from behind the socket's near edge at their final scale, then telescope into position.
+  ctx.save();if(p<1){ctx.beginPath();ctx.rect(-48,-80,96,88);ctx.clip();}
   const tank=p=>{
+    if(tankLift<=0)return;
     // Tank base sits four pixels below the head plane; its tall sides never inherit the yaw matrix.
-    if(!part(2,p.x-5.5,p.y-18,11,22)){
-      ctx.fillStyle='#a95823';roundRect(p.x-5.5,p.y-18,11,22,4);ctx.fill();
-      ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5,p.y-12,11,2);ctx.fillRect(p.x-5.5,p.y-3,11,2);
+    const y=p.y+22*(1-tankLift);
+    if(!part(2,p.x-5.5,y-18,11,22)){
+      ctx.fillStyle='#a95823';roundRect(p.x-5.5,y-18,11,22,4);ctx.fill();
+      ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5,y-12,11,2);ctx.fillRect(p.x-5.5,y-3,11,2);
     }
   };
   tanks.filter(p=>p.y<=FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
   const m=weaponProjection(t.angle);
-  for(const z of [3,0]){
-    ctx.save();ctx.translate(0,FLAMER_ART.mountY+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+  if(lift>0)for(const z of [3,0]){
+    ctx.save();ctx.translate(0,FLAMER_ART.mountY+22*(1-lift)+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
     if(z)ctx.filter='brightness(0.38)';
-    if(!part(1,-13,-13,42,28)){
+    let drawn=false;
+    if(barrel>=1)drawn=part(1,-13,-13,42,28);
+    else if(ready){
+      const r=FLAMER_ART.rects[1],split=r[2]*23/42;
+      try{
+        ctx.save();try{ctx.beginPath();ctx.rect(8,-16,24,34);ctx.clip();
+          ctx.drawImage(flamerArt,r[0]+split,r[1],r[2]-split,r[3],10-14*(1-barrel),-13,19,28);
+        }finally{ctx.restore();}
+        ctx.drawImage(flamerArt,r[0],r[1],split,r[3],-13,-13,23,28);drawn=true;
+      }catch(_){}
+    }
+    if(!drawn){
       ctx.fillStyle='#687257';roundRect(-12,-10,22,20,4);ctx.fill();
-      ctx.fillStyle='#4a4a40';ctx.fillRect(8,-4,21,8);ctx.fillStyle='#b5944e';ctx.fillRect(18,-4,3,8);
+      ctx.fillStyle='#4a4a40';ctx.fillRect(8,-4,7+14*barrel,8);ctx.fillStyle='#b5944e';ctx.fillRect(10+8*barrel,-4,3,8);
     }
     ctx.restore();
   }
   tanks.filter(p=>p.y>FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
+  ctx.restore();
+  if(p<.94){
+    const hatch=deploymentStep(p,.02,.3);
+    ctx.save();ctx.beginPath();ctx.rect(-13,-12,26,16);ctx.clip();
+    ctx.fillStyle='#687257';ctx.strokeStyle='#272d27';ctx.lineWidth=.7;
+    for(const side of [-1,1]){const x=side<0?-13-13*hatch:13*hatch;ctx.fillRect(x,-12,13,16);ctx.strokeRect(x,-12,13,16);}
+    ctx.restore();return;
+  }
   const tip=flamerPoint(t.angle,FLAMER_ART.muzzleX);
   ctx.fillStyle=t.selling||t.paused?'#7e8277':t.branch==='B'?'#a4f5ff':'#ff9b39';
   ctx.beginPath();ctx.arc(tip.x,tip.y,1.2,0,Math.PI*2);ctx.fill();
