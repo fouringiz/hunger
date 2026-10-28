@@ -43,6 +43,18 @@ function checkMuzzle(r){
   }
 }
 const r=boot();checkFoundation(r);checkMuzzle(r);
+function checkEmergence(r){
+  for(const angle of [0,1,2,3,4,5])for(const [progress,kind]of [[.14000001,'tank'],[.30000001,'head']]){
+    r.reset();r.run(`drawFlamethrower({angle:${angle}},${progress});`);
+    const parts=r.draws.filter(d=>kind==='tank'?d.args[1]===569:d.args[1]>=264&&d.args[1]<504);
+    assert.ok(parts.length>0,'newly lifting '+kind+' is sampled');
+    for(const {args,matrix:m}of parts){
+      const [x,y,w,h]=args.slice(-4),top=Math.min(...[[x,y],[x+w,y],[x,y+h],[x+w,y+h]].map(([px,py])=>m[1]*px+m[3]*py+m[5]));
+      assert.ok(top>=8,'newly lifting parts must start below the socket edge, not pop in half exposed');
+    }
+  }
+}
+checkEmergence(r);
 const atlas=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-v1.frames.json'),'utf8'));
 assert.deepEqual(JSON.parse(r.run('JSON.stringify(FLAMER_ART.rects)')),atlas.rects,'runtime rectangles match baked parts');
 assert.ok(r.images.some(i=>i.src.endsWith('assets/hunger-flamethrower-v1.png')));
@@ -57,4 +69,6 @@ const fallback=boot(source,false);assert.doesNotThrow(()=>fallback.run("drawFlam
 assert.throws(()=>checkFoundation(boot(source.replace('if(!part(0,-22,-17,44,34)){','ctx.rotate(t.angle);if(!part(0,-22,-17,44,34)){'))),/foundation must stay fixed/);
 assert.throws(()=>checkMuzzle(boot(source.replace('muzzleX:29','muzzleX:22'))));
 assert.throws(()=>checkFoundation(fallback),/textured foundation must be drawn/);
+assert.throws(()=>checkEmergence(boot(source.replace('44*(1-tankLift)','22*(1-tankLift)'))),/not pop in half exposed/);
+assert.throws(()=>checkEmergence(boot(source.replace('42*(1-lift)','22*(1-lift)'))),/not pop in half exposed/);
 console.log('PASS Flamethrower atlas, planted base, upright tanks, continuous yaw, nozzle attachment, render parity, file-origin fallback and known-bad variants');

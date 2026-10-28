@@ -33,6 +33,7 @@ All gameplay evidence is pending user execution and frame review.
 npm test
 node tools/capture-organic-world.cjs --flamethrower
 node tools/capture-organic-world.cjs --flamethrower-deployment
+node tools/capture-organic-world.cjs --flamethrower-fire
 open prototype/index.html
 ```
 
@@ -43,3 +44,9 @@ In the disk browser, build a Flamethrower, let it fire, pause/resume, and check 
 Tests and game capture have NOT been run by the agent. No before/after gameplay images exist yet. Inspect the actual frames before claiming visual completion; a second independent review is required before merging a visual PR.
 
 Deployment is a separate iteration: compare `before/after-*-deploy-{game,zoom}.png`, `*-retract-{game,zoom}.png`, plus whole colour/grayscale views. Baseline `9ea29bb` is the known bad static model. Reject popping at assembly completion, detached parts, ground sliding, inconsistent camera or lost readability; an early sale must retract from the partial assembly without first flashing the complete tower. The expanded building/salvage tests are prepared, not run.
+
+## Flowing fire — separate visual iteration
+
+`drawFlameJet` replaces the three straight strokes with three filled turbulent ribbons and six advecting tongues. Shape and motion use simulation time without particle state or RNG. The centreline starts at the same muzzle and ends at the existing ground aim point. The fuel silhouette narrows at its source and tip; a 0.23 s visual lifetime with a final fade bridges the existing 0.2 s shot spacing. This extends only the visible tail of the effect; hit timing, range, contact damage, burns and pools stay unchanged. Pausing or selling immediately hides the jet. Base/Plasma use warm fire colors; Cryojet uses the same moving flow in coolant colors.
+
+Evidence pending: `--flamethrower-fire` compares against deployment commit `198ef68`, so that iteration changes only the stream. It captures a fixed nozzle across two firing intervals, a full sweep and the final-pulse fade on Mire/Ember for base/Plasma/Cryojet, with whole colour/grayscale and zoom. Inspect `before/after-*-fire-*-{flow,sweep,stop}-{game,zoom}.png`. These are controlled actual-renderer poses; browser combat still needs checking. Reject a static ribbon, detached origin, harsh pulse gaps, large opaque blobs hiding enemies, or bright trails left after stopping. `tests/flamethrower-jet-art.cjs` rejects frozen flow using the same motion contract. Neither tests nor captures have been run by the agent.

@@ -41,6 +41,7 @@ async function capture(zone,label,sourceHtml){
 async function main(){
   fs.mkdirSync(OUT,{recursive:true});
   if(process.argv.includes('--flamethrower-deployment'))return deploymentMain();
+  if(process.argv.includes('--flamethrower-fire'))return fireMain();
   const arg=process.argv.indexOf('--before'),rev=arg<0?BASE:process.argv[arg+1];
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
   for(const zone of ['mire','ember']){
@@ -51,7 +52,7 @@ async function main(){
   const reference=await loadImage(path.join(OUT,'flamethrower-concept-v1.png'));
   const c=createCanvas(320,160),g=c.getContext('2d');g.fillStyle='#252a23';g.fillRect(0,0,320,160);
   g.drawImage(reference,272,126,996,833,36,28,100,84);
-  const world=await loadWorld();world.run("reset();S.credits=1000;build(SLOTS[2],'flamer');S.towers[0].angle=0;S.selected=null;");
+  const world=await loadWorld();world.run("reset();S.credits=1000;build(SLOTS[2],'flamer');S.towers[0].angle=0;S.selected=null;observeConstruction();presentationTime=3;observeConstruction();");
   const p=JSON.parse(world.run('JSON.stringify({x:SLOTS[2].x,y:SLOTS[2].y})'));
   g.drawImage(crop(shot(world),p.x,p.y),160,0);save(c,'reference-and-game');
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{whole,whole-gray,turn-game,turn-zoom,sweep-*-game,sweep-*-zoom,states-game,states-zoom}.png and reference-and-game.png; simulation fingerprints unchanged.');
@@ -72,6 +73,36 @@ async function deploymentMain(){
     sheet(sale,`${label}-${zone}-retract`);
   }
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{deploy,retract}-{game,zoom}.png and deployment whole/gray views. Review full assembly and retraction independently of the fire effect.');
+}
+async function fireMain(){
+  const before=execFileSync('git',['show','198ef68:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),fingerprints={};
+  for(const zone of ['mire','ember'])for(const label of ['before','after']){
+    const w=await loadWorld({zone,sourceHtml:label==='before'?before:null});
+    fingerprints[label]={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
+    for(const branch of ['', 'A','B']){
+      w.run(`reset();S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;S.towers[0].branch=${JSON.stringify(branch)};observeConstruction();presentationTime=3;observeConstruction();S.enemies=[makeEnemy('forager',1),makeEnemy('carapacid',1)];S.enemies.forEach((e,i)=>{e.x=S.towers[0].x+65+i*18;e.y=S.towers[0].y+(i?18:0);});`);
+      const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})')),flow=[],sweep=[],stop=[],name=`${label}-${zone}-fire-${branch||'base'}`;
+      // Hold the nozzle still to expose intrinsic flow; sample two complete 0.2 s firing intervals.
+      for(let i=0;i<=12;i++){
+        const time=i/30;w.run(`S.time=${time};S.towers[0].angle=0;S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
+        flow.push(crop(shot(w),at.x,at.y,true));
+        if(i===3){save(w.canvas,name+'-whole');save(gray(w.canvas),name+'-whole-gray');}
+      }
+      sheet(flow,name+'-flow');
+      for(let i=0;i<=24;i++){
+        const time=i*Math.PI*2/24/3.2;
+        w.run(`S.time=${time};S.towers[0].angle=${Math.sin(i*Math.PI*2/24)*Math.PI/4};S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
+        sweep.push(crop(shot(w),at.x,at.y,true));
+      }
+      sheet(sweep,name+'-sweep');
+      for(const age of [0,.08,.16,.2,.22,.24,.3]){
+        w.run(`S.time=${.4+age};S.towers[0].angle=0;S.towers[0].jetAt=.4;`);stop.push(crop(shot(w),at.x,at.y,true));
+      }
+      sheet(stop,name+'-stop');
+    }
+    if(label==='after')assert.deepEqual(fingerprints.after,fingerprints.before,'fire presentation leaves simulation fingerprints unchanged');
+  }
+  console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-fire-{base,A,B}-{flow,sweep,stop}-{game,zoom}.png and whole/gray views. Controlled actual-renderer poses: fixed-nozzle flow, full sweep, and final-pulse fade. Actual combat timing still needs the disk-browser check.');
 }
 module.exports={main};
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1988,6 +1988,42 @@ function drawFlamethrower(t,p=1) {
   ctx.fillStyle=t.selling||t.paused?'#7e8277':t.branch==='B'?'#a4f5ff':'#ff9b39';
   ctx.beginPath();ctx.arc(tip.x,tip.y,1.2,0,Math.PI*2);ctx.fill();
 }
+// A flowing fuel ribbon, not three stationary strokes. All turbulence/advected tongues are sampled from
+// simulation time; no particle state, combat RNG, canvas pixels or edits to the burn/sweep simulation.
+function drawFlameJet(t) {
+  const age=S.time-t.jetAt;
+  if(t.jetAt===undefined||age<0||age>=.23||t.paused||t.selling)return false;
+  const muzzle=weaponMuzzle(t),st=tstats(t),cryo=t.branch==='B';
+  const dx=t.x+Math.cos(t.angle)*st.range-muzzle.x,dy=t.y+Math.sin(t.angle)*st.range-muzzle.y;
+  const length=Math.hypot(dx,dy);if(length<1)return false;
+  const nx=-dy/length,ny=dx/length,phase=S.time*27+SLOTS.indexOf(t.slot)*.71;
+  const fade=1-deploymentStep(age,.16,.23),steps=14;
+  const point=u=>{
+    const wave=(Math.sin(phase-u*13)+.45*Math.sin(phase*1.7-u*23))*Math.sin(Math.PI*u)*(cryo?1.6:2.8);
+    return {x:muzzle.x+dx*u+nx*wave,y:muzzle.y+dy*u+ny*wave};
+  };
+  ctx.save();
+  for(let layer=0;layer<3;layer++){
+    const width=[1,.62,.26][layer];
+    ctx.fillStyle=(cryo?['#50b5cf','#a6eaf5','#efffff']:['#e84c0a','#ff941f','#fff1b2'])[layer];
+    ctx.globalAlpha=[.48,.7,.9][layer]*fade;ctx.beginPath();ctx.moveTo(muzzle.x,muzzle.y);
+    for(const side of [1,-1])for(let j=1;j<=steps;j++){
+      const u=(side===1?j:steps-j+1)/steps,p=point(u);
+      const r=(1+5*Math.pow(Math.sin(Math.PI*u),.8))*(1-u*.7)*width*(cryo?.8:1);
+      ctx.lineTo(p.x+nx*r*side,p.y+ny*r*side);
+    }
+    ctx.closePath();ctx.fill();
+  }
+  // Tongues travel outward instead of flickering at fixed positions; their ends fade away in the last third.
+  const heading=Math.atan2(dy,dx);
+  for(let i=0;i<6;i++){
+    const u=(S.time*1.8+i/6)%1,p=point(u),r=.7+2*Math.sin(Math.PI*u);
+    const side=Math.sin(phase*.8+i*2.4)*u*3;
+    ctx.fillStyle=cryo?'#d8fbff':i%2?'#ffc45b':'#ff6a1a';ctx.globalAlpha=.35*Math.sin(Math.PI*u)*fade;
+    ctx.beginPath();ctx.ellipse(p.x+nx*side,p.y+ny*side,r*2,r*.65,heading,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();return true;
+}
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon',cell=cannon?1:0;
   if(!lowBuildingSprite(cell,-22,-17,44,34) && !structureSprite(cell,-22,-22,44,40))return false;
@@ -3115,12 +3151,7 @@ function draw() {
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
   for (const q of S.pools) { const k = Math.max(0, Math.min(1, (q.until - S.time) / 3)), f = 0.6 + 0.4 * Math.sin(S.time * 9 + q.x);   // plasma pools
     ctx.globalAlpha = 0.35 + 0.35 * k; ctx.fillStyle = '#ff7a2a'; ctx.beginPath(); ctx.ellipse(q.x, q.y, q.r * f + 4, q.r * 0.55 * f + 2, 0, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
-  for (const t of S.towers) if (t.type === 'flamer' && t.jetAt !== undefined && S.time - t.jetAt < 0.16) {           // the jet follows its sweep
-    const m = weaponMuzzle(t), st = tstats(t), cryo = t.branch === 'B';
-    for (let i = 0; i < 3; i++) { const w = 7 - i * 2, a = t.angle + Math.sin(S.time * 30 + i) * 0.03;
-      ctx.strokeStyle = cryo ? (i ? '#d8fbff' : '#7fe3f0') : (i === 2 ? '#fff1a0' : i ? '#ffb347' : '#ff6a1a'); ctx.globalAlpha = 0.55 + i * 0.15; ctx.lineWidth = w;
-      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(t.x + Math.cos(a) * st.range, t.y + Math.sin(a) * st.range); ctx.stroke(); }
-    ctx.globalAlpha = 1; }
+  for (const t of S.towers) if (t.type === 'flamer') drawFlameJet(t);
   for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower);
     if (sh.cluster) {                                             // one carrier flies to the burst point, then five bomblets fan out
       const BURST = 0.68, c = sh.cluster, arc = q => ({x:start.x + (c.cx-start.x)*q, y:start.y + (c.cy-start.y)*q - Math.sin(q*Math.PI)*70});
