@@ -1,3 +1,22 @@
+# Level 4 tower reference — approved and archived (2026-10-29)
+
+- User selected Machine Gun C, Rifle C, Tesla C, Prism A, Howitzer A, Cluster A,
+  Plasma C, Cryojet C, then approved the second corrected combined sheet and
+  requested upload. Branch: `codex/level4-approved-art`, based on `origin/main`
+  at `58c1e8e`; unrelated Flamethrower work is excluded.
+- Final approved source: `assets/art/references/towers/level4-selected-approved-v1.png`.
+  Selection, provenance, SHA-256 and limitations: `assets/art/references/towers/README.md`.
+- File copied byte-for-byte; source/destination SHA-256 match. User approval is for
+  this concept's appearance. No runtime sprites, animation cycles or game edits
+  are included. Tests, game captures and browser checks were not run or needed
+  for this reference-only archive; this establishes no gameplay visual validation.
+- Next: produce separate sprite components and animations from the selected designs;
+  then implement and review one visual iteration at a time using user-run checks.
+  Previously proposed animation behavior is not yet independently approved.
+
+---
+Previous checkpoint:
+
 # Leech surfacing art — prototype v0.14 (2026-10-28)
 
 - Branch `codex/leech-surfacing-art`, nothing committed yet. Presentation only: no change to `update`, `stepSimulation`, targeting, `LEECH_OOZE` or `BUILD_WARMUP_SECONDS`; no function in `replaySourceFingerprint` was edited. Export tag `prototype-v0.14` (accepted on import; `tests/overlapping-waves.cjs` pin moved).
