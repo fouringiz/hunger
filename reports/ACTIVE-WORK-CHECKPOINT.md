@@ -1,3 +1,15 @@
+# Polypoid — away-from-camera run sheet prepared (2026-10-28)
+
+- Latest user request: attached rightward runner as appearance/cycle reference, same six-frame row but running AWAY / SCREEN UP. Flat disk, six smooth jointless tentacles/one raised bending into depth, asynchronous scurry/bounce, far front reaches top/near rear below. Fixed elevated three-quarter camera/scale, overhead light, grey/no labels, no hooks.
+- Output: `reports/generated/polypoid-run-away/sheet-v1.png`; input archived beside it. Built-in image_gen one pass. Exact prompt/limits: `assets/art/references/enemies/polyp/polypoid-run-away-sheet-v1.md`.
+- Illustration visible in tool output: six poses, flat pale disk/seam, upper/far raised appendage, near/lower rear supports, low/high clearance and changing soft arm windings. Exact six-path tracing near foreshortened roots, away-heading/raised-arm forward bend and surface smoothness remain user review items. User acceptance pending.
+- Static sheet does not prove running speed/asynchronous timing, no sliding/loop, strict scale/camera/light or game readability. No tests/browser/game captures/thumbnail/grayscale/continuous-cycle checks run. No runtime/simulation/balance changes.
+- Heavy PNG ignored, small prompts/checkpoint tracked. Rightward run and older sheets preserved; previous mesh-rig candidate still awaits user rerun. Unrelated organic-world-mire-v7.webp modification untouched.
+- Next: user reviews away-heading run sheet and provides specific feedback. Later game integration requires actual-game before/after captures, full cycle, camera/grayscale/readability checks and independent visual review.
+
+---
+Previous checkpoint:
+
 # Polypoid — rightward running sheet prepared (2026-10-28)
 
 - Latest user request: exact pale juvenile reference, six-frame one-row RUN to RIGHT, fast/nervous/asynchronous smooth jointless arms, disk bounces/rocks, raised arm bends forward. Exactly six tentacles, flat disk/ragged pink seam, same elevated three-quarter camera/scale/overhead light, grey/no text, no spider/crab/joints/hooks/faces/blood/metal.
