@@ -1,3 +1,23 @@
+# Polyp — contact-transition collapse revision, awaiting user rerun (2026-10-28)
+
+- User ran syntax and motion checks on commit `840f458`: viewer syntax returned no error; continuity, planted contacts/rendered vertices, local proportions and rigid plate distances reported PASS. Mesh check FAILED at phase 12/120, triangle 5445, area ratio 0.0056545352650638515 against unchanged >0.02 criterion. Later negative controls were not reached.
+- Source diagnosis: short contact-support falloffs (.075–.110 UV) concentrate the tip correction gradient. Prepared wider .180 supports for all four tips, keeping gait, travel, lift, tissue fields and plate transforms unchanged. This is a candidate correction, not a verified fix; interactions near rigid plates and between supports still need the full sweep.
+- Observable criterion: tissue remains continuous without collapsed/inverted patches across the whole loop; planted tips stay anchored and plates stay rigid. Existing full-cycle threshold is unchanged. Added explicit regression at the reported triangle/phase with the old four radii as a known-bad negative control.
+- Preserved prior standalone preview at `reports/generated/polyp-continuous-motion/review-before-contact-support.html`; regenerated `review.html` with revised rig. These are preview artifacts, NOT actual-game before/after captures.
+- Agent did not run tests, browser checks or captures. Prior PASS results belong to the old rig only; revised checks and visual comparison remain pending. No runtime/simulation/path/balance change. Unrelated `assets/art/previews/organic-world-mire-v7.webp` remains untouched.
+
+## Next step — user runs from repository root
+
+```sh
+node tools/check-polyp-motion.cjs
+open reports/generated/polyp-continuous-motion/review.html
+```
+
+Reload an already-open preview to load the embedded revised rig. Inspect full cycles with the mesh enabled, including phase 0.10, at large and 50 px scale. Watch for displaced seams, rigid-plate transitions and contact sliding. Return the complete checker output and any visible defects. Actual-game captures/readability/perspective verification remain a later integration requirement.
+
+---
+Previous checkpoint:
+
 # Polyp — continuous-motion preview prepared, user checks pending (2026-10-28)
 
 ## Current work

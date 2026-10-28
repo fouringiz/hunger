@@ -3,7 +3,10 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.PolypMotion=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  const TAU=Math.PI*2;
  const config={duration:5.2,aspect:1.5,stride:[-.065,.014],duty:.66,
-  contacts:[{p:[.174,.874],phase:0,r:.095,lift:.025},{p:[.390,.918],phase:.51,r:.085,lift:.020},{p:[.810,.970],phase:.25,r:.110,lift:.032},{p:[.873,.758],phase:.75,r:.075,lift:.025}],
+  // Spread tip corrections through adjacent tissue. The old .075–.110 UV supports
+  // concentrated the correction gradient enough to collapse/invert mesh cells.
+  // .180 remains below every anchor-to-anchor distance, preserving exact tips.
+  contacts:[{p:[.174,.874],phase:0,r:.180,lift:.025},{p:[.390,.918],phase:.51,r:.180,lift:.020},{p:[.810,.970],phase:.25,r:.180,lift:.032},{p:[.873,.758],phase:.75,r:.180,lift:.025}],
   plates:[{center:[.660,.235],polygon:[[.534,.047],[.650,.059],[.737,.165],[.785,.302],[.756,.418],[.691,.359],[.608,.274],[.566,.151]],feather:.050},
    {center:[.489,.720],polygon:[[.453,.604],[.544,.646],[.550,.738],[.518,.843],[.462,.843],[.411,.751],[.430,.660]],feather:.040}]};
  const fract=x=>x-Math.floor(x),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));

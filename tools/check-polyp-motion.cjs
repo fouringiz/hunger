@@ -40,6 +40,21 @@ for(const [i,plate] of R.config.plates.entries()){
 }console.log('PASS rigid plate interior distances');
 let minRatio=Infinity,maxRatio=0;
 const area=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+// User-reported failure: phase .1, triangle 5445, ratio .0056545352650638515.
+// Rebuild bindings with the old support widths to ensure this regression still
+// rejects the actual bad deformation, not just a synthetic folded triangle.
+const regressionIds=Array.from(mesh.indices.slice(5445*3,5445*3+3));
+const regressionBase=regressionIds.map(k=>[mesh.points[k].x,mesh.points[k].y]);
+function regressionRatio(){return area(...regressionBase.map(p=>sample(...p,.1)))/area(...regressionBase);}
+const savedRadii=R.config.contacts.map(c=>c.r);
+try{
+ [.095,.085,.110,.075].forEach((r,i)=>{R.config.contacts[i].r=r;});
+ const bad=regressionRatio();
+ assert.ok(Number.isFinite(bad)&&bad<=.02,`known collapsing configuration escaped regression: ${bad}`);
+}finally{savedRadii.forEach((r,i)=>{R.config.contacts[i].r=r;});}
+const corrected=regressionRatio();
+assert.ok(Number.isFinite(corrected)&&corrected>.02,`reported mesh collapse remains: ${corrected}`);
+console.log('PASS reported collapse regression and old-support negative control');
 for(let n=0;n<120;n++){
  const state=R.prepare(n/120),v=mesh.points.map(p=>R.deformBound(p,state));
  for(let j=0;j<mesh.indices.length;j+=3){

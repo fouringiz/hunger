@@ -57,5 +57,11 @@ Observe at least three full loops, then slow down: compare against the accepted 
 
 - The extracted image has subtle detail differences; it is not newly artistically accepted.
 - True emergence of entirely new anatomy is not possible with this single-mesh source; existing folds stretch/retract. Judge whether that realizes the desired amorphous motion.
-- No user results yet. Mesh quality, browser render/performance, subjective continuity and ground-contact mapping remain unverified.
+- User results on initial rig: continuity, planted/rendered anchors, local proportions and rigid interior lengths passed; mesh sweep failed at phase .1 / triangle 5445 (area ratio .0056545352650638515). Browser render/performance and visual ground-contact mapping remain unverified. Revised rig has not yet been tested.
 - No runtime asset, multi-heading animation, gameplay, paths, collision, balance or replay changes. No game-level comparison to actual lane/camera/actors yet. No claim that the requested game behavior is fixed or fully verified.
+
+## Contact-collapse revision — 2026-10-28
+
+User-reported fold/collapse is a real failure; >.02 area threshold remains unchanged. Contact supports now extend .180 UV instead of .075–.110, spreading the same tip correction across adjacent tissue. No gait/lift/stride or body-motion amplitude reduction. Added a regression at the reported phase/triangle that rebinds the old widths and must reject that known-bad configuration before accepting the revised one. The full sweep and all previous criteria still apply.
+
+Candidate correction only: tests and full-loop visual comparison are user-run and pending. Compare regenerated `review.html` with retained `review-before-contact-support.html`; these standalone previews are not game captures. Reload the browser tab after rebuilding because rig code is embedded.
