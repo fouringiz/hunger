@@ -1,3 +1,15 @@
+# Polypoid — rightward running sheet prepared (2026-10-28)
+
+- Latest user request: exact pale juvenile reference, six-frame one-row RUN to RIGHT, fast/nervous/asynchronous smooth jointless arms, disk bounces/rocks, raised arm bends forward. Exactly six tentacles, flat disk/ragged pink seam, same elevated three-quarter camera/scale/overhead light, grey/no text, no spider/crab/joints/hooks/faces/blood/metal.
+- Selected output: `reports/generated/polypoid-run-right/sheet-v3.png`; source and v1/v2 archived beside it. Built-in image_gen three passes: run poses, far-arm exposure, then count correction only in2/5. Exact prompts/limits: `assets/art/references/enemies/polyp/polypoid-run-right-sheet-v1.md`.
+- Visible tool-output illustration: six full unlabelled poses, flat pale disks, low/high clearances and varied support/recovery curves, raised arms oriented right, no source discarded skin. Final count intended as five locomotor arms plus raised sixth; foreshortened far roots/tips and soft curled tip interpretation still need human review. User acceptance pending.
+- Static sheet does not prove running speed, nervous asynchronous timing, no sliding, registered cycle/loop, strict camera/scale/light or game readability. No tests/browser/game captures/thumbnail/grayscale/full-cycle checks run. No runtime/simulation/balance changes.
+- Heavy draft PNGs ignored; small prompt/checkpoint tracked. Existing parent/zygote sheets preserved; previous mesh-rig candidate still awaits user rerun. Unrelated organic-world-mire-v7.webp modification untouched.
+- Next: user reviews running sheet. Apply specific feedback; later runtime integration requires actual-game before/after captures, complete motion cycle, camera/grayscale/readability checks and second visual review.
+
+---
+Previous checkpoint:
+
 # Zygote — five-frame emergence sheet prepared (2026-10-28)
 
 - Latest user request: use attached parent sheet as MATERIAL ONLY. Draw five frames of torn living zygote fragment: rest/glowing seam → tense swelling/coiled body under skin → seam rupture/first tentacles → pale translucent flat disk raised over opened skin on six jointless arching tentacles (one raised) → free juvenile beside empty collapsed skin. One row, same elevated three-quarter camera/scale, overhead light, light grey, no labels. No egg/capsule/shell, faces/eyes/teeth/body parts/claws/hooks/pincers/blood/glass/metal.
