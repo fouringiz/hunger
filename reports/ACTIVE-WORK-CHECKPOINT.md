@@ -1,3 +1,15 @@
+# Polyp — toward-camera crawl sheet prepared (2026-10-28)
+
+- Latest user request: six frames in ONE horizontal row, same supplied appearance and flowing cycle, now TOWARD CAMERA / DOWN SCREEN; far rear stays upper screen. Fixed elevated three-quarter camera, strictly overhead light, constant scale, light grey, no text. Radial flower/explosion remains prohibited.
+- Output: `reports/generated/polyp-toward-crawl/sheet-v1.png`; supplied input archived beside it. Built-in image_gen one pass. Exact prompt/limits: `assets/art/references/enemies/polyp/toward-crawl-sheet-v1.md`.
+- Tool-output illustration: six complete poses, near/lower pseudopod reach in 2–3, stretched leading flesh/seams in 3, far/upper trailing tissue in 4, compact 5–6. Recognizable palette/parts, no radial open hub. User acceptance pending.
+- Straight down-screen readability (some lateral asymmetry), precise overhead illumination, fixed scale/camera, hidden six-lobe identity/count, <=1.5 envelope and registered displacement remain unverified/review items. No tests/browser/game captures/thumbnail/grayscale/continuous-cycle checks run. Static illustration does not prove runtime motion.
+- Draft heavy PNG ignored; small checkpoint/prompt tracked. No runtime/simulation/balance changes; prior contact-rig candidate still awaits user rerun. Preserve away/rightward sheets and unrelated organic-world-mire-v7.webp modification.
+- Next: user reviews toward-camera variant; apply specific feedback. Later integration still requires actual-game before/after captures, camera/grayscale/readability/full-loop evidence and second visual review.
+
+---
+Previous checkpoint:
+
 # Polyp — away-from-camera crawl sheet prepared (2026-10-28)
 
 - Latest user request: same six-phase sheet and creature, now crawls AWAY into depth toward SCREEN UP. Layout remains six frames in ONE horizontal row. Same elevated three-quarter camera/scale, strictly overhead light, light grey, no text; no radial spreading.
