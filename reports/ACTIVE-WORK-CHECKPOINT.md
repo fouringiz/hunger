@@ -1,3 +1,15 @@
+# Zygote — five-frame emergence sheet prepared (2026-10-28)
+
+- Latest user request: use attached parent sheet as MATERIAL ONLY. Draw five frames of torn living zygote fragment: rest/glowing seam → tense swelling/coiled body under skin → seam rupture/first tentacles → pale translucent flat disk raised over opened skin on six jointless arching tentacles (one raised) → free juvenile beside empty collapsed skin. One row, same elevated three-quarter camera/scale, overhead light, light grey, no labels. No egg/capsule/shell, faces/eyes/teeth/body parts/claws/hooks/pincers/blood/glass/metal.
+- Output: `reports/generated/zygote-emergence/sheet-v2.png`. Input and v1 retained beside it. Built-in image_gen, two passes; second only requested removal of skin/left-tip contact in frame5. Exact prompts/criteria and limitations: `assets/art/references/enemies/polyp/zygote-emergence-sheet-v1.md`.
+- Generated illustration shows five stages, raw irregular violet chunk/pink seam glow, swollen under-skin folds, rupture, lighter disk lifted on arching smooth tentacles, raised appendage. Final frame visibly separates empty skin from juvenile with grey ground. Five supports plus one raised tentacle depicted in4–5; occluded small-scale count and soft-tip interpretation still subject to review. User acceptance pending.
+- Exact source-material likeness, strict light/camera/scale, physical fist-size, frame registration and smooth motion not measured. No tests/browser/game captures/thumbnail/grayscale/full-loop checks run. Static concept not runtime verification.
+- Heavy draft images ignored; small prompt/checkpoint tracked. No runtime/simulation/balance changes. Parent directional sheets and unrelated organic-world-mire-v7.webp modification preserved. Previous contact-rig widening candidate still awaits user rerun.
+- Next: user reviews emergence sheet. Apply specific feedback. Later game integration still requires actual-game before/after captures, camera/readability/grayscale/full-cycle evidence and second visual review.
+
+---
+Previous checkpoint:
+
 # Polyp — toward-camera crawl sheet prepared (2026-10-28)
 
 - Latest user request: six frames in ONE horizontal row, same supplied appearance and flowing cycle, now TOWARD CAMERA / DOWN SCREEN; far rear stays upper screen. Fixed elevated three-quarter camera, strictly overhead light, constant scale, light grey, no text. Radial flower/explosion remains prohibited.
