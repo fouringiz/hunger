@@ -1,3 +1,15 @@
+# Polypoid — away-running perspective revision v2 prepared (2026-10-28)
+
+- Latest user clarification: BEHIND+ABOVE, flee UP. BOTH cues mandatory each pose: raised arm bows away with far tip partly self-occluded, NEVER back at viewer; far/up arms visibly short/small vs near/down pushing arms. Same scale/camera, six smooth tentacles, flat disk, overhead material/light, no labels. Adjacent poses need varied all-arm positions/height and away-leaning disk.
+- Output version: `reports/generated/polypoid-run-away/sheet-v2.png`; v1 preserved. New reference archived beside it. Built-in image_gen three passes: depth cues, anatomy, targeted residual-stub cleanup. Exact prompts/limits: `assets/art/references/enemies/polyp/polypoid-run-away-sheet-v2.md`.
+- Final tool-output illustration shows one upper raised arm + two small far arms + three larger near arms in each pose; extra underside stubs from earlier passes removed visually. Stronger near/far size cue; small far tip partly obscured behind raised shaft, no exposed C-shaped curl; low/high disk changes and arm winding differences. User acceptance pending; speed/asynchrony and forward-away perception still review items, some high poses similar.
+- No tests/browser/game captures/50 px/grayscale/registered loop/contact checks run. Static painting does not establish exact perspective/anatomical identity or full motion behavior. No runtime/simulation/balance changes. Previous mesh-rig candidate still awaits user rerun.
+- Heavy PNG ignored; small notes/checkpoint tracked. Preserve older heading sheets, v1 and unrelated organic-world-mire-v7.webp modification.
+- Next: user reviews both mandatory direction cues in this version and running-readability. Later integration requires actual-game captures, complete cycle/contact, camera/grayscale/scale/readability checks and independent visual review.
+
+---
+Previous checkpoint:
+
 # Polypoid — away-from-camera run sheet prepared (2026-10-28)
 
 - Latest user request: attached rightward runner as appearance/cycle reference, same six-frame row but running AWAY / SCREEN UP. Flat disk, six smooth jointless tentacles/one raised bending into depth, asynchronous scurry/bounce, far front reaches top/near rear below. Fixed elevated three-quarter camera/scale, overhead light, grey/no labels, no hooks.
