@@ -1,3 +1,14 @@
+# Polyp — painted six-frame colony crawl sheet prepared (2026-10-28)
+
+- Latest direct request: draw a horizontal six-frame sheet using supplied appearance and spreading-silhouette references. Persistent six heterogeneous lobes, pink seams, amber organic shell; colony spreads and gathers, no walking, same camera/light/scale, <=1.5 resting envelope, light grey background, no text. This turn produces that image, not a further mesh-rig patch.
+- Output: `reports/generated/polyp-six-frame-colony/sheet-v4.png`. Inputs archived in that folder. Built-in image_gen, four sequential passes; final shorter-bridge revision keeps six clearly separated masses in fourth pose, earlier passes had excessive central mound/spread. Exact prompts and limitations in `assets/art/references/enemies/polyp/six-frame-colony-sheet-v1.md`.
+- Sheet visible in image-tool output: six poses in one row, grey background, no text, compact/spread/gather shapes, recognizable pink seams/blue sac/amber plates. This is illustration review only. Exact size cap, occluded lobe count/identity, exact source likeness, animation continuity and user acceptance remain unconfirmed. No tests, browser checks or game captures run.
+- Keep heavy draft image ignored, small prompt/decision notes tracked. No runtime/simulation/balance changes. Prior contact-support candidate remains awaiting user check; do not carry older PASS results over to it. Unrelated modified organic-world-mire-v7.webp preserved.
+- Next: user reviews this sheet. Apply specific feedback; approval of older art does not automatically approve this sheet. Actual game integration, if later requested, still requires actual game captures, camera/readability/grayscale/full motion cycle evidence and second visual review.
+
+---
+Previous checkpoint:
+
 # Polyp — contact-transition collapse revision, awaiting user rerun (2026-10-28)
 
 - User ran syntax and motion checks on commit `840f458`: viewer syntax returned no error; continuity, planted contacts/rendered vertices, local proportions and rigid plate distances reported PASS. Mesh check FAILED at phase 12/120, triangle 5445, area ratio 0.0056545352650638515 against unchanged >0.02 criterion. Later negative controls were not reached.
