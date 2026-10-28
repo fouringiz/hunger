@@ -1236,6 +1236,8 @@ const crawlerArt = typeof Image === 'undefined' ? null : new Image();
 if (crawlerArt) crawlerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-crawlers-v2.png';
 const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
+const flamerArt = typeof Image === 'undefined' ? null : new Image();
+if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -1740,9 +1742,15 @@ function weaponProjection(angle) {
   const depth=.56, yaw=Math.atan2(Math.sin(angle)/depth,Math.cos(angle));
   return {a:Math.cos(yaw),b:Math.sin(yaw)*depth,c:-Math.sin(yaw),d:Math.cos(yaw)*depth};
 }
+// The foundation never turns. The flat head is projected like the other guns; upright cylindrical tanks
+// move around its bearing but keep their own vertical axis and fixed lighting. No runtime pixel reads.
+const FLAMER_ART={rects:[[8,39,240,178],[264,66,240,123],[569,8,142,240]],mountY:-12,muzzleX:29};
+function flamerPoint(angle,x,y=0) {
+  const m=weaponProjection(angle);return {x:m.a*x+m.c*y,y:FLAMER_ART.mountY+m.b*x+m.d*y};
+}
 function weaponMuzzle(t,angle=t.angle) {
   if(t.type==='voltaic')return {x:t.x,y:t.y-58};
-  if(t.type==='flamer'){const m=weaponProjection(angle);return {x:t.x+m.a*22,y:t.y-14+m.b*22};}
+  if(t.type==='flamer'){const p=flamerPoint(angle,FLAMER_ART.muzzleX);return {x:t.x+p.x,y:t.y+p.y};}
   const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
   return {x:t.x+m.a*length,y:t.y-14+m.b*length};
 }
@@ -1924,6 +1932,36 @@ function soldierPresentationPoint(s,t) {
   return {...ground,visible:true};
 }
 
+function drawFlamethrower(t) {
+  const ready=flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768&&flamerArt.naturalHeight>=256;
+  const part=(n,x,y,w,h)=>{if(!ready)return false;try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[n],x,y,w,h);return true;}catch(_){return false;}};
+  if(!part(0,-22,-17,44,34)){
+    ctx.fillStyle='#2b2a22';roundRect(-22,-17,44,34,5);ctx.fill();ctx.strokeStyle='#827855';ctx.lineWidth=1.5;ctx.stroke();
+  }
+  const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y));
+  const tank=p=>{
+    // Tank base sits four pixels below the head plane; its tall sides never inherit the yaw matrix.
+    if(!part(2,p.x-5.5,p.y-18,11,22)){
+      ctx.fillStyle='#a95823';roundRect(p.x-5.5,p.y-18,11,22,4);ctx.fill();
+      ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5,p.y-12,11,2);ctx.fillRect(p.x-5.5,p.y-3,11,2);
+    }
+  };
+  tanks.filter(p=>p.y<=FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
+  const m=weaponProjection(t.angle);
+  for(const z of [3,0]){
+    ctx.save();ctx.translate(0,FLAMER_ART.mountY+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+    if(z)ctx.filter='brightness(0.38)';
+    if(!part(1,-13,-13,42,28)){
+      ctx.fillStyle='#687257';roundRect(-12,-10,22,20,4);ctx.fill();
+      ctx.fillStyle='#4a4a40';ctx.fillRect(8,-4,21,8);ctx.fillStyle='#b5944e';ctx.fillRect(18,-4,3,8);
+    }
+    ctx.restore();
+  }
+  tanks.filter(p=>p.y>FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
+  const tip=flamerPoint(t.angle,FLAMER_ART.muzzleX);
+  ctx.fillStyle=t.selling||t.paused?'#7e8277':t.branch==='B'?'#a4f5ff':'#ff9b39';
+  ctx.beginPath();ctx.arc(tip.x,tip.y,1.2,0,Math.PI*2);ctx.fill();
+}
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon',cell=cannon?1:0;
   if(!lowBuildingSprite(cell,-22,-17,44,34) && !structureSprite(cell,-22,-22,44,40))return false;
@@ -2340,10 +2378,8 @@ function drawTowerBody(t) {
     const visibleProgress=saleProgress!==null?saleProgress:buildProgress<1?buildProgress:fold<1?foldedPose:1;
     const deploying=drawBuildingDeployment(t,visibleProgress);
     if(!deploying){
-    if (t.type === 'flamer') {                                   // no atlas cell yet: vector tank and nozzle in the atlas' idiom
-      ctx.fillStyle='#2b2a22';roundRect(-20,-18,40,36,5);ctx.fill();ctx.strokeStyle='#6b6450';ctx.lineWidth=1.5;roundRect(-20,-18,40,36,5);ctx.stroke();
-      ctx.fillStyle='#7a3a1c';roundRect(-13,-14,10,26,4);ctx.fill();ctx.fillStyle='#8a4a22';roundRect(1,-14,10,26,4);ctx.fill();
-      ctx.save();ctx.rotate(t.angle);ctx.fillStyle='#4a4a40';ctx.fillRect(0,-3,22,6);ctx.fillStyle=t.branch==='B'?'#9df7ff':'#ff8a3d';ctx.fillRect(20,-2,4,4);ctx.restore();
+    if (t.type === 'flamer') {
+      drawFlamethrower(t);
     } else if (t.type === 'voltaic') {
       let drawn = lowBuildingSprite(4,-22,-62,44,76);
       const capY=drawn?-58:-28;

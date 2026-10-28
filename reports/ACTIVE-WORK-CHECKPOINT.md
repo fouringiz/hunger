@@ -1,3 +1,17 @@
+# Flamethrower art integration — checks pending (2026-10-29)
+
+- Branch `codex/flamethrower-art`, baseline `58c1e8eeb350927ec16a2723eecb91171a71f718`. User approved the concept in this chat, then explicitly requested integration. Approval of the resulting gameplay appearance remains pending.
+- `assets/hunger-flamethrower-v1.png` (768×256 RGBA) + `.frames.json`: stationary foundation, overhead weapon head/nozzle, upright tank. Generated separation and approved concept remain in ignored `reports/generated/flamethrower/`; only the final atlas is committed. Reproduction: `tools/bake-flamethrower.cjs`; design/provenance and review criteria in `assets/art/flamethrower-v1.md`.
+- Renderer: fixed 44×34 foundation, continuous projected upper yaw, two upright tanks sorted around the head; orange/cyan pilot; muzzle follows the drawn nozzle. Vector loading/failure fallback, no new runtime pixel reads. Existing flamer deployment/pause/sale behavior retained. No combat/balance/route/platform edits; simulation fingerprints are to be compared by the user-run capture, no restamp claimed or performed.
+- Agent completed: generated/packed final atlas, opened and inspected that asset, reviewed source diff. This does NOT establish gameplay appearance or test success.
+- Prepared, NOT run: `tests/flamethrower-art.cjs` (planted foundation, upright tanks, 64 yaw/muzzle samples, atlas mapping, render parity, pixel-free fallback; known-bad rotated foundation/old muzzle/missing atlas must fail the same checks). Full `npm test` includes it.
+- Prepared, NOT run: `node tools/capture-organic-world.cjs --flamethrower` compares the baseline/current actual renderer on Mire/Ember, with whole colour/grayscale images, 17-sample complete turns and complete fire/Plasma/Cryojet sweeps, paused/branch/sale states, reference comparison and simulation fingerprint parity. Output paths are expectations, not existing evidence: `reports/generated/flamethrower/{before,after}-{mire,ember}-*.png`.
+- Still unverified: all tests, real game scale/readability/camera, head/tank overlap and depth handoffs during turns, nozzle attachment throughout firing, complete sweep cycles, `file://` console and independent second review. No claim of visual completion.
+- Next: user runs the three commands in `assets/art/flamethrower-v1.md`, supplies output/captures; inspect whole and enlarged before/after views and the full cycles, record actual findings, then fix any mismatch before PR/merge.
+
+---
+Previous checkpoint:
+
 # Leech surfacing art — prototype v0.14 (2026-10-28)
 
 - Branch `codex/leech-surfacing-art`, nothing committed yet. Presentation only: no change to `update`, `stepSimulation`, targeting, `LEECH_OOZE` or `BUILD_WARMUP_SECONDS`; no function in `replaySourceFingerprint` was edited. Export tag `prototype-v0.14` (accepted on import; `tests/overlapping-waves.cjs` pin moved).
