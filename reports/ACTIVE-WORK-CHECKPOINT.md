@@ -1,3 +1,15 @@
+# Polyp — five-frame death/disassembly sheet prepared (2026-10-28)
+
+- Latest request: exact rest/material reference + exact open-pose reference as FRAME3. Five stages: limp seam flash → strand/seam rupture → radial opening of six lobes/carrier collapse → six curled live pieces fall → six separate zygote-like ragged glowing-seam chunks at unequal distances around dark dead carrier. Elevated three-quarter camera, same scale/overhead light, grey/no labels, no eggs/blood/metal/body parts. Radial opening explicitly belongs to DEATH; remains forbidden for living crawl.
+- Selected output: `reports/generated/polyp-death/sheet-v2.png`; v1/two refs archived beside it. Built-in image_gen two passes: full sequence, then curl/scatter4–5. Exact prompts/limits: `assets/art/references/enemies/polyp/polyp-death-sheet-v1.md`.
+- Tool-output illustration shows five scenes, first bright seam network, reference-corresponding third open composition, six detached live seam-lit chunks plus one dark flat central carrier in4–5. Final positions have different offsets/distances but preserve broad lobe ordering; irregular-scatter and zygote-likeness still require user judgment. User acceptance pending.
+- No pixel-exact reference copy or verified camera/light/scale/phase continuity. No tests/browser/game captures/50 px/grayscale/runtime spawning or animation verification run. No runtime/simulation/balance changes. Prior mesh-rig candidate still awaits user rerun.
+- Heavy draft PNGs ignored; small prompt/checkpoint tracked. Preserve prior heading/zygote sheets and unrelated organic-world-mire-v7.webp modification.
+- Next: user reviews death stages, especially frame3/reference, six living zygote counts vs one dead carrier, curled/ragged form and irregular scatter. Later integration needs actual-game captures, complete timed animation, camera/grayscale/readability and independent visual review.
+
+---
+Previous checkpoint:
+
 # Polypoid — toward-viewer run sheet prepared (2026-10-28)
 
 - Latest request: FRONT+ABOVE, run toward viewer/DOWN, six poses. Both required in EACH: raised arm closer/larger tip overhanging front rim, never away; long/large near catching arms vs short/small far pushing arms. Flat disk leans viewerward, six jointless/no-hook tentacles, changed heights/arm curves in adjacent phases. Same elevated camera/scale/overhead light, grey/no labels.
