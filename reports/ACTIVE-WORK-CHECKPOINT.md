@@ -15,7 +15,7 @@
   ```
 
   The reference-board capture needs the local ignored photo `reports/generated/flamethrower/references/fire-1.png` (present in this workspace). Expected, not yet captured: `reports/generated/flamethrower-reference-fire/reference-before-after.png`, `{before,after}-{mire,ember}-fire-{base,A,B}-whole{,-gray}.png`, and full `flow/sweep/stop` game/zoom sheets. `--before` now applies to fire captures so the comparison can use this exact main base. Inspect whole and close views, full cycles and real `file://` console; second independent frame review remains required before merge.
-- Next: publish a draft PR, then await user-run results and frame review. No claim of visual completion.
+- Published draft PR [#71](https://github.com/fouringiz/hunger/pull/71), base `main`, implementation commit `b4afb20`. PR includes the final fire/smoke sheets inline and explicit integration/verification limits. Next: await user-run results and frame review. No claim of visual completion; no merge.
 
 ---
 Historical checkpoint inherited from main (PR #69 is now merged):
