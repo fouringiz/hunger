@@ -1,0 +1,6 @@
+'use strict';
+// The actual-game capture must not silently substitute vector terrain for zone art.
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),{createRequire}=require('node:module'),assert=require('node:assert/strict');
+const file=path.join(__dirname,'../tools/capture-organic-world.cjs'),{loadWorld}=require(file);
+async function check(load){const w=await load();assert.ok(w.images.worldGroundArt?.width>0,'zone ground material missing');assert.ok(w.images.ancientStoneArt?.width>0,'stone material missing');}
+(async()=>{await check(loadWorld);const source=fs.readFileSync(file,'utf8'),bad=source.replace("if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;","if(!source.includes('const '+name+' = '))continue;");assert.notEqual(bad,source);const mod={exports:{}},run=vm.runInThisContext('(function(require,module,exports,__dirname,__filename){'+bad+'\n})');run(createRequire(file),mod,mod.exports,path.dirname(file),file);await assert.rejects(()=>check(mod.exports.loadWorld),/zone ground material missing/);console.log('PASS capture materials: real zone/stone art loaded; overbroad declaration filter rejected');})().catch(e=>{console.error(e);process.exitCode=1;});

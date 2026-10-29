@@ -44,7 +44,9 @@ for(const type of ['forager','carapacid','leech']){
 }
 const tesla=boot();tesla.run("reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
 const firstLines=tesla.lines.slice();tesla.lines.length=0;tesla.run('S.towers[0].angle=Math.PI/2;drawTowerBody(S.towers[0]);');assert.deepEqual(tesla.lines,firstLines,'Tesla draws no changing directional pointer');
-const drawnTesla=tesla.draws.find(d=>d[0]===tesla.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===86);
-assert.ok(drawnTesla&&drawnTesla[6]===-62&&drawnTesla[8]===76,'Tesla is a tall upright model');
+const neutral=tesla.images.find(i=>i.src.endsWith('hunger-voltaic-neutral-v1.png'));
+const drawnNeutral=tesla.draws.find(d=>d[0]===neutral);
+assert.ok(drawnNeutral,'basic Voltaic uses its neutral upper, rather than the old complete column');
+assert.ok(tesla.draws.some(d=>d[0]===tesla.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===59&&d[6]===-17&&d[8]===34),'basic Voltaic uses the same square foundation as the other weapons');
 const capStart=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],0))'),b2=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],Math.PI))');assert.equal(capStart,b2,'Tesla emits from its fixed cap independent of facing');
-console.log('PASS continuous projected yaw, exact barrel direction, fixed crawling contact and tall omnidirectional Tesla');
+console.log('PASS continuous projected yaw, exact barrel direction, fixed crawling contact and neutral omnidirectional Voltaic');

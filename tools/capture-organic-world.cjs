@@ -3,14 +3,22 @@
 // WORLD_CANVAS_MODULE=/path/to/@napi-rs/canvas node tools/capture-organic-world.cjs [--ember] [--frames] [--viewport] [--empty] [--legacy] [--motion]
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-rs/canvas');
+const {execFileSync}=require('node:child_process');
 const legacy=process.argv.includes('--legacy'),motion=process.argv.includes('--motion');
 const root=path.join(__dirname,'..'),zone=process.argv.includes('--ember')?'ember':'mire';
-async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHtml=null,assetOverrides={}}={}){
+async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHtml=null,assetOverrides={},assetGitRef=null}={}){
   let source=(sourceHtml||fs.readFileSync(path.join(root,'prototype/index.html'),'utf8')).match(/<script>([\s\S]*?)<\/script>/)[1];
   const files={leechMireArt:'hunger-leech-mire-v1.webp',leechSurfacingArt:'hunger-leech-surfacing-v1.webp',carapacidShelterArt:'hunger-carapacid-shelter-v1.webp',polypArt:'hunger-polyp-v1.webp',polypoidArt:'hunger-polypoid-v1.webp',zygoteArt:'hunger-zygote-v1.webp',unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
   const images={};
+  files.flamerArt='hunger-flamethrower-v1.png';
+  files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
+  files.level4YawArt='hunger-level4-yaw-v1.png';
+  files.level4Art=source.includes('assets/hunger-level4-towers-v2.png')?'hunger-level4-towers-v2.png':'hunger-level4-towers-v1.png';
   for(const [name,file]of Object.entries(files)){
-    images[name]=await loadImage(assetOverrides[name]||path.join(root,'assets',file));
+    if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;
+    const local=path.join(root,'assets',file);
+    const input=assetOverrides[name]||(fs.existsSync(local)?local:execFileSync('git',['show',(assetGitRef||'15ad9ed')+':assets/'+file],{cwd:root,maxBuffer:32*1024*1024}));
+    images[name]=await loadImage(input);
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }
   for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',gateDetailArt:legacy?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp',...(legacy?{gateRuinsArt:'hunger-ancient-gate-ruins-v1.webp'}:{}),platformDetailArt:'hunger-concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
@@ -86,6 +94,5 @@ async function main(){
   }
   console.log('PASS '+zone+': '+(motion?180:90)+' actual renderer frames, pause/resume and no stone obstruction of build slots. '+path.join(dir,'scene.png'));
 }
-if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
-
 module.exports={loadWorld};
+if(require.main===module)((process.argv.includes('--level4')||process.argv.includes('--level4-seat')||process.argv.includes('--voltaic-base')||process.argv.includes('--level4-yaw')||process.argv.includes('--tower-base'))?require('./capture-level4-towers.cjs').main():process.argv.some(a=>a.startsWith('--flamethrower'))?require('./capture-flamethrower.cjs').main():main()).catch(e=>{console.error(e);process.exitCode=1;});

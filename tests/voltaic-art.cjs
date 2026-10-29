@@ -34,25 +34,37 @@ function runtime({image = true, pathname = '/prototype/'} = {}) {
 
 for (const [pathname, prefix] of [['/prototype/','../'],['/reports/generated/case/','../../']]) {
   const rt = runtime({pathname});
-  assert.equal(rt.calls.images[1].src, `${prefix}assets/hunger-voltaic-v1.png`, 'Voltaic art uses the local asset path in both page contexts');
+  assert.ok(rt.calls.images.some(im=>im.src===`${prefix}assets/hunger-voltaic-neutral-v1.png`), 'neutral art resolves in both page contexts');
 }
-
-for (const state of ['loading','failed']) {
-  const rt = runtime();
-  if (state === 'failed') rt.run('voltaicArt.complete=true; voltaicArt.naturalWidth=0');
-  assert.doesNotThrow(() => rt.run('draw()'), `${state} sprite state falls back without throwing`);
-  assert.ok(rt.calls.arcs.some(([x,y,r]) => x===0 && y===0 && r===13), 'vector coil fallback remains visible');
+for (const image of [true,false]) {
+  const rt=runtime({image});
+  assert.doesNotThrow(()=>rt.run('drawNeutralVoltaic(S.towers[0]);weaponMuzzle(S.towers[0]);'), 'missing assets keep the neutral fallback visible');
+  assert.ok(rt.calls.arcs.some(([, ,r])=>r===3.5),'fallback keeps the neutral discharge terminal');
 }
-
-const noImage = runtime({image:false});
-assert.doesNotThrow(() => noImage.run('draw()'), 'headless runtime keeps the vector fallback');
-assert.ok(noImage.calls.arcs.some(([x,y,r]) => x===0 && y===0 && r===13));
-
-const loaded = runtime();
-loaded.run('voltaicArt.complete=true; voltaicArt.naturalWidth=1254');
-const beforeDraw = loaded.run('JSON.stringify({phase:S.phase,wave:S.wave,gate:S.gate,credits:S.credits,time:S.time,towers:S.towers.map(t=>[t.type,t.x,t.y,t.angle,t.level,t.cd])})');
-loaded.run('draw()');
-assert.ok(loaded.calls.drawImages.some(args => args[0] === loaded.calls.images[1] && args[1] === -28 && args[2] === -40 && args[3] === 56 && args[4] === 56), 'loaded sprite has a raised body and a ground footprint over its platform');
-assert.ok(loaded.calls.arcs.some(([x,y,r]) => x===0 && y===-28 && r===4), 'dynamic charge dot remains over the sprite');
-assert.equal(loaded.run('JSON.stringify({phase:S.phase,wave:S.wave,gate:S.gate,credits:S.credits,time:S.time,towers:S.towers.map(t=>[t.type,t.x,t.y,t.angle,t.level,t.cd])})'), beforeDraw, 'draw does not change the game state');
-console.log('voltaic art: paths, fallbacks, sprite sizing, charge cue, and draw parity passed');
+const loaded=runtime();
+loaded.run('voltaicNeutralArt.complete=true;voltaicNeutralArt.naturalWidth=256;lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4Art.complete=true;level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;');
+const neutral=loaded.calls.images.find(im=>im.src.endsWith('hunger-voltaic-neutral-v1.png'));
+const low=loaded.calls.images.find(im=>im.src.endsWith('hunger-low-buildings-v3.png'));
+let foundation;
+for(const [level,branch] of [[1,null],[2,null],[3,null],[4,'A'],[4,'B']]){
+  loaded.run(`S.towers[0].level=${level};S.towers[0].branch=${JSON.stringify(branch)};`);
+  loaded.calls.drawImages.length=0;
+  const sig=loaded.run('replaySignature()');
+  loaded.run("S.towers[0].level===4?drawLevel4Tower(S.towers[0]):drawNeutralVoltaic(S.towers[0]);");
+  const base=loaded.calls.drawImages.find(a=>a[0]===low);
+  assert.ok(base,'every level must draw the square foundation');
+  if(!foundation)foundation=base.slice(1);
+  assert.deepEqual(base.slice(1),foundation,'the exact source cell, size and position stay unchanged across the branch');
+  if(level<4){
+    assert.ok(loaded.calls.drawImages.some(a=>a[0]===neutral),'levels 1–3 use the new neutral upper');
+    const tip=JSON.parse(loaded.run('JSON.stringify(neutralVoltaicMuzzle())'));
+    const actual=JSON.parse(loaded.run('JSON.stringify(weaponMuzzle(S.towers[0]))'));
+    const pos=JSON.parse(loaded.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
+    assert.equal(actual.x-pos.x,tip.x);assert.ok(Math.abs(actual.y-pos.y-tip.y)<1e-9,'charge and shot origin stay at the new terminal');
+  }
+  assert.equal(loaded.run('replaySignature()'),sig,'drawing leaves combat unchanged');
+}
+// This requirement specifically rejects the old cell-4 complete column.
+assert.deepEqual(foundation.slice(0,4),[59,137,429,321]);
+for(const progress of [0,.3,.65,.94,1])assert.doesNotThrow(()=>loaded.run(`drawNeutralVoltaic(S.towers[0],${progress})`));
+console.log('voltaic art: common square foundation at levels 1–4, neutral upper, terminal origin, fallback and draw parity passed');
