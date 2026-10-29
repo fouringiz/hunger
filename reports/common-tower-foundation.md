@@ -24,7 +24,25 @@ Flamethrower base tile remains available for historical before-captures.
 | Combat and disk-browser operation remain intact | Simulation unchanged; parity tests and file-origin console check pending |
 
 No tests, captures or browser checks were run by the agent, per the agreement.
-Do not call this visually verified without inspecting actual before/after frames.
+User results on 2026-10-29: full suite failed at the Flamethrower negative
+head-emergence case (the mutation targeted the new support instead of the head).
+A precise unique-target mutation is prepared; its rerun and full suite are pending.
+
+The user's Howitzer capture completed: identical rules `9d3c412e`, source
+`5750d1fe` and 151 live combat steps in Mire and Ember. Opened the reference/game
+pair, Mire whole before/after and after-upgrade strip. The square base is present;
+the projected Howitzer head appears much flatter than the approved elevated gun.
+No visual acceptance: full cycles, Ember/grayscale and other branches are still
+pending review. The correction to the test does not change these game frames.
+
+Opened evidence (actual game, captured by the user):
+
+- [Before Mire whole](generated/common-tower-base/howitzer/before-mire-whole.png)
+- [After Mire whole](generated/common-tower-base/howitzer/after-mire-whole.png)
+- [Reference and game](generated/common-tower-base/howitzer/reference-and-game.png)
+- [After upgrade and grayscale strip](generated/common-tower-base/howitzer/after-mire-upgrade.png)
+
+Do not call this visually verified without completing the remaining checks.
 
 ## User-run checks from the PR checkout root
 
@@ -41,7 +59,7 @@ actual game renderer against `528cb0b`, isolating the common-foundation change.
 They include levels 1–3, a full construction cycle, turn/upgrade/attack/pause/sale,
 whole views, close-ups and grayscale, with exact live combat parity checks.
 
-Expected paths (NOT yet generated/inspected):
+Evidence paths (Howitzer generated; only the views listed above inspected; other branches pending):
 
 - `reports/generated/common-tower-base/<branch>/{before,after}-{mire,ember}-whole.png`
 - Same directory: `*-level{1,2,3}-whole.png`, `*-whole-gray.png`, `*-levels1to3.png`

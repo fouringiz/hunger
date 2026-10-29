@@ -66,9 +66,16 @@ r.run("S.towers[0].branch='B';");const cryoSignature=r.run('replaySignature()');
 r.run("drawFlamethrower(S.towers[0]);");assert.equal(r.run('replaySignature()'),cryoSignature,'Cryojet drawing leaves combat state unchanged');
 const fallback=boot(source,false);assert.doesNotThrow(()=>fallback.run("drawFlamethrower({angle:1.1,branch:'B',paused:true});"),'failed/loading art has a pixel-free fallback');
 // Known bad variants must fail the same contracts: rotating the whole foundation, old nozzle length, missing art.
-assert.throws(()=>checkFoundation(boot(source.replace('  drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)', '  ctx.rotate(t.angle);drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)'))),/foundation must stay fixed/);
-assert.throws(()=>checkMuzzle(boot(source.replace('muzzleX:29','muzzleX:22'))));
+function mutateOnce(before,after){
+  const start=source.indexOf(before);
+  assert.ok(start>=0,'negative variant must find its intended drawing operation');
+  assert.equal(source.indexOf(before,start+before.length),-1,'negative variant must target exactly one drawing operation');
+  return source.replace(before,after);
+}
+assert.throws(()=>checkFoundation(boot(mutateOnce('  drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)', '  ctx.rotate(t.angle);drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)'))),/foundation must stay fixed/);
+assert.throws(()=>checkMuzzle(boot(mutateOnce('muzzleX:29','muzzleX:22'))));
 assert.throws(()=>checkFoundation(fallback),/textured foundation must be drawn/);
-assert.throws(()=>checkEmergence(boot(source.replace('44*(1-tankLift)','22*(1-tankLift)'))),/not pop in half exposed/);
-assert.throws(()=>checkEmergence(boot(source.replace('42*(1-lift)','22*(1-lift)'))),/not pop in half exposed/);
+assert.throws(()=>checkEmergence(boot(mutateOnce('const y=p.y+44*(1-tankLift);','const y=p.y+22*(1-tankLift);'))),/not pop in half exposed/);
+// The support uses the same lift distance; mutate the head translation, not its shaft.
+assert.throws(()=>checkEmergence(boot(mutateOnce('ctx.translate(0,FLAMER_ART.mountY+42*(1-lift)+z);','ctx.translate(0,FLAMER_ART.mountY+22*(1-lift)+z);'))),/not pop in half exposed/);
 console.log('PASS Flamethrower atlas, planted base, upright tanks, continuous yaw, nozzle attachment, render parity, file-origin fallback and known-bad variants');

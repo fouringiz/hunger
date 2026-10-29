@@ -1,3 +1,30 @@
+# Shared foundation verification follow-up — 2026-10-29
+
+- User ran `npm test`: FAILED at the negative head-emergence case in
+  `tests/flamethrower-art.cjs` (line 73 before this correction), missing expected
+  exception. This is not a green full suite.
+- Cause: bare `42*(1-lift)` replacement now matched the support introduced before
+  the head translation. It altered the support, while the head under test stayed
+  correct. Corrected the mutation to the exact head translation; all source
+  mutations in that test now require a unique matching target. The unchanged
+  emergence threshold must still reject the too-short head/tank lift variants.
+- No runtime/assets changed in this correction. Agent did not run tests/captures.
+  User must rerun `node tests/flamethrower-art.cjs` and `npm test`.
+- User-run `--tower-base howitzer` COMPLETED. Its results.json confirms the
+  `528cb0b` before/current after rules `9d3c412e`, source `5750d1fe`, and exact 151
+  live-step combat parity in both Mire and Ember.
+- Opened Howitzer reference/game pair, Mire before/after whole frames and after
+  upgrade strip. The common square base is visible, but the head is noticeably
+  flatter than the approved elevated-barrel reference. This is a review risk,
+  not visual approval. Full turn/attack/build/pause/sale and Ember/grayscale
+  inspection remains incomplete; other branches and file:// check pending.
+- Before/after evidence and remaining criteria updated in
+  `reports/common-tower-foundation.md`. Next: user reruns focused/full tests;
+  then continue visual review without merging PR #69 or claiming acceptance.
+
+---
+Previous checkpoint:
+
 # Shared weapon foundation — implementation prepared, verification pending
 
 - User approved one identical Turret foundation for all four weapon families and
