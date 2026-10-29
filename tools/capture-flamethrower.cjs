@@ -41,7 +41,7 @@ async function capture(zone,label,sourceHtml){
 async function main(){
   fs.mkdirSync(OUT,{recursive:true});
   if(process.argv.includes('--flamethrower-deployment'))return deploymentMain();
-  if(REF_FIRE)return fireMain();
+  if(REF_FIRE)return approvedJetMain();
   if(process.argv.includes('--flamethrower-fire'))return fireMain();
   const arg=process.argv.indexOf('--before'),rev=arg<0?BASE:process.argv[arg+1];
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
@@ -106,22 +106,82 @@ async function fireMain(){
     }
     if(label==='after')assert.deepEqual(fingerprints.after,fingerprints.before,'fire presentation leaves simulation fingerprints unchanged');
   }
-  if(REF_FIRE)await fireReferenceBoard(before);
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-fire-{base,A,B}-{flow,sweep,stop}-{game,zoom}.png and whole/gray views. Controlled actual-renderer poses: fixed-nozzle flow, full sweep, and final-pulse fade. Actual combat timing still needs the disk-browser check.');
 }
-async function fireReferenceBoard(before){
-  const photo=await loadImage(path.join(ROOT,'reports/generated/flamethrower/references/fire-1.png'));
-  const board=createCanvas(600,320),g=board.getContext('2d');g.fillStyle='#292e29';g.fillRect(0,0,600,320);
-  // Photo 1's nozzle-to-tip crop is ~600 source pixels; scale to the game's 66-unit visible jet (132 screen px).
-  g.drawImage(photo,267,30,600,280,16,39.4,132,61.6);
-  for(const [i,sourceHtml]of [before,null].entries()){
-    const w=await loadWorld({sourceHtml});
-    w.run("reset();S.phase='wave';S.wave=1;S.spawnQueue=[];S.streams=[];S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;observeConstruction();presentationTime=3;observeConstruction();S.time=.2;S.towers[0].jetAt=.2;");
-    const m=JSON.parse(w.run('JSON.stringify(weaponMuzzle(S.towers[0]))'));shot(w);
-    g.drawImage(w.canvas,(m.x-8)*2,(m.y-45)*2,200,160,200*(i+1),0,200,160);
+async function approvedJetMain(){
+  const arg=process.argv.indexOf('--before'),rev=arg<0?'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5':process.argv[arg+1];
+  assert.ok(rev,'--before requires a revision');
+  const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+  const report={before:rev,smoke:'iteration 2 not started',zones:{}};
+  function grid(cells,cols=4){const w=cells[0].width,h=cells[0].height,c=createCanvas(w*cols,h*Math.ceil(cells.length/cols)),g=c.getContext('2d');cells.forEach((v,i)=>g.drawImage(v,i%cols*w,Math.floor(i/cols)*h));return c;}
+  function copy(c){const d=createCanvas(c.width,c.height);d.getContext('2d').drawImage(c,0,0);return d;}
+  function patch(w,at){const c=createCanvas(280,240);c.getContext('2d').drawImage(w.canvas,at.x-140,at.y-120,280,240,0,0,280,240);return c;}
+  for(const zone of ['mire','ember']){
+    const worlds={before:await loadWorld({zone,sourceHtml:before,assetGitRef:rev,viewport:[960,540]}),after:await loadWorld({zone,viewport:[960,540]})};
+    const fingerprints={};
+    for(const[label,w]of Object.entries(worlds)){
+      w.run("reset();S.credits=10000;S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];build(SLOTS[2],'flamer');build(SLOTS[5],'turret');build(SLOTS[12],'cannon');S.selected=null;observeConstruction();presentationTime=3;observeConstruction();");
+      fingerprints[label]={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
+      const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
+      for(const [kind,level,branch]of [['level3',3,''],['plasma',4,'A'],['cryojet',4,'B']]){
+        const headings=[];
+        for(let i=0;i<8;i++){
+          w.run(`{const t=S.towers[0];t.level=${level};t.branch=${JSON.stringify(branch)};t.angle=${i*Math.PI/4};t.paused=false;t.selling=false;S.time=.05;t.jetAt=0;presentationTime=3.1;observeConstruction();S.enemies=['forager','carapacid','leech'].map((type,j)=>{const e=makeEnemy(type,1);e.d=420+j*40;const side=j===0?0:j===1?50:-55;e.x=t.x+Math.cos(t.angle)*(48+j*18)-Math.sin(t.angle)*side;e.y=t.y+Math.sin(t.angle)*(48+j*18)+Math.cos(t.angle)*side;return e;});}`);
+          shot(w);save(w.canvas,`${label}-${zone}-${kind}-heading-${i}-whole`);save(gray(w.canvas),`${label}-${zone}-${kind}-heading-${i}-whole-gray`);
+          headings.push(patch(w,at));
+          if(i===0&&kind==='level3'){save(w.canvas,`${label}-${zone}-whole`);save(gray(w.canvas),`${label}-${zone}-whole-gray`);}
+        }
+        const headingsGrid=grid(headings);save(headingsGrid,`${label}-${zone}-${kind}-8-headings-game`);
+        const z=createCanvas(headingsGrid.width*2,headingsGrid.height*2);z.getContext('2d').drawImage(headingsGrid,0,0,z.width,z.height);save(z,`${label}-${zone}-${kind}-8-headings-zoom`);
+      }
+      w.run("{const t=S.towers[0];t.level=3;t.branch='';t.angle=0;}");
+      const cycle=[];
+      // Two complete four-frame clips, including the wrap, plus consecutive firing pulses.
+      for(let i=0;i<=16;i++){
+        const time=i/24;
+        w.run(`presentationTime=${3+time};S.time=${time};S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
+        shot(w);cycle.push(patch(w,at));
+      }
+      save(grid(cycle),`${label}-${zone}-full-cycle-game`);
+      const sweep=[];
+      for(let i=0;i<=24;i++){
+        const time=i*Math.PI*2/24/3.2;
+        w.run(`S.towers[0].angle=${Math.sin(i*Math.PI*2/24)*Math.PI/4};presentationTime=${6+time};S.time=${time};S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
+        shot(w);sweep.push(patch(w,at));
+      }
+      save(grid(sweep),`${label}-${zone}-full-sweep-game`);w.run('S.towers[0].angle=0;');
+      const fade=[];for(const age of [0,.08,.16,.2,.22,.24,.3]){w.run(`presentationTime=${4+age};S.time=${.4+age};S.towers[0].jetAt=.4;`);shot(w);fade.push(patch(w,at));}
+      save(grid(fade),`${label}-${zone}-stop-game`);
+      const states=[];
+      for(const state of ['paused','selling','folded']){
+        w.run(`{const t=S.towers[0];t.paused=${state==='paused'};t.selling=${state==='selling'};t.sellT=SELL_TIME*.5;t.jetAt=1;S.time=1.05;presentationTime=5;constructionArt.delete(t);}`);
+        if(state==='folded')w.run('S.towers[0].jetAt=undefined;constructionArt.set(S.towers[0],{at:5,done:false});');
+        shot(w);save(w.canvas,`${label}-${zone}-${state}-whole`);states.push(patch(w,at));
+      }
+      save(grid(states,3),`${label}-${zone}-states-game`);
+      // Same live combat and presentation steps must leave replay state identical in both renderers.
+      w.run("reset();S.credits=10000;build(SLOTS[2],'flamer');S.towers[0].level=3;S.wave=5;S.phase='wave';S.spawnQueue=[];S.enemies=[makeEnemy('carapacid',1)];S.enemies[0].d=450;Object.assign(S.enemies[0],posAt(450));");
+    }
+    assert.deepEqual(fingerprints.after,fingerprints.before,'simulation fingerprints unchanged');
+    for(let i=0;i<151;i++){
+      for(const w of Object.values(worlds)){w.run('update(SIM_STEP);presentationTime+=SIM_STEP;');shot(w);}
+      assert.equal(worlds.after.run('replaySignature()'),worlds.before.run('replaySignature()'),'live simulation parity at step '+i);
+    }
+    report.zones[zone]={fingerprints,identicalCombatSteps:151};
+    // Approved committed sheet at exactly the gameplay frame dimensions, replacing the ignored photo dependency.
+    const ref=createCanvas(280,240),g=ref.getContext('2d'),w=worlds.after;
+    w.run("S.towers[0].level=3;S.towers[0].branch='';S.towers[0].angle=0;");
+    const geom=JSON.parse(w.run('JSON.stringify({m:weaponMuzzle(S.towers[0]),x:S.towers[0].x,y:S.towers[0].y,r:tstats(S.towers[0]).range})'));
+    const dx=geom.x+geom.r-geom.m.x,dy=geom.y-geom.m.y,k=Math.hypot(dx,dy)/512;
+    g.fillStyle='#292e29';g.fillRect(0,0,280,240);g.translate(65,120);g.rotate(Math.atan2(dy,dx));g.scale(k,k);g.drawImage(w.images.flameJetArt,0,0,512,256,0,-128,512,256);
+    const old=await loadImage(path.join(OUT,`before-${zone}-level3-heading-0-whole.png`)),now=await loadImage(path.join(OUT,`after-${zone}-level3-heading-0-whole.png`));
+    const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
+    const board=grid([ref,patch({canvas:old},at),patch({canvas:now},at)],3);save(board,`${zone}-reference-before-after`);
+    const wholeBoard=grid([await loadImage(path.join(OUT,`before-${zone}-whole.png`)),await loadImage(path.join(OUT,`after-${zone}-whole.png`)),await loadImage(path.join(OUT,`before-${zone}-whole-gray.png`)),await loadImage(path.join(OUT,`after-${zone}-whole-gray.png`))],2);save(wholeBoard,`${zone}-whole-before-after`);
   }
-  g.drawImage(gray(board),0,160);g.fillStyle='#fff';g.font='12px sans-serif';['REFERENCE','BEFORE','AFTER'].forEach((s,i)=>g.fillText(s,i*200+8,15));
-  save(board,'reference-before-after');
+  fs.writeFileSync(path.join(OUT,'verification.json'),JSON.stringify(report,null,2)+'\n');
+  console.log('Wrote '+OUT+': game-size before/after Mire/Ember, 8 headings for level3/Plasma/Cryojet, full cycles, stop and paused/sale/folded states. Fingerprints and 151 live steps per zone match. Reference is the committed approved sheet; no ignored photo required.');
 }
+
 module.exports={main};
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});

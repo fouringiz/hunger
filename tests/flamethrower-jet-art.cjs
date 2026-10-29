@@ -1,82 +1,63 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-function boot(code=source,withAtlas=false){
-  const shapes=[],draws=[],rotations=[];let points=[];
-  const ctx=new Proxy({}, {get(o,k){
-    if(k==='beginPath')return ()=>{points=[];};
-    if(['moveTo','lineTo','ellipse'].includes(k))return (...a)=>points.push([k,...a]);
-    if(k==='fill')return ()=>shapes.push({points:points.slice(),color:o.fillStyle,alpha:o.globalAlpha});
-    if(k==='drawImage')return (...args)=>draws.push({args,alpha:o.globalAlpha});
-    if(k==='rotate'||k==='transform')return (...args)=>rotations.push(args);
-    if(k==='getImageData'||k==='toDataURL')return ()=>{throw new Error('SecurityError');};
-    return o[k]??(o[k]=()=>{});
+const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-jet-v1.frames.json'),'utf8'));
+function boot(code=source,art=true){
+  let matrix=[1,0,0,1,0,0],stack=[],points=[];const draws=[],fills=[];
+  const mul=n=>{const[a,b,c,d,e,f]=matrix,[g,h,i,j,k,l]=n;matrix=[a*g+c*h,b*g+d*h,a*i+c*j,b*i+d*j,a*k+c*l+e,b*k+d*l+f];};
+  const state={globalAlpha:1,globalCompositeOperation:'source-over',shadowBlur:0};
+  const ctx=new Proxy(state,{get(o,k){
+    if(k==='save')return ()=>stack.push({matrix:matrix.slice(),state:{...state}});
+    if(k==='restore')return ()=>{const v=stack.pop();matrix=v.matrix;Object.assign(state,v.state);};
+    if(k==='translate')return(x,y)=>mul([1,0,0,1,x,y]);
+    if(k==='rotate')return a=>mul([Math.cos(a),Math.sin(a),-Math.sin(a),Math.cos(a),0,0]);
+    if(k==='scale')return(x,y)=>mul([x,0,0,y,0,0]);
+    if(k==='transform')return(...a)=>mul(a);
+    if(k==='beginPath')return()=>{points=[];};
+    if(['moveTo','lineTo','ellipse'].includes(k))return(...a)=>points.push([k,...a]);
+    if(k==='fill')return()=>fills.push({points:points.slice(),color:o.fillStyle,alpha:o.globalAlpha});
+    if(k==='drawImage')return(...a)=>draws.push({args:a,matrix:matrix.slice(),alpha:o.globalAlpha,blend:o.globalCompositeOperation,blur:o.shadowBlur});
+    if(k==='getImageData'||k==='toDataURL')return()=>{throw Error('SecurityError');};
+    return o[k]??(()=>{});
   }});
+  class Image{constructor(){this.complete=true;this.naturalWidth=0;this.naturalHeight=0;}set src(v){this.url=v;const jet=v.includes('flamethrower-jet');this.naturalWidth=jet?(art?2048:0):v.includes('level4-towers')?4096:v.includes('flamethrower-v1')?768:0;this.naturalHeight=jet?256:v.includes('level4-towers')?2048:256;}get src(){return this.url;}}
   const canvas={getContext:()=>ctx,style:{},addEventListener(){}};
-  class Image{constructor(){this.complete=true;this.naturalWidth=512;this.naturalHeight=256;}}
-  const c=vm.createContext({Image:withAtlas?Image:undefined,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:''},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
-  vm.runInContext(code,c);const run=x=>vm.runInContext(x,c);
-  run("reset();S.credits=1000;build(SLOTS[2],'flamer');const jetTower=S.towers[0];jetTower.angle=0;jetTower.jetAt=0;");
-  return {run,shapes,draws,rotations,frame(time){shapes.length=0;draws.length=0;run(`S.time=${time};drawFlameJet(jetTower);`);return JSON.parse(JSON.stringify(shapes));}};
+  const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:''},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
+  vm.runInContext(code,c);const run=s=>vm.runInContext(s,c);
+  run("reset();S.credits=10000;build(SLOTS[2],'flamer');const jetTower=S.towers[0];jetTower.angle=0;jetTower.level=3;jetTower.jetAt=0;S.time=.05;presentationTime=3;");
+  return {run,draws,fills,frame(p=3){draws.length=0;fills.length=0;run(`presentationTime=${p};drawFlameJet(jetTower);`);return draws.filter(d=>d.args[0].src.includes('flamethrower-jet'));}};
 }
-function flowing(r){
-  const a=r.frame(.02),b=r.frame(.08);
-  assert.equal(a.length,9,'three fuel ribbons plus six moving tongues');
-  assert.notDeepEqual(a[0].points,b[0].points,'flame must flow even while the nozzle holds still');
-  assert.ok(a[0].points.length>20,'a filled flame silhouette replaces the old straight strokes');
+const near=(a,b,msg)=>assert.ok(Math.abs(a-b)<1e-8,`${msg}: ${a} != ${b}`);
+function sheetContract(r){
+  const draws=r.frame();assert.equal(draws.length,2,'sheet plus soft halo must draw');
+  const d=draws[1],a=d.args,m=d.matrix;
+  const spec=JSON.parse(r.run('JSON.stringify({m:weaponMuzzle(jetTower),t:{x:jetTower.x,y:jetTower.y,angle:jetTower.angle},range:tstats(jetTower).range})'));
+  const length=Math.hypot(spec.t.x+Math.cos(spec.t.angle)*spec.range-spec.m.x,spec.t.y+Math.sin(spec.t.angle)*spec.range-spec.m.y);
+  assert.deepEqual(a.slice(3,5),meta.cell);assert.deepEqual(a.slice(5),[-meta.anchor[0],-meta.anchor[1],...meta.cell]);
+  const sx=Math.hypot(m[0],m[1]),sy=Math.hypot(m[2],m[3]);near(sx,sy,'uniform scale');near(sx*meta.cell[0],length,'muzzle-to-range length');
+  near(m[4],spec.m.x,'anchor x');near(m[5],spec.m.y,'anchor y');
+  near(m[0]*512+m[4],spec.t.x+Math.cos(spec.t.angle)*spec.range,'endpoint x');near(m[1]*512+m[5],spec.t.y+Math.sin(spec.t.angle)*spec.range,'endpoint y');
+  assert.equal(d.blend,'lighter');assert.ok(draws[0].blur>0&&draws[0].alpha<d.alpha,'soft halo underneath');
 }
-const r=boot();flowing(r);
-for(const angle of [0,.4,1.8,3.2,4.9]){
-  r.run(`jetTower.angle=${angle};`);const frame=r.frame(.05),m=JSON.parse(r.run('JSON.stringify(weaponMuzzle(jetTower))'));
-  assert.deepEqual(frame[0].points[0],['moveTo',m.x,m.y],'the fuel ribbon begins exactly at the nozzle');
+const r=boot();assert.deepEqual(meta.cell,[512,256]);assert.deepEqual(meta.anchor,[0,128]);assert.equal(meta.frames,4);
+for(const [level,branch]of [[1,''],[2,''],[3,''],[4,'A']])for(let i=0;i<16;i++){
+  r.run(`jetTower.level=${level};jetTower.branch=${JSON.stringify(branch)};jetTower.angle=${i*Math.PI/8};`);sheetContract(r);
 }
-r.run("jetTower.branch='B';");const cryo=r.frame(.08);assert.equal(cryo[0].color,'#50b5cf','Cryojet uses coolant colors');
-r.run("jetTower.branch='A';");const fire=r.frame(.08);assert.equal(fire[0].color,'#e84c0a','Plasma keeps the fuel-flame appearance');
-const saved=r.run('replaySignature()');r.run('drawFlameJet(jetTower);');assert.equal(r.run('replaySignature()'),saved,'the effect never changes combat');
-assert.ok(r.frame(.18)[0].alpha<r.frame(.08)[0].alpha,'fuel fades between the last pulse and disappearance');
-assert.equal(r.frame(.24).length,0,'a stopped jet leaves no permanent flame');
-for(const flag of ['paused','selling']){
-  r.run(`jetTower.${flag}=true;`);assert.equal(r.frame(.05).length,0,flag+' immediately stops the visual jet');r.run(`jetTower.${flag}=false;`);
-}
-assert.throws(()=>flowing(boot(source.replace('S.time*27+SLOTS.indexOf(t.slot)*.71','0'))),/flame must flow/,'the same animation check rejects a static ribbon');
-function fuelVolume(r){
-  r.frame(.07);
-  const samples=r.draws.map(d=>({x:d.args[5]+d.args[7]/2,width:d.args[7]})).sort((a,b)=>a.x-b.x);
-  assert.ok(samples.length>=10,'fuel must use textured turbulent volume instead of just smooth ribbons');
-  const mean=a=>a.reduce((s,p)=>s+p.width,0)/a.length;
-  assert.ok(mean(samples.slice(-6))>mean(samples.slice(0,6))*2,'fire grows into broad distant lobes rather than tapering to a needle');
-  const first=JSON.stringify(r.draws.map(d=>d.args.slice(1)));r.frame(.13);
-  assert.notEqual(JSON.stringify(r.draws.map(d=>d.args.slice(1))),first,'billows travel and roll with the nozzle held still');
-  assert.equal(r.rotations.length,0,'billows keep the fixed camera and vertical rise at every heading');
-}
-const fuel=boot(source,true);fuelVolume(fuel);
-const frames=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flame-billows-v1.frames.json'),'utf8'));
-assert.equal(frames.cell,128);assert.equal(frames.columns,4);assert.equal(frames.frames,8);
-for(const angle of [0,1.5,3.1,4.7]){fuel.run(`jetTower.angle=${angle}`);fuel.frame(.07);}
-assert.equal(fuel.rotations.length,0,'turning the nozzle never spins the billow image in the screen plane');
-fuel.run("jetTower.angle=0;S.time=.07;");const sig=fuel.run('replaySignature()');fuel.run('drawFlameJet(jetTower);');assert.equal(fuel.run('replaySignature()'),sig);
-assert.equal(fuel.frame(.24).length,0);assert.equal(fuel.draws.length,0,'expired fuel has no lingering opaque cloud');
-fuel.run("jetTower.branch='B';");fuel.frame(.07);assert.equal(fuel.draws.length,0,'Cryojet keeps its coolant effect rather than orange fire textures');
-assert.throws(()=>fuelVolume(boot(source.replace("if(t.branch==='B'||!fuelFireReady())return drawRibbonJet(t);","if(true)return drawRibbonJet(t);"),true)),/textured turbulent volume/,'the same check rejects the previous ribbon-only appearance');
-assert.throws(()=>fuelVolume(boot(source.replace('5+30*Math.pow(u,1.1)','5+0*Math.pow(u,1.1)'),true)),/broad distant lobes/);
-assert.throws(()=>fuelVolume(boot(source.replace('function fuelBillowPoses(t,time=S.time)','function fuelBillowPoses(t,time=0)'),true)),/billows travel and roll/);
-const narrowSource=source.replace('return 1+.6*deploymentStep(u,.1,.72);','return 1;');
-function widerFlame(r){
-  const old=boot(narrowSource,true);old.frame(.07);r.frame(.07);
-  const sizes=v=>v.draws.map(d=>d.args[7]).sort((a,b)=>a-b),a=sizes(r),b=sizes(old);
-  const mean=v=>v.reduce((s,x)=>s+x,0)/v.length;
-  assert.ok(mean(a.slice(-6))>=mean(b.slice(-6))*1.5,'the distant flame must be visibly wider than the previous narrow version');
-  assert.ok(mean(a.slice(0,6))<=mean(b.slice(0,6))*1.1,'the nozzle end remains a narrow fuel stream');
-}
-const expanded=boot(source,true);widerFlame(expanded);
-for(const angle of [0,.7,1.5,2.4,3.1,4,4.7,5.6]){
-  expanded.run(`jetTower.angle=${angle};`);expanded.frame(.07);
-  const ray=JSON.parse(expanded.run('JSON.stringify({m:weaponMuzzle(jetTower),x:jetTower.x+Math.cos(jetTower.angle)*tstats(jetTower).range,y:jetTower.y+Math.sin(jetTower.angle)*tstats(jetTower).range})'));
-  const dx=ray.x-ray.m.x,dy=ray.y-ray.m.y,len=Math.hypot(dx,dy);
-  for(const {args}of expanded.draws){
-    const [x,y,w,h]=args.slice(-4);
-    for(const [px,py]of [[x,y],[x+w,y],[x,y+h],[x+w,y+h]])assert.ok(((px-ray.m.x)*dx+(py-ray.m.y)*dy)/len<=len+1e-8,'wider billows must not extend the forward visual reach');
-  }
-}
-assert.throws(()=>widerFlame(boot(narrowSource,true)),/wider than the previous narrow version/,'the same width check rejects the known narrow variant');
-console.log('PASS flowing fuel silhouette, moving tongues, nozzle attachment, branch colors, fade/stop, render parity and known-bad frozen flow');
+const phases=[0,.09,.18,.27,.34].map(p=>r.frame(p)[1].args[1]);assert.deepEqual(phases,[0,512,1024,1536,0],'four frames loop by presentation time while simulation time is held');
+r.run('jetTower.jetAt=0;S.time=.05;');const first=r.frame()[1].matrix;
+r.run('jetTower.jetAt=.2;S.time=.25;');const second=r.frame()[1].matrix;
+near(first[0],second[0],'mirror preserves forward x');near(first[1],second[1],'mirror preserves forward y');near(first[2],-second[2],'alternate pulse mirror x');near(first[3],-second[3],'alternate pulse mirror y');
+r.run('jetTower.jetAt=.55;S.time=.60;');const irregular=r.frame()[1].matrix;near(first[2],irregular[2],'third pulse mirrors back even with irregular firing interval');near(first[3],irregular[3],'third pulse Y mirrors back');r.run('jetTower.jetAt=.2;S.time=.25;');
+r.run('S.time=.38;');const faded=r.frame()[1].alpha;r.run('S.time=.25;');assert.ok(faded<r.frame()[1].alpha,'existing pulse fade');
+for(const flag of ['paused','selling']){r.run(`jetTower.${flag}=true;`);assert.equal(r.frame().length,0);assert.equal(r.fills.length,0);r.run(`jetTower.${flag}=false;`);}
+r.run("constructionArt.set(jetTower,{at:3,done:false});");assert.equal(r.frame().length,0,'folded assembly has no jet');r.run('constructionArt.delete(jetTower);');
+r.run('S.time=.44;');assert.equal(r.frame().length,0,'pulse ends at .23 s');
+r.run("S.time=.25;jetTower.branch='B';");assert.equal(r.frame().length,0,'Cryojet must not use sheet');assert.equal(r.fills[0].color,'#50b5cf');
+const fallback=boot(source,false);assert.equal(fallback.frame().length,0);assert.equal(fallback.fills.length,9,'missing art retains current vector jet');
+const a=fallback.frame(.02);const shape=JSON.stringify(fallback.fills);fallback.run('S.time=.08;');fallback.frame(.08);assert.notEqual(JSON.stringify(fallback.fills),shape,'vector fallback still flows');
+const sig=r.run('replaySignature()');r.frame();assert.equal(r.run('replaySignature()'),sig);
+function badContract(from,to,pattern){const bad=source.replace(from,to);assert.notEqual(bad,source);assert.throws(()=>sheetContract(boot(bad)),pattern);}
+badContract('ctx.scale(scale,scale*mirror)','ctx.scale(scale,1*mirror)',/uniform scale/);
+badContract('ctx.translate(m.x,m.y);ctx.rotate','ctx.translate(m.x,m.y+2);ctx.rotate',/anchor y/);
+badContract("if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t);","if(true)return drawRibbonJet(t);",/sheet plus soft halo/);
+console.log('PASS approved jet sheet: 64 level/heading anchors, uniform scale (bad stretch rejected), presentation loop, alternating mirror, halo, fade, folded/paused/sale, Cryojet and fallback');
