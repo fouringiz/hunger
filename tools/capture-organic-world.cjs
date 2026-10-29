@@ -14,11 +14,13 @@ async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHt
   files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
   files.level4YawArt='hunger-level4-yaw-v1.png';
   files.level4Art=source.includes('assets/hunger-level4-towers-v2.png')?'hunger-level4-towers-v2.png':'hunger-level4-towers-v1.png';
-  files.fuelFireArt='hunger-flame-billows-v1.png';
+  files.flameJetArt='hunger-flamethrower-jet-v1.png';
+  // Historical PR baseline only: recover the removed atlas from its own revision.
+  if(source.includes('const fuelFireArt = '))files.fuelFireArt='hunger-flame-billows-v1.png';
   for(const [name,file]of Object.entries(files)){
     if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;
     const local=path.join(root,'assets',file);
-    const input=assetOverrides[name]||(fs.existsSync(local)?local:execFileSync('git',['show',(assetGitRef||'15ad9ed')+':assets/'+file],{cwd:root,maxBuffer:32*1024*1024}));
+    const input=assetOverrides[name]||(fs.existsSync(local)?local:execFileSync('git',['show',(assetGitRef||(name==='fuelFireArt'?'ed1b683':'15ad9ed'))+':assets/'+file],{cwd:root,maxBuffer:32*1024*1024}));
     images[name]=await loadImage(input);
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }

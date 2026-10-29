@@ -1242,8 +1242,8 @@ const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
 if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
-const fuelFireArt = typeof Image === 'undefined' ? null : new Image();
-if (fuelFireArt) fuelFireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flame-billows-v1.png';
+const flameJetArt = typeof Image === 'undefined' ? null : new Image();
+if (flameJetArt) flameJetArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-jet-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -2189,7 +2189,7 @@ function drawRibbonJet(t) {
     ctx.globalAlpha=[.48,.7,.9][layer]*fade;ctx.beginPath();ctx.moveTo(muzzle.x,muzzle.y);
     for(const side of [1,-1])for(let j=1;j<=steps;j++){
       const u=(side===1?j:steps-j+1)/steps,p=point(u);
-      const r=(cryo?(1+5*Math.pow(Math.sin(Math.PI*u),.8))*(1-u*.7)*.8:(1+9*Math.pow(u,.9))*fuelFireSpread(u))*width;
+      const r=(cryo?(1+5*Math.pow(Math.sin(Math.PI*u),.8))*(1-u*.7)*.8:(1+9*Math.pow(u,.9))*(1+.6*deploymentStep(u,.1,.72)))*width;
       ctx.lineTo(p.x+nx*r*side,p.y+ny*r*side);
     }
     ctx.closePath();ctx.fill();
@@ -2204,59 +2204,38 @@ function drawRibbonJet(t) {
   }
   ctx.restore();return true;
 }
-const FUEL_FIRE={cell:128,cols:4,frames:8,count:10,rate:1.7};
-function fuelFireSpread(u){return 1+.6*deploymentStep(u,.1,.72);}
-function fuelFireReady(){return !!(fuelFireArt&&fuelFireArt.complete&&fuelFireArt.naturalWidth>=512&&fuelFireArt.naturalHeight>=256);}
+// Mirrors the committed frame metadata; no runtime JSON fetch or canvas pixel reads (file:// safe).
+const FLAME_JET={cell:[512,256],anchor:[0,128],frames:4,fps:12};
+function flameJetReady(){return !!(flameJetArt&&flameJetArt.complete&&flameJetArt.naturalWidth>=2048&&flameJetArt.naturalHeight>=256);}
 function fuelJetFade(t){
   const age=S.time-t.jetAt;
-  return t.jetAt===undefined||age<0||age>=.23||t.paused||t.selling?0:1-deploymentStep(age,.16,.23);
+  return t.jetAt===undefined||age<0||age>=.23||t.paused||t.selling||constructionProgress(t)<1?0:1-deploymentStep(age,.16,.23);
 }
-// Fire photos: a narrow fuel core expands into rolling lobes. Every lobe grows as it travels, stays upright
-// under the fixed camera, and fades before wrapping back to the nozzle. Only presentation samples are returned.
-function fuelBillowPoses(t,time=S.time){
-  const m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
-  const length=Math.hypot(dx,dy)||1,vx=dx/length,vy=dy/length,seed=SLOTS.indexOf(t.slot)*.071,poses=[];
-  for(let i=0;i<FUEL_FIRE.count;i++){
-    const u=((time*FUEL_FIRE.rate+i/FUEL_FIRE.count+seed)%1+1)%1;
-    const width=(5+30*Math.pow(u,1.1))*fuelFireSpread(u),height=width*.78;
-    // Enlarge across the jet without pushing its front beyond the existing endpoint at any heading.
-    const front=Math.abs(vx)*width/2+Math.abs(vy)*height*(vy<0?.6:.4)+Math.max(0,-4*u*vy);
-    const along=u*Math.max(0,length-front);
-    const roll=Math.sin(time*18-u*17+seed)*1.8*u,cycle=(time*12+i*1.37)%FUEL_FIRE.frames;
-    const q=along/length;
-    poses.push({u,x:m.x+vx*along-vy*roll,y:m.y+vy*along+vx*roll-4*u,
-      width,height,frame:Math.floor(cycle),blend:cycle%1,
-      alpha:.32*deploymentStep(u,0,.08)*(1-deploymentStep(u,.9,1)),depthY:t.y+(Math.sin(t.angle)*st.range)*q});
-  }
-  return poses;
+let flamePulseScene=null,flamePulseStates=new WeakMap();
+function flamePulseMirror(t){
+  if(flamePulseScene!==S){flamePulseScene=S;flamePulseStates=new WeakMap();}
+  let pulse=flamePulseStates.get(t);
+  if(!pulse){pulse={at:t.jetAt,mirror:1};flamePulseStates.set(t,pulse);}
+  else if(pulse.at!==t.jetAt){pulse.at=t.jetAt;pulse.mirror=-pulse.mirror;}
+  return pulse.mirror;
 }
-function drawFuelBillow(t,p){
-  const fade=fuelJetFade(t);if(!fade||!fuelFireReady())return;
-  const c=FUEL_FIRE.cell;
-  ctx.save();
-  for(const [frame,share]of [[p.frame,1-p.blend],[(p.frame+1)%FUEL_FIRE.frames,p.blend]]){
-    if(share<=0)continue;ctx.globalAlpha=p.alpha*share*fade;
-    try{ctx.drawImage(fuelFireArt,frame%4*c,Math.floor(frame/4)*c,c,c,p.x-p.width/2,p.y-p.height*.6,p.width,p.height);}catch(_){}
-  }
-  ctx.restore();
-}
-function drawFlameJet(t,includeBillows=true){
-  if(t.branch==='B'||!fuelFireReady())return drawRibbonJet(t);
+function drawFlameJet(t){
   const fade=fuelJetFade(t);if(!fade)return false;
+  if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t);
   const m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
-  const length=Math.hypot(dx,dy)||1,nx=-dy/length,ny=dx/length;
-  ctx.save();
-  // The bright narrow core remains connected beneath the textured volume, including the gap between pulses.
-  for(const [width,color,alpha]of [[1,'#ff8027',.3],[.48,'#ffd76d',.65],[.18,'#fff5bd',.9]]){
-    ctx.fillStyle=color;ctx.globalAlpha=alpha*fade;ctx.beginPath();ctx.moveTo(m.x,m.y);
-    for(const side of [1,-1])for(let j=1;j<=14;j++){
-      const u=(side===1?j:15-j)/14,wave=Math.sin(S.time*31-u*16)*u*.7;
-      const r=(.7+3.2*u)*width;
-      ctx.lineTo(m.x+dx*u+nx*(wave+side*r),m.y+dy*u+ny*(wave+side*r));
-    }
-    ctx.closePath();ctx.fill();
-  }
-  if(includeBillows)for(const p of fuelBillowPoses(t).sort((a,b)=>a.depthY-b.depthY))drawFuelBillow(t,p);
+  const length=Math.hypot(dx,dy);if(length<1)return false;
+  const [w,h]=FLAME_JET.cell,[ax,ay]=FLAME_JET.anchor,scale=length/w;
+  const frame=Math.floor(presentationTime*FLAME_JET.fps)%FLAME_JET.frames;
+  const mirror=flamePulseMirror(t);
+  ctx.save();ctx.translate(m.x,m.y);ctx.rotate(Math.atan2(dy,dx));ctx.scale(scale,scale*mirror);
+  ctx.globalCompositeOperation='lighter';
+  try{
+    // Soft glow under the same uniformly scaled silhouette, then the crisp approved frame.
+    ctx.globalAlpha=.12*fade;ctx.shadowColor='#ff7018';ctx.shadowBlur=5;
+    ctx.drawImage(flameJetArt,frame*w,0,w,h,-ax,-ay,w,h);
+    ctx.shadowBlur=0;ctx.globalAlpha=.85*fade;
+    ctx.drawImage(flameJetArt,frame*w,0,w,h,-ax,-ay,w,h);
+  }catch(_){ctx.restore();return drawRibbonJet(t);}
   ctx.restore();return true;
 }
 function drawPlantedWeapon(t,kick) {
@@ -3293,11 +3272,10 @@ function draw() {
       else { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(weaponMuzzle(t).x,weaponMuzzle(t).y,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
     }
   }
+  // The full jet stays beneath actors so its incandescent core cannot erase enemy silhouettes.
+  for(const t of S.towers)if(t.type==='flamer'&&t.branch!=='B')drawFlameJet(t);
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygotePose(zygote).y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
-  // Voluminous fire shares ground depth with the actors; it cannot paint an opaque strip over every enemy.
-  for(const t of S.towers)if(t.type==='flamer'&&t.branch!=='B'&&fuelJetFade(t)&&fuelFireReady())
-    for(const p of fuelBillowPoses(t))actors.push({y:p.depthY-.01,fuelBillow:{tower:t,pose:p}});
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
   for(const event of polypDeaths)actors.push({y:event.y,polypDeath:event});
   if (INFANTRY_TRIAL) {
@@ -3306,7 +3284,6 @@ function draw() {
   actors.push({y:GATE_REAR.y,gatePart:'rear'},{y:GATE.y+.1,gatePart:'field'},{y:GATE_FRONT.y,gatePart:'front'});
   actors.sort((a,b)=>a.y-b.y);
   for (const actor of actors) {
-    if(actor.fuelBillow){drawFuelBillow(actor.fuelBillow.tower,actor.fuelBillow.pose);continue;}
     if(actor.portal){drawPortalEntry(actor.portal);continue;}
     if(actor.polypDeath){drawPolypDeath(actor.polypDeath);continue;}
     if(actor.platform){platformFront(actor.platform);continue;}
@@ -3390,7 +3367,7 @@ function draw() {
     ctx.globalAlpha = Math.max(0, s.life / 0.09); ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke(); ctx.globalAlpha = 1; }
   for (const q of S.pools) { const k = Math.max(0, Math.min(1, (q.until - S.time) / 3)), f = 0.6 + 0.4 * Math.sin(S.time * 9 + q.x);   // plasma pools
     ctx.globalAlpha = 0.35 + 0.35 * k; ctx.fillStyle = '#ff7a2a'; ctx.beginPath(); ctx.ellipse(q.x, q.y, q.r * f + 4, q.r * 0.55 * f + 2, 0, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
-  for (const t of S.towers) if (t.type === 'flamer') drawFlameJet(t,false);
+  for (const t of S.towers) if (t.type === 'flamer'&&t.branch==='B') drawFlameJet(t);
   for (const sh of S.shells) { const k = sh.t / sh.flight, start=shellLaunchPoint(sh);
     if (sh.cluster) {                                             // one carrier flies to the burst point, then five bomblets fan out
       const BURST = 0.68, c = sh.cluster, arc = q => ({x:start.x + (c.cx-start.x)*q, y:start.y + (c.cy-start.y)*q - Math.sin(q*Math.PI)*70});
