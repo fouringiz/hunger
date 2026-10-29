@@ -40,3 +40,7 @@ Opened `approved-and-game.png`, `before-mire-whole.png`, `after-mire-whole.png`,
 ### Fresh upgrade capture
 
 User supplied the successful capture output after the tooling correction. Opened fresh `before-mire-upgrade.png`, `after-mire-upgrade.png` and `after-ember-upgrade.png`: strips now cover old-head retraction, empty socket, toroid emergence and completed seated new head. No lateral drift or floating gap observed in these sampled strips. Individual frames between strip samples remain unreviewed. The submitted output confirms capture only; test-suite and file-browser console status remain unconfirmed.
+
+### User confirmation
+
+2026-10-30: user explicitly confirmed the requested tests passed and browser console was clean after disk launch. This records user-run validation, not agent execution. Independent second visual review remains required before merge.
