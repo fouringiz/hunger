@@ -11,7 +11,8 @@ async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHt
   const files={leechMireArt:'hunger-leech-mire-v1.webp',leechSurfacingArt:'hunger-leech-surfacing-v1.webp',carapacidShelterArt:'hunger-carapacid-shelter-v1.webp',polypArt:'hunger-polyp-v1.webp',polypoidArt:'hunger-polypoid-v1.webp',zygoteArt:'hunger-zygote-v1.webp',unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
   const images={};
   files.flamerArt='hunger-flamethrower-v1.png';
-  files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
+  // Historical renderers only: the neutral Voltaic head was removed in favour of the Tesla head.
+  if(source.includes('const voltaicNeutralArt = '))files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
   files.level4YawArt='hunger-level4-yaw-v1.png';
   files.level4Art=source.includes('assets/hunger-level4-towers-v2.png')?'hunger-level4-towers-v2.png':'hunger-level4-towers-v1.png';
   files.flameJetArt='hunger-flamethrower-jet-v1.png';

@@ -23,7 +23,7 @@ function boot(code=source){
  vm.runInContext(code,c);return {run:x=>vm.runInContext(x,c),calls,draws,images,handlers};
 }
 function saleScene(type,code=source){
- const r=boot(code);r.run(`reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);return r;
+ const r=boot(code);r.run(`if(typeof level4Art!=='undefined'&&level4Art){level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;}reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);return r;
 }
 function checkSaleMotion(r,type){
  const phases=[],upperYs=[];
@@ -32,8 +32,8 @@ function checkSaleMotion(r,type){
   // Movement may live in the canvas transform, not the image's local destination.
   phases.push(JSON.stringify(r.draws.map(({args,matrix})=>({asset:args[0].src,rect:args.slice(1),matrix}))));
   if(type==='voltaic'){
-   const upper=r.draws.find(d=>d.args[0].src.endsWith('hunger-voltaic-neutral-v1.png'));
-   assert.ok(upper,'sale continues to draw the neutral upper through the socket clip');
+   const upper=r.draws.find(d=>d.args[0].src.endsWith('hunger-level4-towers-v2.png')&&d.args[2]===512);
+   assert.ok(upper,'sale continues to draw the Tesla head through the socket clip');
    const [x,y]=upper.args.slice(-4),m=upper.matrix;upperYs.push(m[1]*x+m[3]*y+m[5]);
    const base=r.draws.find(d=>d.args[0].src.endsWith('hunger-low-buildings-v3.png'));
    const pos=JSON.parse(r.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));

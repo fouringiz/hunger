@@ -34,7 +34,8 @@ function runtime({image = true, pathname = '/prototype/'} = {}) {
 
 for (const [pathname, prefix] of [['/prototype/','../'],['/reports/generated/case/','../../']]) {
   const rt = runtime({pathname});
-  assert.ok(rt.calls.images.some(im=>im.src===`${prefix}assets/hunger-voltaic-neutral-v1.png`), 'neutral art resolves in both page contexts');
+  assert.ok(rt.calls.images.some(im=>im.src===`${prefix}assets/hunger-level4-towers-v2.png`), 'Tesla head atlas resolves in both page contexts');
+  assert.ok(!rt.calls.images.some(im=>im.src.includes('hunger-voltaic-neutral')), 'the removed neutral head is never requested');
 }
 for (const image of [true,false]) {
   const rt=runtime({image});
@@ -42,8 +43,8 @@ for (const image of [true,false]) {
   assert.ok(rt.calls.arcs.some(([, ,r])=>r===3.5),'fallback keeps the neutral discharge terminal');
 }
 const loaded=runtime();
-loaded.run('voltaicNeutralArt.complete=true;voltaicNeutralArt.naturalWidth=256;lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4Art.complete=true;level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;');
-const neutral=loaded.calls.images.find(im=>im.src.endsWith('hunger-voltaic-neutral-v1.png'));
+loaded.run('lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4Art.complete=true;level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;');
+const atlas=loaded.calls.images.find(im=>im.src.endsWith('hunger-level4-towers-v2.png'));
 const low=loaded.calls.images.find(im=>im.src.endsWith('hunger-low-buildings-v3.png'));
 let foundation;
 for(const [level,branch] of [[1,null],[2,null],[3,null],[4,'A'],[4,'B']]){
@@ -56,15 +57,15 @@ for(const [level,branch] of [[1,null],[2,null],[3,null],[4,'A'],[4,'B']]){
   if(!foundation)foundation=base.slice(1);
   assert.deepEqual(base.slice(1),foundation,'the exact source cell, size and position stay unchanged across the branch');
   if(level<4){
-    assert.ok(loaded.calls.drawImages.some(a=>a[0]===neutral),'levels 1–3 use the new neutral upper');
+    assert.ok(loaded.calls.drawImages.some(a=>a[0]===atlas&&a[1]===0&&a[2]===512),'levels 1–3 use the Tesla head from the level-4 atlas');
     const tip=JSON.parse(loaded.run('JSON.stringify(neutralVoltaicMuzzle())'));
     const actual=JSON.parse(loaded.run('JSON.stringify(weaponMuzzle(S.towers[0]))'));
     const pos=JSON.parse(loaded.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
-    assert.equal(actual.x-pos.x,tip.x);assert.ok(Math.abs(actual.y-pos.y-tip.y)<1e-9,'charge and shot origin stay at the new terminal');
+    assert.ok(Math.abs(actual.x-pos.x-tip.x)<1e-9);assert.ok(Math.abs(actual.y-pos.y-tip.y)<1e-9,'charge and shot origin stay at the new terminal');
   }
   assert.equal(loaded.run('replaySignature()'),sig,'drawing leaves combat unchanged');
 }
 // This requirement specifically rejects the old cell-4 complete column.
 assert.deepEqual(foundation.slice(0,4),[59,137,429,321]);
 for(const progress of [0,.3,.65,.94,1])assert.doesNotThrow(()=>loaded.run(`drawNeutralVoltaic(S.towers[0],${progress})`));
-console.log('voltaic art: common square foundation at levels 1–4, neutral upper, terminal origin, fallback and draw parity passed');
+console.log('voltaic art: common square foundation at levels 1–4, Tesla head on levels 1–3, terminal origin, fallback and draw parity passed');
