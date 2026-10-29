@@ -1,59 +1,58 @@
-# Iteration 3 — awaiting the user's visual verdict
+# Howitzer design restoration — candidate awaiting user verification
 
 Checkout: `/private/tmp/hunger-level4-sprites`
 Branch: `codex/level4-sprites`; PR: https://github.com/fouringiz/hunger/pull/69
-No merge. Iteration1 (df6f8f5) and iteration2 (15ad9ed) accepted before proceeding.
-Pipeline preparation saved as f433911; integration and evidence report are committed
-on this branch. Exact final commit/push identity is reported in the session/PR.
+Previous committed baseline: d022ae3. No merge.
 
-## Current implementation
+## Current scope
 
-- New `assets/hunger-level4-towers-v2.png` / `.frames.json`: 4096x2048,
-  six16-view families at22.5-degree world-yaw steps; fixed Tesla/Cluster copied
-  exactly. Each pose has measured bearing and muzzle anchors. One family scale.
-- Old overhead yaw PNG/metadata and runtime path removed. General projection
-  remains for levels1–3/Flamethrower. No new runtime pixel reads or JSON fetch.
-- A60ms presentation transition shares head/muzzle weights; held aim uses ONE
-  opaque source image. Persistent angular blending was rejected during cycle
-  inspection. Flashes use displayed heading; shell launch points remain pinned.
-- Iteration2 bearing/recoil bounds retained. No combat, targeting, balance, PATH,
-  GATE_D, platform-position or replay changes.
-- Prompts and final source identities: `assets/art/level4-towers-v1.prompt.txt`.
-  Whole-sheet generation plus focused rear-view repairs used built-in ImageGen.
-  Draft sheets/guides/manifests are ignored, not committed.
+User rejected the Howitzer redesign in iteration 3: #89
+https://github.com/fouringiz/hunger/issues/89
+Restore the user's second-sheet identity while retaining sixteen directional
+poses: compact olive body, paired long hydraulic cylinders/pistons, looping
+hoses, vented side boxes and rear hatch, short narrow steel mounting peg.
+The broad copper pedestal and simplified proxy housing are rejected.
 
-## Verified on final temporal-transition source
+## Prepared changes
 
-- Full npm test PASS, including leech-crawl-atlas.
-- Art contracts:16 distinct raster/source cells, upright camera, shared temporal
-  muzzle, wrap, held opacity, recoil, pixel-free fallback, launch pinning; known
-  bad eight-pose/row/matrix/wrap/snap/permanent-blend/air-anchor variants rejected.
-- Seating:490 authored heading/recoil states; <=2 native px, max1.800px. Coverage
-  and physical-contact thresholds retained; exact previous and6-unit rear shift
-  negatives rejected. Transition/effect tests separately exercise384 states.
-- Deployment:96 headings, old flat narrow-clip pop and early wide-clip emergence
-  rejected. Badge/foundation/fallback contracts retained with new image mocks.
-- All8 matching captures in Mire/Ember against15ad9ed: rules9d3c412e,
-  source5750d1fe,151 identical live combat steps per scene. Timed full-turn97
-  frames and complete firing151 frames before/after are present for each scene.
-- Offline audit:928 lower-level/build-state pairs identical; fixed Tesla/Cluster
-  RGBA exact. Capture material regression rejects silently omitted zone textures.
-- Opened actual before/after board, approved/reference16-view boards, full-cycle
-  contact sheets, key timed turn and upgrade/pause/sale sheets, whole grayscale.
+- Exact user reference archived under
+  `assets/art/references/towers/howitzer-selected-approved-v1.png`.
+- Only Howitzer row4 and its sixteen measured bearing/muzzle anchors repacked
+  into the existing v2 atlas. Dimensions/layout unchanged. Other metadata
+  entries unchanged in source diff. Inline LEVEL4_ART updated to match.
+- Selected raw source: exec-84d8655f-2fc0-4fbd-9e72-30feed66270d.png;
+  prompts/provenance in `assets/art/level4-towers-v1.prompt.txt`.
+- New narrow-peg test includes the actual rejected raster as a pinned fixture;
+  no Git history reads in this new test. Existing tests are not rewritten.
+- New --howitzer-design-review capture compares baseline source AND baseline
+  atlas pixels from d022ae3, with separate output and exact user reference.
+- Raw sheet and annotated anchor board opened during authoring. Offline atlas
+  packing completed. No combat/targeting/balance/PATH/GATE_D/platform edits.
 
-## Evidence and acceptance boundary
+## Verification boundary
 
-Final local ignored root: `reports/generated/level4-poses/game/`.
-`before-after.png`, `reference-and-game-all.png`, per-branch
-`approved-and-16-poses.png`, `all151-review.png`, `all97-turn-review.png`,
-`states-review.png`, before/after whole/grayscale/close frames and full cycles.
-All exact paths, criteria and test-change explanations:
-`reports/level4-review/iteration-3-rotation.md`.
+Prior d022ae3 tests/captures passed, but DO NOT validate this correction or its
+art fidelity. User runs all tests, actual-game captures and file-origin browser
+console checks. NONE run by the agent in this iteration. Pose spacing, camera,
+seating, grayscale readability, effect attachment and complete cycles await
+actual-game evidence and the user's visual verdict. Issue #89 remains open.
 
-Known review limits: a short transition can soften/double an outline for60ms;
-generated hardware details vary slightly. Busy terrain is unchanged. No artistic
-approval inferred. File-origin browser console check NOT performed.
+## Next user-run commands
 
-Next action: present iteration3 results/frames and WAIT for user's verdict.
-Do not merge or start other visual changes. Keep generated heavy captures/drafts
-out of Git. Historical iterations are documented in the iteration1/2 reports.
+From `/private/tmp/hunger-level4-sprites`:
+
+    node tests/howitzer-design.cjs
+    node tests/level4-seating.cjs
+    npm test
+    node tools/capture-organic-world.cjs --tower-base howitzer --howitzer-design-review
+
+Expected root:
+`/private/tmp/hunger-level4-sprites/reports/generated/howitzer-design-review/howitzer/`
+Compare `user-approved-and-16-poses.png`, before/after Mire/Ember whole and
+turn-zoom images, turn-cycle/000..096, live cycle/000..150, whole grayscale,
+results.json. Open prototype/index.html from disk and inspect browser console.
+Full criteria, expected paths and verification limits:
+`reports/level4-review/howitzer-design-restoration.md`.
+
+Then inspect user-supplied outputs/frames and address any failure. Do not claim
+visual completion or merge before actual evidence and a second visual review.

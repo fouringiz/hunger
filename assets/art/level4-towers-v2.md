@@ -2,6 +2,10 @@
 
 The approved design reference remains `references/towers/level4-selected-approved-v1.png`.
 The generated implementation awaits the user's iteration-3 visual verdict.
+The Howitzer source was replaced after the user rejected its design drift (#89).
+Its exact approved design reference is `references/towers/howitzer-selected-approved-v1.png`.
+The restoration is prepared but awaits user-run tests and actual-game captures;
+see `../../reports/level4-review/howitzer-design-restoration.md`.
 
 - Runtime atlas: `../hunger-level4-towers-v2.png`, 4096 × 2048, 16 columns × 8 rows,
   256px cells. Machine Gun, Rifle, Prism, Howitzer, Plasma and Cryojet each have
