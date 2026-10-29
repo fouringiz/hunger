@@ -31,6 +31,146 @@
         "bright": 0.04852014386115419,
         "pixels": 242456
       }
+    },
+    "rifle": {
+      "row": 1,
+      "params": {
+        "saturation": 0.6315,
+        "gamma": 1.08,
+        "scale": 0.84
+      },
+      "before": {
+        "saturation": 0.5473170969874418,
+        "value": 0.42396003245758224,
+        "bright": 0.13696567511957158,
+        "pixels": 146774
+      },
+      "after": {
+        "saturation": 0.3450637492805131,
+        "value": 0.33971646952493456,
+        "bright": 0.04414269557278537,
+        "pixels": 146774
+      }
+    },
+    "tesla": {
+      "row": 2,
+      "params": {
+        "saturation": 0.7062,
+        "gamma": 1.22,
+        "scale": 0.81
+      },
+      "before": {
+        "saturation": 0.4910839776403508,
+        "value": 0.4601553793195321,
+        "bright": 0.2357419980601358,
+        "pixels": 20620
+      },
+      "after": {
+        "saturation": 0.3436250656832968,
+        "value": 0.3391323862231357,
+        "bright": 0.062366634335596506,
+        "pixels": 20620
+      }
+    },
+    "prism": {
+      "row": 3,
+      "params": {
+        "saturation": 0.6022,
+        "gamma": 1.28,
+        "scale": 0.82
+      },
+      "before": {
+        "saturation": 0.5735408734080062,
+        "value": 0.4753907942737689,
+        "bright": 0.204380907399621,
+        "pixels": 347234
+      },
+      "after": {
+        "saturation": 0.3417870185628974,
+        "value": 0.3398732413820677,
+        "bright": 0.04896697904007096,
+        "pixels": 347234
+      }
+    },
+    "howitzer": {
+      "row": 4,
+      "params": {
+        "saturation": 0.6116,
+        "gamma": 1.04,
+        "scale": 0.84
+      },
+      "before": {
+        "saturation": 0.5643863463704416,
+        "value": 0.41408073516133626,
+        "bright": 0.11373917811686052,
+        "pixels": 284493
+      },
+      "after": {
+        "saturation": 0.34499610858112234,
+        "value": 0.3393612841227671,
+        "bright": 0.04710484967995698,
+        "pixels": 284493
+      }
+    },
+    "cluster": {
+      "row": 5,
+      "params": {
+        "saturation": 0.7761,
+        "gamma": 0.82,
+        "scale": 0.82
+      },
+      "before": {
+        "saturation": 0.4429244405007597,
+        "value": 0.36097340287525914,
+        "bright": 0.11983801855252625,
+        "pixels": 21237
+      },
+      "after": {
+        "saturation": 0.3469875071710998,
+        "value": 0.3351462994200234,
+        "bright": 0.055280877713424686,
+        "pixels": 21237
+      }
+    },
+    "plasma": {
+      "row": 6,
+      "params": {
+        "saturation": 0.645,
+        "gamma": 1.26,
+        "scale": 0.81
+      },
+      "before": {
+        "saturation": 0.5354438618586305,
+        "value": 0.46833461962180006,
+        "bright": 0.24509808510538708,
+        "pixels": 427282
+      },
+      "after": {
+        "saturation": 0.3369145532806001,
+        "value": 0.33863334597137107,
+        "bright": 0.031749523733740244,
+        "pixels": 427282
+      }
+    },
+    "cryojet": {
+      "row": 7,
+      "params": {
+        "saturation": 0.6844,
+        "gamma": 1.16,
+        "scale": 0.81
+      },
+      "before": {
+        "saturation": 0.5044170551173576,
+        "value": 0.45289940519617194,
+        "bright": 0.20547752096220318,
+        "pixels": 354686
+      },
+      "after": {
+        "saturation": 0.3451869448524725,
+        "value": 0.33842821261521566,
+        "bright": 0.04185392149676052,
+        "pixels": 354686
+      }
     }
   }
 }
