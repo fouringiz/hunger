@@ -1,7 +1,7 @@
 'use strict';
 // Colour-grades rows of the level-4 head atlas into the palette of the shared tower foundation.
 // Hue and alpha are untouched: saturation is scaled, value goes through scale*v^gamma (gamma > 1 compresses highlights).
-// Usage: node tools/grade-level4-atlas.cjs machine-gun [rifle ...]   (or: all)
+// Usage: node tools/grade-level4-atlas.cjs machine-gun [rifle ...]   (or: all = every row not graded yet)
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {paletteMetrics}=require('./palette-metrics.cjs');
@@ -18,11 +18,15 @@ function fit(data,width,rect,target){
   const px=[];const [x0,y0,w,h]=rect;
   for(let y=y0;y<y0+h;y+=2)for(let x=x0;x<x0+w;x+=2){const i=(y*width+x)*4;if(data[i+3]<200)continue;px.push(rgb2hsv(data[i],data[i+1],data[i+2]));}
   const meanS=px.reduce((a,p)=>a+p[1],0)/px.length,sat=Math.min(1,target.saturation/meanS);
-  let best=null;
-  for(let gamma=1;gamma<=2.6;gamma+=.02){
-    const mv=px.reduce((a,p)=>a+Math.pow(p[2],gamma),0)/px.length,scale=Math.min(1,target.value/mv);
-    const bright=px.filter(p=>scale*Math.pow(p[2],gamma)>.8).length/px.length,err=Math.abs(bright-target.bright);
-    if(!best||err<best.err)best={gamma:+gamma.toFixed(2),scale:+scale.toFixed(4),err};
+  // Joint fit of mean value and bright share, evaluated with clipping so a scale above 1 cannot cheat.
+  const vs=px.filter((_,k)=>k%2===0).map(p=>p[2]);let best=null;
+  for(let gamma=.8;gamma<=2.6;gamma+=.02){
+    const pw=vs.map(v=>Math.pow(v,gamma));
+    for(let scale=.5;scale<=1.8;scale+=.01){
+      let sum=0,bright=0;for(const x of pw){const v=Math.min(1,scale*x);sum+=v;if(v>.8)bright++;}
+      const err=Math.abs(sum/pw.length-target.value)+Math.abs(bright/pw.length-target.bright);
+      if(!best||err<best.err)best={gamma:+gamma.toFixed(2),scale:+scale.toFixed(3),err};
+    }
   }
   return {saturation:+sat.toFixed(4),gamma:best.gamma,scale:best.scale};
 }
@@ -33,8 +37,9 @@ function apply(data,width,rect,p){const [x0,y0,w,h]=rect;
 async function main(){
   const keys=process.argv.slice(2);if(!keys.length){console.error('usage: node tools/grade-level4-atlas.cjs <row-key ...|all>');process.exit(2);}
   const record=fs.existsSync(RECORD)?JSON.parse(fs.readFileSync(RECORD,'utf8')):{foundation:null,rows:{}};
-  const rows=META.entries.filter(e=>keys.includes('all')||keys.includes(e.key));
-  if(!rows.length)throw new Error('no such rows: '+keys.join(','));
+  // 'all' grades every row that is not graded yet; naming an already graded row is an error.
+  const rows=META.entries.filter(e=>keys.includes('all')?!record.rows[e.key]:keys.includes(e.key));
+  if(!rows.length)throw new Error(keys.includes('all')?'every row is already graded':'no such rows: '+keys.join(','));
   const fimg=await loadImage(path.join(ROOT,'assets/hunger-low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
   const target=paletteMetrics(fg.getImageData(0,0,fc.width,fc.height).data,fc.width,FOUNDATION_RECT);record.foundation={rect:FOUNDATION_RECT,...target};
   const img=await loadImage(ATLAS),c=createCanvas(img.width,img.height),g=c.getContext('2d');g.drawImage(img,0,0);
