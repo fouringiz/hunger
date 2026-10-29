@@ -2265,8 +2265,9 @@ function fuelContactFor(t,e){
   return {tower:t,body,vx:dx/len,vy:dy/len,u,strength:fuelJetFade(t),active:true};
 }
 let fuelContactFrame=new Map();
+const FUEL_CONTACT_CAP=8;
 function prepareFuelContacts(){
-  fuelContactFrame=new Map();if(!flameJetReady())return;let count=0;
+  fuelContactFrame=new Map();if(!flameJetReady())return;const found=[];
   for(const e of S.enemies){
     let contact=null;
     for(const t of S.towers){const p=fuelContactFor(t,e);if(p&&(!contact||p.strength>contact.strength))contact=p;}
@@ -2275,8 +2276,11 @@ function prepareFuelContacts(){
       const p=enemyBodyPoint(visualEnemy(e)),m=weaponMuzzle(e.burnTower),dx=p.x-m.x,dy=p.y-m.y,len=Math.hypot(dx,dy)||1;
       contact={tower:e.burnTower,body:e,vx:dx/len,vy:dy/len,u:1,strength:.38*Math.min(1,(e.burnUntil-S.time)/.35),active:false};
     }
-    if(contact&&count++<24)fuelContactFrame.set(e,contact);
+    if(contact)found.push([e,contact]);
   }
+  // Live jet contacts win over retained burn films, then the strongest; the cap bounds per-frame mask compositing on phones.
+  found.sort((a,b)=>(b[1].active!==false)-(a[1].active!==false)||b[1].strength-a[1].strength);
+  for(const [e,contact] of found.slice(0,FUEL_CONTACT_CAP))fuelContactFrame.set(e,contact);
 }
 let fuelBodyMask=null,fuelBodyFilm=null;
 function stampFuelBody(g,e){
