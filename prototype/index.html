@@ -1753,9 +1753,10 @@ function weaponProjection(angle) {
 // Presentation-only: every weapon head (levels 1-4) is drawn this much larger around its own mount point.
 const HEAD_SCALE=1.15;
 // A soft contact shadow under a head gives it weight on the foundation (light from the upper left).
-function drawHeadShadow(mountY,radius=17){
+function drawHeadShadow(mountY,radius=17,alpha=1){
+  if(alpha<=0)return;
   const r=radius*HEAD_SCALE,cx=2,cy=mountY+4;
-  ctx.save();ctx.translate&&ctx.translate(cx,cy);ctx.scale&&ctx.scale(1,.5);
+  ctx.save();ctx.globalAlpha*=alpha;ctx.translate&&ctx.translate(cx,cy);ctx.scale&&ctx.scale(1,.5);
   const g=ctx.createRadialGradient&&ctx.createRadialGradient(0,0,r*.2,0,0,r);if(!g||!g.addColorStop){ctx.restore();return;}
   g.addColorStop(0,'rgba(8,10,8,.42)');g.addColorStop(1,'rgba(8,10,8,0)');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.restore();
@@ -1810,7 +1811,7 @@ function neutralVoltaicMuzzle(){
   return {x:(a.muzzle[0]-a.bearing[0])*k,y:LEVEL4_SOCKETS.voltaic.y-1+(a.muzzle[1]-a.bearing[1])*k};
 }
 function drawNeutralVoltaic(t,progress=1){
-  drawTowerFoundation(t);drawLevel4Coupling(t);if(progress>=1)drawHeadShadow(LEVEL4_SOCKETS.voltaic.y-1);
+  drawTowerFoundation(t);drawLevel4Coupling(t);drawHeadShadow(LEVEL4_SOCKETS.voltaic.y-1,17,deploymentStep(progress,.2,.94));
   const a=VOLTAIC_NEUTRAL,size=a.size*HEAD_SCALE,k=size/256,drop=(size+24)*(1-deploymentStep(progress,.2,.94));
   const x=-a.bearing[0]*k,y=LEVEL4_SOCKETS.voltaic.y-1-a.bearing[1]*k;
   ctx.save();ctx.beginPath();ctx.rect(-40,-80,80,80+LEVEL4_SOCKETS.voltaic.y+4);ctx.clip();ctx.translate(0,drop);
@@ -1946,7 +1947,7 @@ function drawLevel4Tower(t,progress=1){
   if(feedback&&e&&feedback.at>=e.at)upgrade=1;
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
-  drawLevel4Coupling(t);if(open>=1)drawHeadShadow(LEVEL4_SOCKETS[t.type].y);
+  drawLevel4Coupling(t);drawHeadShadow(LEVEL4_SOCKETS[t.type].y,17,open);
   ctx.save();
   const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
   if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
@@ -2015,14 +2016,14 @@ function drawWeaponDeployment(t,p) {
   if(p>=1)return false;
   const lift=deploymentStep(p,.25,.65),barrels=deploymentStep(p,.64,.94),cannon=t.type==='cannon';
   // The common foundation stays planted while the upper emerges through its bearing.
-  drawTowerFoundation(t);drawTowerSupport(t,12-26*lift);
+  drawTowerFoundation(t);drawTowerSupport(t,12-26*lift);drawHeadShadow(-14,17,lift);
   // The shaft rises out of the socket; the housing is occluded by the near edge while emerging.
   if(lift>0){
     const angle=t.selling||t.paused||constructionProgress(t)>=1?t.angle:-Math.PI/2,m=weaponProjection(angle),r=STRUCTURE_RECTS[cannon?9:5],split=cannon?205:200,size=.14;
     const px=cannon?101:103,py=cannon?93:91;
     ctx.save();ctx.beginPath();ctx.rect(-45,-75,90,71+19*deploymentStep(p,.45,.65));ctx.clip();
     for(const z of [3,0]){
-      ctx.save();ctx.translate(0,12-26*lift+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+      ctx.save();ctx.translate(0,12-26*lift+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);ctx.transform(HEAD_SCALE,0,0,HEAD_SCALE,0,0);
       if(z)ctx.filter='brightness(0.38)';
       if(structureArt&&structureArt.complete&&structureArt.naturalWidth){
         // Retracted barrel tips slide inside the housing; crop at the receiver instead of scaling them.
@@ -2132,7 +2133,7 @@ function drawFlamethrower(t,p=1) {
   drawTowerFoundation(t);
   const lift=deploymentStep(p,.3,.78),tankLift=deploymentStep(p,.14,.5),spread=deploymentStep(p,.32,.6),barrel=deploymentStep(p,.65,.94);
   drawTowerSupport(t,FLAMER_ART.mountY+42*HEAD_SCALE*(1-lift));
-  if(lift>=1)drawHeadShadow(FLAMER_ART.mountY);
+  drawHeadShadow(FLAMER_ART.mountY,17,lift);
   const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y*(.3+.7*spread)));
   // Parts rise from behind the socket's near edge at their final scale, then telescope into position.
   ctx.save();if(p<1){ctx.beginPath();ctx.rect(-48,-80,96,88);ctx.clip();}
