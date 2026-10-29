@@ -2,6 +2,8 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-jet-v1.frames.json'),'utf8'));
+const FLAME_REACH=meta.sources.reduce((a,f)=>a+(f.bounds[2]-f.emission[0])*meta.scale,0)/meta.sources.length;
+assert.ok(Math.abs(FLAME_REACH-382)<1,'FLAME_JET.reach matches the frames JSON bounds');
 function boot(code=source,art=true){
   let matrix=[1,0,0,1,0,0],stack=[],points=[];const draws=[],fills=[];
   const mul=n=>{const[a,b,c,d,e,f]=matrix,[g,h,i,j,k,l]=n;matrix=[a*g+c*h,b*g+d*h,a*i+c*j,b*i+d*j,a*k+c*l+e,b*k+d*l+f];};
@@ -34,9 +36,9 @@ function sheetContract(r){
   const spec=JSON.parse(r.run('JSON.stringify({m:weaponMuzzle(jetTower),t:{x:jetTower.x,y:jetTower.y,angle:jetTower.angle},range:tstats(jetTower).range})'));
   const length=Math.hypot(spec.t.x+Math.cos(spec.t.angle)*spec.range-spec.m.x,spec.t.y+Math.sin(spec.t.angle)*spec.range-spec.m.y);
   assert.deepEqual(a.slice(3,5),meta.cell);assert.deepEqual(a.slice(5),[-meta.anchor[0],-meta.anchor[1],...meta.cell]);
-  const sx=Math.hypot(m[0],m[1]),sy=Math.hypot(m[2],m[3]);near(sx,sy,'uniform scale');near(sx*meta.cell[0],length,'muzzle-to-range length');
+  const sx=Math.hypot(m[0],m[1]),sy=Math.hypot(m[2],m[3]);near(sx,sy,'uniform scale');near(sx*382,length,'visible flame tip (FLAME_JET.reach 382) reaches the range end');
   near(m[4],spec.m.x,'anchor x');near(m[5],spec.m.y,'anchor y');
-  near(m[0]*512+m[4],spec.t.x+Math.cos(spec.t.angle)*spec.range,'endpoint x');near(m[1]*512+m[5],spec.t.y+Math.sin(spec.t.angle)*spec.range,'endpoint y');
+  near(m[0]*382+m[4],spec.t.x+Math.cos(spec.t.angle)*spec.range,'visible tip x at range end');near(m[1]*382+m[5],spec.t.y+Math.sin(spec.t.angle)*spec.range,'visible tip y at range end');
   assert.equal(d.blend,'lighter');assert.ok(draws[0].blur>0&&draws[0].alpha<d.alpha,'soft halo underneath');
 }
 const r=boot();assert.deepEqual(meta.cell,[512,256]);assert.deepEqual(meta.anchor,[0,128]);assert.equal(meta.frames,4);

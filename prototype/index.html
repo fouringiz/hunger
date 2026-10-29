@@ -2207,7 +2207,9 @@ function drawRibbonJet(t,ctx=canvas.getContext('2d')) {
   ctx.restore();return true;
 }
 // Mirrors the committed frame metadata; no runtime JSON fetch or canvas pixel reads (file:// safe).
-const FLAME_JET={cell:[512,256],anchor:[0,128],frames:4,fps:12};
+// reach: mean distance from the nozzle anchor to the visible flame tip, in cell pixels (from the frames JSON bounds).
+// The cell has an empty margin past the tip, so scaling by the cell width stopped the flame at about 75 percent of range.
+const FLAME_JET={cell:[512,256],anchor:[0,128],frames:4,fps:12,reach:382};
 function flameJetReady(){return !!(flameJetArt&&flameJetArt.complete&&flameJetArt.naturalWidth>=2048&&flameJetArt.naturalHeight>=256);}
 function fuelJetFade(t){
   const age=S.time-t.jetAt;
@@ -2226,7 +2228,7 @@ function drawFlameJet(t,ctx=canvas.getContext('2d')){
   if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t,ctx);
   const m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
   const length=Math.hypot(dx,dy);if(length<1)return false;
-  const [w,h]=FLAME_JET.cell,[ax,ay]=FLAME_JET.anchor,scale=length/w;
+  const [w,h]=FLAME_JET.cell,[ax,ay]=FLAME_JET.anchor,scale=length/FLAME_JET.reach;
   const frame=Math.floor(presentationTime*FLAME_JET.fps)%FLAME_JET.frames;
   const mirror=flamePulseMirror(t);
   ctx.save();ctx.translate(m.x,m.y);ctx.rotate(Math.atan2(dy,dx));ctx.scale(scale,scale*mirror);
