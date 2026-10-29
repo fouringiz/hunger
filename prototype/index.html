@@ -1245,6 +1245,8 @@ const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
 const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
+const teslaToroidArt = typeof Image === 'undefined' ? null : new Image();
+if (teslaToroidArt) teslaToroidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-tesla-toroid-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
 if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
 const flameJetArt = typeof Image === 'undefined' ? null : new Image();
@@ -1822,7 +1824,13 @@ function drawNeutralVoltaic(t,progress=1){
 }
 
 let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap(),level4ViewStates=new WeakMap();
-function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
+const TESLA_TOROID={"key":"tesla","type":"voltaic","branch":"A","row":0,"size":48,"tips":[[157.6139,76.48]],"seats":[[128,235]],"rings":[[128,130.24],[128,154.88]],"rim":[[93.1601,58.56],[162.8399,69.76]]};
+function teslaToroidReady(){return !!(teslaToroidArt&&teslaToroidArt.complete&&teslaToroidArt.naturalWidth===256&&teslaToroidArt.naturalHeight===256);}
+function level4Spec(t){
+  if(t.level!==4||!t.branch)return null;
+  if(t.type==='voltaic'&&t.branch==='A'&&teslaToroidReady())return TESLA_TOROID;
+  return LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch);
+}
 function level4Ready(){
   return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===4096&&level4Art.naturalHeight===2048);
 }
@@ -1848,6 +1856,7 @@ function level4Transition(t,frame){
 }
 let level4BlendCanvas=null;
 function level4Image(p){
+  if(p.spec===TESLA_TOROID)return {image:teslaToroidArt,rect:[0,0,256,256]};
   if(p.views.length===1)return {image:level4Art,rect:[p.views[0].frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL]};
   if(!level4BlendCanvas){level4BlendCanvas=document.createElement('canvas');level4BlendCanvas.width=level4BlendCanvas.height=LEVEL4_CELL;}
   const g=level4BlendCanvas.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,LEVEL4_CELL,LEVEL4_CELL);
@@ -1867,7 +1876,7 @@ function observeLevel4(t){
   else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;level4ViewStates.delete(t);}
 }
 function level4Pose(t,angle=t.angle,recoil=true){
-  const spec=level4Spec(t);if(!spec||!level4Ready(spec))return null;
+  const spec=level4Spec(t);if(!spec||(spec===TESLA_TOROID?!teslaToroidReady():!level4Ready(spec)))return null;
   // Tesla/Cluster keep one fixed view; the six aimed heads use sixteen authored poses.
   const {frame,yaw}=level4Views(angle,spec.tips.length);
   const foreign=Math.abs(Math.atan2(Math.sin(angle-t.angle),Math.cos(angle-t.angle)))>1e-8;
@@ -1909,6 +1918,13 @@ function drawLevel4Mechanism(t,p){
     const phase=presentationTime*65,fade=1-deploymentStep(p.age,.13,.28);
     ctx.globalAlpha=.65*fade;ctx.fillStyle='#e3d3b2';
     for(let i=0;i<6;i++){const a=phase+i*Math.PI/3;ctx.beginPath();ctx.ellipse(x+Math.cos(a)*1.15,y+Math.sin(a)*1.7,.45,.65,0,0,Math.PI*2);ctx.fill();}
+  }else if(p.spec===TESLA_TOROID){
+    // Charge/arc annotations are in the selected sprite's coordinates, not the old side posts.
+    const k=p.size/LEVEL4_CELL,charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
+    ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;
+    p.spec.rings.forEach((r,i)=>{if(charged>(i+1)/3){ctx.globalAlpha=.13;ctx.beginPath();ctx.ellipse(p.x+r[0]*k,p.y+r[1]*k,6,1.5,0,0,Math.PI*2);ctx.stroke();}});
+    if(p.age>=0&&p.age<.12){ctx.globalAlpha=.65*(1-p.age/.12);ctx.lineWidth=1.2;
+      for(const r of p.spec.rim){const sx=p.x+r[0]*k,sy=p.y+r[1]*k;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo((sx+x)/2,(sy+y)/2-1.5);ctx.lineTo(x,y);ctx.stroke();}}
   }else if(p.spec.key==='tesla'){
     const charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
     ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;

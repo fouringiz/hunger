@@ -16,7 +16,7 @@ async function check(sourceHtml=null,{anchors=true}={}){
  w.run(`const seatingDrawImage=ctx.drawImage.bind(ctx),seatingCoupling=typeof drawLevel4Coupling==='function'?drawLevel4Coupling:null;
  let seatingLayer='full',seatingDraws=[];ctx.drawImage=(image,...args)=>{
    const blended=typeof level4BlendCanvas!=='undefined'&&image===level4BlendCanvas;
-   const head=image===level4Art||blended||(typeof level4YawArt!=='undefined'&&image===level4YawArt);
+   const head=(typeof teslaToroidArt!=='undefined'&&image===teslaToroidArt)||image===level4Art||blended||(typeof level4YawArt!=='undefined'&&image===level4YawArt);
    if(head){const m=ctx.getTransform();seatingDraws.push({kind:blended?'blend':image===level4Art?'directional':'projected',args,matrix:[m.a,m.b,m.c,m.d,m.e,m.f]});}
    if(seatingLayer==='support'||(['upper','head','coverage'].includes(seatingLayer)&&!head))return;
    seatingDrawImage(image,...args);
@@ -47,7 +47,7 @@ async function check(sourceHtml=null,{anchors=true}={}){
    if(anchors){
     const draw=JSON.parse(w.run('JSON.stringify(seatingDraws)')).at(-1);
     assert.ok(draw,`${e.key}: actual head image must be drawn`);
-    const entry=draw.kind==='projected'?yawTable.entries.find(a=>a.key===e.key):e.frames[draw.kind==='blend'?0:Math.round(draw.args[0]/256)];
+    const entry=e.key==='tesla'&&w.run("typeof TESLA_TOROID!=='undefined'&&level4Spec(S.towers[0])===TESLA_TOROID")?JSON.parse(w.run('JSON.stringify({bearing:TESLA_TOROID.seats[0]})')):draw.kind==='projected'?yawTable.entries.find(a=>a.key===e.key):e.frames[draw.kind==='blend'?0:Math.round(draw.args[0]/256)];
     const [x,y,width,height]=draw.args.slice(-4),[a,b,c,d,tx,ty]=draw.matrix;
     const u=x+entry.bearing[0]/256*width,v=y+entry.bearing[1]/256*height;
     // Measure the atlas bearing in the ACTUAL draw matrix, not a reported pose helper.

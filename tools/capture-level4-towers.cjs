@@ -83,4 +83,4 @@ async function main(){
  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({branch:key,baseline:BASE,candidate:NEUTRAL?'acb6218':'working-tree',results,limits:'Controlled native capture, not file-origin browser validation or artistic approval. Reference crop is scaled by foundation width; review perspective, silhouette, occlusion, full cycles and grayscale manually.'},null,2)+'\n');
  console.log('Wrote '+out+'/{before,after}-{mire,ember}-{whole,whole-gray,turn,upgrade,attack,sale}*.png, full cycles and reference-and-game.png. Inspect before/after and whole/close views before marking visual work verified.');
 }
-module.exports={main};
+module.exports={main,capture,crop,setup,shot};

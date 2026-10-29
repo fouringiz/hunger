@@ -1,0 +1,53 @@
+{
+  "key": "tesla",
+  "type": "voltaic",
+  "branch": "A",
+  "row": 0,
+  "size": 48,
+  "tips": [
+    [
+      157.6139,
+      76.48
+    ]
+  ],
+  "seats": [
+    [
+      128,
+      235
+    ]
+  ],
+  "source": "assets/art/references/towers/tesla-level4-approved-v2.png",
+  "sourceSha256": "0e2a1cc599ead626c66fa5c92991e4ce85607b6b979725656ed8363e1fb212dd",
+  "sourceBox": [
+    230,
+    66,
+    850,
+    1093
+  ],
+  "rect": [
+    0,
+    0,
+    256,
+    256
+  ],
+  "rings": [
+    [
+      128,
+      130.24
+    ],
+    [
+      128,
+      154.88
+    ]
+  ],
+  "rim": [
+    [
+      93.1601,
+      58.56
+    ],
+    [
+      162.8399,
+      69.76
+    ]
+  ]
+}

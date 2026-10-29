@@ -1,25 +1,12 @@
-# PR #71 — nozzle/platform occlusion correction
+# Tesla toroid — integration awaiting user verification
 
-2026-10-29. `codex/flamethrower-vfx`; https://github.com/fouringiz/hunger/pull/71 remains draft and unmerged.
+2026-10-30. User selected the attached compact five-stud image and explicitly authorized connecting it. Scope is Tesla level 4 only; Voltaic 1–3 retains the old three-electrode head and Prism remains unchanged.
 
-- User supplied the downward-facing screenshot: the platform hid the jet stem, leaving a detached lower fireball. Latest request explicitly authorizes fixing this one visual defect. Baseline `6c66c10` (same renderer as `dd62837`); previous full tests were user-confirmed passed before this change.
-- Replaced the under-all-actors placement with a transparent foreground jet pass. Actual creature alpha is subtracted, along with health bars; the jet is above the platform/foundation while enemy silhouettes remain readable. Existing contact film remains; Cryojet unchanged. Explicit target contexts keep vector fallback and flow on the same layer.
-- No source PNG/layout, simulation, damage, range, sweep, burn, RNG, route or platform-position changes. No runtime pixel reads. Reuses one viewport-sized layer; body mask uses current pose/scale, including surfacing/air variants.
-- Actual captures under ignored `reports/generated/flamethrower-layer/`: downward before/after whole/close/gray on Mire/Ember, matching crowd scenes with six damaged enemies/bars, all eight headings ×level3/Plasma/Cryojet, full cycles/sweeps/stops/inactive states. Opened frames and exact paths: `reports/flamethrower-platform-layer.md`. The nozzle bridge is visible in the corrected frames; no opaque body/bar blanket observed in inspected samples.
-- Capture confirmed rules/source `9d3c412e` / `5750d1fe` unchanged,151 identical live combat steps per zone. This is capture evidence, not a test-suite result.
-- Replaced the old ordering-only regression, which enforced the bad platform occlusion, with real-pixel bridge/core/bar checks. Known-bad detached and blanket variants use the same assertions. Test mutation forwarding updated for explicit contexts. NOT run by agent; user owns tests.
-- User ran the new focused check and `npm test`: both FAILED at the heading-0 overlap precondition, before core/bar assertions. Inspection of the source atlas found only 17 fully opaque pixels across 1024×1024; its dense body alpha is mostly 253. The test erroneously required exact alpha 255 after downsampling.
-- Test-only correction samples the dense core (alpha ≥250), keeps ≥12 actually fire-overlapped samples in every heading, and permits only the mathematically bounded residual from real alpha: at most `255-alpha` per RGB channel. The existing <3 excess-error threshold, exact bar protection and known-bad blanket rejection remain. No runtime/art changes; corrected tests NOT run by agent.
-- Next: user reruns `node tests/flamethrower-readability.cjs`, `npm test`, and disk-browser firing/console check. Await visual verdict/independent review. Smoke iteration2 remains on hold. No claim of browser verification or overall visual completion.
+- Selected original archived at `assets/art/references/towers/tesla-level4-approved-v2.png`; decision recorded in the passport.
+- Offline packing completed: `assets/hunger-tesla-toroid-v1.png` and inline-compatible annotations. New presentation image selection, socket bearing and toroid discharge/charge annotations are prepared. Existing atlas, simulation, balance, PATH, GATE_D and platform positions unchanged by the patch.
+- Prepared native regression rejects the previous three-post selection; existing socket-coverage regression recognizes the dedicated image without changing coverage/anchor tolerances. Before renderer pinned at `1499ae5`.
+- NO agent-run tests, game captures or browser checks. Art approval is confirmed; runtime visual quality and combat parity are pending. No confirmed new runtime defect or related issue number yet.
+- Criteria, commands and expected before/after paths: `reports/tesla-toroid-integration.md`.
+- Next: user runs `node tests/tesla-toroid.cjs`, `node tests/level4-seating.cjs`, `npm test`, `node tools/capture-organic-world.cjs --tesla-toroid`, then opens `prototype/index.html` from disk and checks console/full cycles. Inspect actual before/after frames and obtain a second visual review before merge.
 
-## Smoke iteration 2 — starting checkpoint
-
-User confirmed all tests passed on `194103f`; static review found no runtime changes in that commit. User now authorizes smoke iteration with intermediate saves (8% usage remaining). Checks and captures remain user-run.
-
-Observable smoke criteria: approved six-cell sheet with cell5 never used; one puff grows/fades through1→2→3→4→6; all headings rise vertically up screen; slight drift; lifetime about1.2s; composited opacity ≤0.55; at most6 per tower plus global cap; enemies/bars remain readable in colour/grayscale. No paused/sale/folded/Cryojet smoke, simulation state or RNG edits. Save implementation and focused checks separately; visual acceptance requires actual game captures/full cycle and disk-browser console.
-
-Implementation save: approved smoke sheet is wired after actors/jet, presentation pool outside S, six-per-tower/96 global cap,1.2s lifetime, vertical screen rise22px/s, drift±6px/s. Frame indices0,1,2,3,5 only;3→5 crossfade. A single reusable layer composites at0.45 for all overlapping puffs; health bars are excluded. Inactive/deleted/Cryojet towers clear their particles. No pixel reads. Not tested or captured yet; focused checks and capture scenario are next.
-
-Verification-preparation save: `tests/flamethrower-smoke.cjs` covers metadata, all16 screen-rise headings, lifecycle/crossfade without frame5, deterministic read-only emission, inactive/construction/Cryojet/missing art,20-tower stress with6/96 caps, expired particles and aggregate alpha under overlap; known-bad heading/ring variants must fail. New actual-render capture route `--flamethrower-smoke` compares `194103f` against current on Mire/Ember,8 headings ×level3/Plasma/Cryojet, whole/close/grayscale,1.6s full lifecycle and paused/sale. Neither tests nor captures nor browser checks have been run by agent.
-
-NEXT (from repo root): `node tests/flamethrower-smoke.cjs`, `npm test`, `node tools/capture-organic-world.cjs --flamethrower-smoke`, `open prototype/index.html`. User sends test output and generated before/after/cycle frames for review. Actual readability/appearance and browser console remain UNVERIFIED. Smoke implementation saved separately as `75d8bd6`; prior passed jet checkpoint `f26492b`. No merge.
+Previous smoke/jet work is outside this iteration; its prior checkpoint remains in the pre-change commit `1499ae5`.
