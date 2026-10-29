@@ -27,11 +27,26 @@ async function frames(w){
   const snapshot=w.run('JSON.stringify(flameSmokePuffs.map(({at,x,y,drift})=>({at,x,y,drift})))');
   const twin=await boot();twin.run('S.towers[0].angle=15*Math.PI/8;updateFlameSmoke();');assert.equal(twin.run('JSON.stringify(flameSmokePuffs.map(({at,x,y,drift})=>({at,x,y,drift})))'),snapshot,'slot and presentation time reproduce emission');
   for(const state of ["t.paused=true","t.selling=true","t.branch='B'","constructionArt.set(t,{at:presentationTime,done:false})"]){
-    const v=await boot();v.run(`updateFlameSmoke();{const t=S.towers[0];${state};}updateFlameSmoke();`);assert.equal(v.run('flameSmokePuffs.length'),0,'no smoke for '+state);
+    const v=await boot();v.run('updateFlameSmoke();');const before=v.run('flameSmokePuffs.length');assert.ok(before>0,'smoke emitted before '+state);
+    v.run(`{const t=S.towers[0];${state};}updateFlameSmoke();`);assert.equal(v.run('flameSmokePuffs.length'),before,'puffs in the air must not vanish on '+state);
+    v.run('presentationTime+=.21;updateFlameSmoke();');assert.equal(v.run('flameSmokePuffs.filter(p=>p.at>3.1).length'),0,'no new smoke after '+state);
+    v.run('presentationTime+=1.3;updateFlameSmoke();');assert.equal(v.run('flameSmokePuffs.length'),0,'remaining puffs expire after '+state);
   }
+  // Health bars are drawn after smoke: dense smoke over a wounded body must leave the bar pixels exact, with no cut-out.
+  const bar=await boot();
+  const px=JSON.parse(bar.run(`JSON.stringify((()=>{const e=makeEnemy('forager',1);e.d=420;e.x=S.towers[0].x+60;e.y=S.towers[0].y+40;e.hp=e.maxHp*.5;S.enemies=[e];const v=visualEnemy(e),by=v.y-enemyBodyHeight(v)-6+2,bx=v.x-(v.r*2+6)/2+2;
+    const sample=(x=bx,y=by)=>{const m=ctx.getTransform(),d=ctx.getImageData(Math.round(m.a*x+m.c*y+m.e),Math.round(m.b*x+m.d*y+m.f),1,1).data;return [d[0],d[1],d[2]];};
+    S.towers[0].jetAt=undefined;flameSmokePuffs=[];flameSmokeEmitters.set(S.towers[0],{next:1e9});draw();const clear=sample(),clearEdge=sample(bx,by-3);
+    flameSmokePuffs=Array.from({length:6},()=>({tower:S.towers[0],at:presentationTime-.6,x:bx,y:by,drift:0}));draw();const smoked=sample(),smokedEdge=sample(bx,by-3);
+return {clear,smoked,clearEdge,smokedEdge,puffs:flameSmokePuffs.length};})())`));
+  assert.ok(px.puffs>0,'dense smoke present over the bar');
+  assert.deepEqual(px.smoked,px.clear,'health bar pixels are identical with and without smoke over them');
+  assert.notDeepEqual(px.smokedEdge,px.clearEdge,'smoke reaches the bar edge: no rectangular hole cut around the bar');
   const absent=await boot();absent.run('flameSmokeReady=()=>false;updateFlameSmoke();');assert.equal(absent.run('flameSmokePuffs.length'),0,'missing smoke art is harmless');
   const cap=await boot();cap.run("reset();S.credits=100000;for(const slot of [...SLOTS,...SLOTS.slice(0,4).map(s=>({...s,tower:null}))])build(slot,'flamer');observeConstruction();presentationTime=6.2;observeConstruction();for(const t of S.towers){t.warm=0;t.jetAt=0;}for(let i=0;i<6;i++){presentationTime=6.2+i*.21;updateFlameSmoke();}");
-  const counts=JSON.parse(cap.run('JSON.stringify(S.towers.map(t=>flameSmokePuffs.filter(p=>p.tower===t).length))'));assert.ok(counts.some(n=>n===6),'per-tower boundary exercised');assert.ok(counts.every(n=>n<=6),'six puffs per tower');assert.equal(cap.run('flameSmokePuffs.length'),96,'global 96 cap exercised');
+  const counts=JSON.parse(cap.run('JSON.stringify(S.towers.map(t=>flameSmokePuffs.filter(p=>p.tower===t).length))'));assert.ok(counts.every(n=>n<=6),'six puffs per tower');assert.equal(cap.run('flameSmokePuffs.length'),96,'global 96 cap exercised');
+  // Per-tower cap on its own: a long life would allow more than six, the cap must stop at six.
+  const one=await boot();one.run('FLAME_SMOKE.life=5;for(let i=0;i<12;i++){presentationTime=3.1+i*.21;updateFlameSmoke();}');assert.equal(one.run('flameSmokePuffs.length'),6,'per-tower boundary exercised');
   cap.run('presentationTime+=1.21;for(const t of S.towers)t.jetAt=undefined;updateFlameSmoke();');assert.equal(cap.run('flameSmokePuffs.length'),0,'particles expire without active fire');
   // Overlap must be capped for the entire layer, not separately for each puff.
   w.run('presentationTime=3.7;flameSmokePuffs=Array.from({length:6},()=>({tower:S.towers[0],at:3.1,x:400,y:250,drift:0}));flameSmokeEmitters.set(S.towers[0],{next:100});ctx.clearRect(0,0,W,H);drawFlameSmoke();');
@@ -39,5 +54,5 @@ async function frames(w){
   assert.ok(!/Math\.random/.test(html.slice(html.indexOf('const FLAME_SMOKE='),html.indexOf('function drawPlantedWeapon'))),'no random source in smoke path');
   const along=html.replace('y:p.y-22*age','y:p.y+Math.sin(p.tower.angle)*22*age');assert.notEqual(along,html);await assert.rejects(()=>boot(along).then(rise),/rise up screen/);
   const ring=html.replace('else cells=[[5,1]]','else cells=[[4,1]]');assert.notEqual(ring,html);await assert.rejects(()=>boot(ring).then(frames),/ring frame 5/);
-  console.log('PASS smoke sheet metadata, 16-heading screen rise, ring rejection, lifecycle/crossfade, caps, deterministic read-only emissions, inactive/Cryojet/missing art, aggregate alpha; bad direction/ring variants rejected');
+  console.log('PASS smoke sheet metadata, 16-heading screen rise, ring rejection, lifecycle/crossfade, caps, deterministic read-only emissions, inactive towers stop emitting without popping puffs, Cryojet/missing art, health bar above smoke, aggregate alpha; bad direction/ring variants rejected');
 })().catch(e=>{console.error(e);process.exitCode=1;});
