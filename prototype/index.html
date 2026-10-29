@@ -1245,6 +1245,8 @@ const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
 const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
+const teslaToroidArt = typeof Image === 'undefined' ? null : new Image();
+if (teslaToroidArt) teslaToroidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-tesla-toroid-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
 if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
 const flameJetArt = typeof Image === 'undefined' ? null : new Image();
@@ -1775,27 +1777,11 @@ function flamerPoint(angle,x,y=0) {
 // Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
 const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":49.76209150326797,"tips":[[237.83713,122.98371],[223.6873,151.20521],[212.35179,172.93811],[196.09121,187.16612],[135.73941,191.15309],[76.09121,184.74267],[56.54723,176.14332],[38.87948,163.63518],[31.76547,128.61238],[50.91857,113.52443],[73.58958,87.0228],[76.79479,80.69055],[126.35831,68.33876],[179.43974,78.34528],[199.53094,92.57329],[217.5114,105.86319]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":57.66213592233009,"tips":[[231.44828,147.51724],[237.24138,181.24138],[223.17241,206],[198.8,225.17241],[125.86207,207.58621],[80.75862,206.34483],[37.24138,195.7931],[17.58621,185.58621],[34.27586,147.65517],[41.51724,119.93103],[55.58621,103.44828],[80.75862,86.13793],[128.62069,82.75862],[175.93103,83.44828],[205.44828,88.2069],[213.51724,126.27586]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":43.07692307692307,"tips":[[167.49367,120.73924],[155.55781,104.23966],[154.24135,102.30886],[142.48101,110.29536],[131.15949,106.87257],[138.79494,99.76371],[107.63882,98.97384],[100.1789,101.69451],[91.31477,134.8692],[77.09705,73.4346],[84.90802,73.4346],[110.35949,56.84726],[128.43882,68.51983],[170.21435,67.64219],[166.08945,76.85738],[164.15865,96.95527]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":45.53846153846154,"tips":[[206.34098,46.09836],[200.88525,59.7377],[195.25902,74.99672],[180.51148,65.61967],[131.92131,94.68852],[87.93443,84.54426],[66.11148,75.93443],[60.99672,66.47213],[53.49508,60.67541],[61.93443,52.91803],[95.26557,30.7541],[108.81967,22.14426],[129.36393,23.08197],[157.32459,29.98689],[174.54426,39.19344],[198.83934,44.56393]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":38.15384615384615,"tips":[[229.81513,109.88235],[215.39496,127.27395],[214.52101,136.10084],[191.88571,145.71429],[131.05882,142.30588],[66.38655,143.00504],[64.98824,142.30588],[63.24034,137.06218],[15.17311,111.54286],[50.65546,91.61681],[50.21849,69.2437],[123.71765,52.90084],[123.97983,43.37479],[185.33109,64.52437],[211.11261,68.89412],[230.16471,82.87731]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":45.95982532751092,"tips":[[242.54181,135.79933],[238.12709,169.43144],[208.42809,184.52174],[194.62207,196.80268],[127.67893,187.89298],[56.16054,185.40468],[38.74247,180.6689],[25.97993,167.10368],[18.35452,136.52174],[34.80936,89.16388],[73.8194,73.99331],[107.77258,54.56856],[120.77592,32.09365],[184.34783,51.35786],[228.01338,77.92642],[236.1204,62.51505]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]}];
 const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240];
-// A filled, stationary bearing closes the empty foundation socket. Its near lip hides the inserted peg.
 // Socket centres are measured on the foundation art drawn at 44 x 34, independently of upper-frame anchors.
 const TOWER_SOCKET={x:0,y:-5.5};
+// Heads sit this much lower than the socket rim, so their own base fills the socket (no separate bearing disc).
+const HEAD_SEAT_DROP=5;
 const LEVEL4_SOCKETS={turret:TOWER_SOCKET,voltaic:TOWER_SOCKET,cannon:TOWER_SOCKET,flamer:TOWER_SOCKET};
-function drawLevel4Coupling(t,front=false){
-  const {x,y}=TOWER_SOCKET;
-  ctx.save();ctx.translate(x,y);
-  if(!front){
-    ctx.fillStyle='#303b34';ctx.beginPath();ctx.ellipse(0,2,7.2,2.7,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#536052';ctx.fillRect(-7.2,-3,14.4,5);
-    ctx.fillStyle='#76816b';ctx.strokeStyle='#27332c';ctx.lineWidth=.8;
-    ctx.beginPath();ctx.ellipse(0,-3,7.2,2.7,0,0,Math.PI*2);ctx.fill();ctx.stroke();
-    ctx.strokeStyle='#9a9c80';ctx.lineWidth=.6;ctx.beginPath();ctx.ellipse(0,-3,5.8,1.9,0,Math.PI,Math.PI*1.85);ctx.stroke();
-  }else{
-    // Near lip occludes the bottom of the upper bearing. It never follows yaw or recoil.
-    ctx.fillStyle='#46513f';ctx.strokeStyle='#27332c';ctx.lineWidth=.7;
-    ctx.beginPath();ctx.moveTo(-7.2,-3);ctx.bezierCurveTo(-4,0,4,0,7.2,-3);ctx.lineTo(7.2,2);ctx.bezierCurveTo(4,5,-4,5,-7.2,2);ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.fillStyle='#8a8e75';ctx.fillRect(-5.6,.9,1.1,.8);ctx.fillRect(4.5,.9,1.1,.8);
-  }
-  ctx.restore();
-}
 
 // One immutable foundation for all four weapon families, every level and animation state.
 function drawTowerFoundation(t){
@@ -1804,23 +1790,23 @@ function drawTowerFoundation(t){
   }
 }
 function drawTowerSupport(t,top){
-  drawLevel4Coupling(t);
+  
   if(top<TOWER_SOCKET.y){
     ctx.fillStyle='#334039';ctx.fillRect(-4,top,8,TOWER_SOCKET.y+1.5-top);
     ctx.fillStyle='#9a9d83';ctx.fillRect(-3,top,1.5,TOWER_SOCKET.y+1.5-top);
   }
-  drawLevel4Coupling(t,true);
+  
 }
 // Voltaic levels 1-3 use the Tesla head from the level-4 atlas (decided 2026-10-29); the Tesla branch gets a new head later.
 const VOLTAIC_NEUTRAL={"key":"tesla","rect":[0,512,256,256],"size":52.5714,"bearing":[128,218.706],"muzzle":[127.488,29.645]};
 function neutralVoltaicMuzzle(){
   const a=VOLTAIC_NEUTRAL,k=a.size*HEAD_SCALE/256;
-  return {x:(a.muzzle[0]-a.bearing[0])*k,y:LEVEL4_SOCKETS.voltaic.y-1+(a.muzzle[1]-a.bearing[1])*k};
+  return {x:(a.muzzle[0]-a.bearing[0])*k,y:LEVEL4_SOCKETS.voltaic.y-1+HEAD_SEAT_DROP+(a.muzzle[1]-a.bearing[1])*k};
 }
 function drawNeutralVoltaic(t,progress=1){
-  drawTowerFoundation(t);drawLevel4Coupling(t);drawHeadShadow(LEVEL4_SOCKETS.voltaic.y-1,17,deploymentStep(progress,.2,.94));
+  drawTowerFoundation(t);drawHeadShadow(LEVEL4_SOCKETS.voltaic.y-1,17,deploymentStep(progress,.2,.94));
   const a=VOLTAIC_NEUTRAL,size=a.size*HEAD_SCALE,k=size/256,drop=(size+24)*(1-deploymentStep(progress,.2,.94));
-  const x=-a.bearing[0]*k,y=LEVEL4_SOCKETS.voltaic.y-1-a.bearing[1]*k;
+  const x=-a.bearing[0]*k,y=LEVEL4_SOCKETS.voltaic.y-1+HEAD_SEAT_DROP-a.bearing[1]*k;
   ctx.save();ctx.beginPath();ctx.rect(-40,-80,80,80+LEVEL4_SOCKETS.voltaic.y+4);ctx.clip();ctx.translate(0,drop);
   let drawn=false;
   if(level4Ready()){
@@ -1834,11 +1820,17 @@ function drawNeutralVoltaic(t,progress=1){
     const tip=neutralVoltaicMuzzle();ctx.fillStyle='#c8d1c7';ctx.beginPath();ctx.arc(tip.x,tip.y,3.5,0,Math.PI*2);ctx.fill();
   }
   if(progress>.92&&!t.paused&&!t.selling){const tip=neutralVoltaicMuzzle();ctx.fillStyle='rgba(157,247,255,'+(.3+.2*Math.sin(S.time*6))+')';ctx.beginPath();ctx.arc(tip.x,tip.y,1.5,0,Math.PI*2);ctx.fill();}
-  ctx.restore();drawLevel4Coupling(t,true);
+  ctx.restore();
 }
 
 let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap(),level4ViewStates=new WeakMap();
-function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
+const TESLA_TOROID={"key":"tesla","type":"voltaic","branch":"A","row":0,"size":48,"tips":[[157.6139,76.48]],"seats":[[128,235]],"rings":[[128,130.24],[128,154.88]],"rim":[[93.1601,58.56],[162.8399,69.76]]};
+function teslaToroidReady(){return !!(teslaToroidArt&&teslaToroidArt.complete&&teslaToroidArt.naturalWidth===256&&teslaToroidArt.naturalHeight===256);}
+function level4Spec(t){
+  if(t.level!==4||!t.branch)return null;
+  if(t.type==='voltaic'&&t.branch==='A'&&teslaToroidReady())return TESLA_TOROID;
+  return LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch);
+}
 function level4Ready(){
   return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===4096&&level4Art.naturalHeight===2048);
 }
@@ -1864,6 +1856,7 @@ function level4Transition(t,frame){
 }
 let level4BlendCanvas=null;
 function level4Image(p){
+  if(p.spec===TESLA_TOROID)return {image:teslaToroidArt,rect:[0,0,256,256]};
   if(p.views.length===1)return {image:level4Art,rect:[p.views[0].frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL]};
   if(!level4BlendCanvas){level4BlendCanvas=document.createElement('canvas');level4BlendCanvas.width=level4BlendCanvas.height=LEVEL4_CELL;}
   const g=level4BlendCanvas.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,LEVEL4_CELL,LEVEL4_CELL);
@@ -1883,7 +1876,7 @@ function observeLevel4(t){
   else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;level4ViewStates.delete(t);}
 }
 function level4Pose(t,angle=t.angle,recoil=true){
-  const spec=level4Spec(t);if(!spec||!level4Ready(spec))return null;
+  const spec=level4Spec(t);if(!spec||(spec===TESLA_TOROID?!teslaToroidReady():!level4Ready(spec)))return null;
   // Tesla/Cluster keep one fixed view; the six aimed heads use sixteen authored poses.
   const {frame,yaw}=level4Views(angle,spec.tips.length);
   const foreign=Math.abs(Math.atan2(Math.sin(angle-t.angle),Math.cos(angle-t.angle)))>1e-8;
@@ -1899,7 +1892,7 @@ function level4Pose(t,angle=t.angle,recoil=true){
   const dx=rawDx*seatScale,dy=rawDy*seatScale;
   const seat=spec.seats[frame],size=spec.size*HEAD_SCALE,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
   const tip=[0,1].map(i=>views.reduce((sum,v)=>sum+spec.tips[v.frame][i]*v.weight,0));
-  const mountY=socket.y,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
+  const mountY=socket.y+HEAD_SEAT_DROP,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
   return {spec,frame,views,age,kick,dx,dy,seat,bodyY,size,frontFacing:spec.tips.length===1||Math.sin(yaw)>-.15,
     x:socket.x-seat[0]*scale+dx,y:mountY-seat[1]*scale+dy,
     muzzle:{x:socket.x+(tip[0]-seat[0])*scale+dx,y:mountY+(tip[1]-seat[1])*scale+dy}};
@@ -1925,6 +1918,13 @@ function drawLevel4Mechanism(t,p){
     const phase=presentationTime*65,fade=1-deploymentStep(p.age,.13,.28);
     ctx.globalAlpha=.65*fade;ctx.fillStyle='#e3d3b2';
     for(let i=0;i<6;i++){const a=phase+i*Math.PI/3;ctx.beginPath();ctx.ellipse(x+Math.cos(a)*1.15,y+Math.sin(a)*1.7,.45,.65,0,0,Math.PI*2);ctx.fill();}
+  }else if(p.spec===TESLA_TOROID){
+    // Charge/arc annotations are in the selected sprite's coordinates, not the old side posts.
+    const k=p.size/LEVEL4_CELL,charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
+    ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;
+    p.spec.rings.forEach((r,i)=>{if(charged>(i+1)/3){ctx.globalAlpha=.13;ctx.beginPath();ctx.ellipse(p.x+r[0]*k,p.y+r[1]*k,6,1.5,0,0,Math.PI*2);ctx.stroke();}});
+    if(p.age>=0&&p.age<.12){ctx.globalAlpha=.65*(1-p.age/.12);ctx.lineWidth=1.2;
+      for(const r of p.spec.rim){const sx=p.x+r[0]*k,sy=p.y+r[1]*k;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo((sx+x)/2,(sy+y)/2-1.5);ctx.lineTo(x,y);ctx.stroke();}}
   }else if(p.spec.key==='tesla'){
     const charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
     ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;
@@ -1954,7 +1954,7 @@ function drawLevel4Tower(t,progress=1){
   if(feedback&&e&&feedback.at>=e.at)upgrade=1;
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
-  drawLevel4Coupling(t);drawHeadShadow(LEVEL4_SOCKETS[t.type].y,17,open);
+  drawHeadShadow(LEVEL4_SOCKETS[t.type].y,17,open);
   ctx.save();
   const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
   if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
@@ -1964,7 +1964,7 @@ function drawLevel4Tower(t,progress=1){
     ctx.drawImage(art.image,...art.rect,p.x,p.y,p.size,p.size);
   }catch(_){ctx.restore();return false;}
   if(open>=1)drawLevel4Mechanism(t,p);
-  ctx.restore();drawLevel4Coupling(t,true);return true;
+  ctx.restore();return true;
 }
 
 function weaponMuzzle(t,angle=t.angle) {
