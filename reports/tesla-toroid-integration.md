@@ -36,3 +36,7 @@ Opened `approved-and-game.png`, `before-mire-whole.png`, `after-mire-whole.png`,
 - `results.json` was written after capture's before/after fingerprint and 151-live-tick assertions passed in both zones: rules `388d2ac9`, source `48035e01`. This confirms that controlled comparison, not full-suite or browser success.
 - The generated upgrade strip does NOT cover the upgrade: every cell shows the old head because the capture advanced only presentation time while branch change follows simulation warm. Corrected the capture to advance real simulation ticks through the 0.9-second swap and another 30 ticks, save every upgrade frame and require warm to expire. No game/art change in this follow-up. User rerun required: `node tools/capture-organic-world.cjs --tesla-toroid`.
 - Full-cycle individual frames and all second-zone close-ups have not yet been inspected. Test-suite and file-browser console outcomes have not been supplied explicitly; confirmation requested. No overall visual completion or independent second review claimed.
+
+### Fresh upgrade capture
+
+User supplied the successful capture output after the tooling correction. Opened fresh `before-mire-upgrade.png`, `after-mire-upgrade.png` and `after-ember-upgrade.png`: strips now cover old-head retraction, empty socket, toroid emergence and completed seated new head. No lateral drift or floating gap observed in these sampled strips. Individual frames between strip samples remain unreviewed. The submitted output confirms capture only; test-suite and file-browser console status remain unconfirmed.
