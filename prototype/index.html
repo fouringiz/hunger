@@ -2363,7 +2363,8 @@ function updateFlameSmoke(){
   if(flameSmokeScene!==S){flameSmokeScene=S;flameSmokePuffs=[];flameSmokeEmitters=new Map();}
   if(!flameSmokeReady()){flameSmokePuffs=[];flameSmokeEmitters.clear();return;}
   const now=presentationTime;
-  flameSmokePuffs=flameSmokePuffs.filter(p=>smokeTowerVisible(p.tower)&&now>=p.at&&now-p.at<FLAME_SMOKE.life);
+  // A tower that pauses, sells or switches to Cryojet only stops emitting; puffs already in the air live out their life.
+  flameSmokePuffs=flameSmokePuffs.filter(p=>now>=p.at&&now-p.at<FLAME_SMOKE.life);
   for(const [t]of flameSmokeEmitters)if(!smokeTowerVisible(t))flameSmokeEmitters.delete(t);
   for(const t of S.towers){
     if(!smokeTowerVisible(t)||!fuelJetFade(t))continue;
@@ -2398,9 +2399,8 @@ function drawFlameSmoke(){
     const p=flameSmokePose(puff),c=FLAME_SMOKE.cell,k=p.size/c;
     for(const [frame,weight]of p.cells){g.globalAlpha=p.alpha*weight;g.drawImage(flameSmokeArt,frame*c,0,c,c,p.x-FLAME_SMOKE.anchor[0]*k,p.y-FLAME_SMOKE.anchor[1]*k,p.size,p.size);}
   }
-  // Protect health bars; smoke itself remains above bodies, with one cap for ALL overlap.
-  g.globalAlpha=1;g.globalCompositeOperation='destination-out';g.fillStyle='#fff';
-  for(const body of S.enemies){if(body.dead||body.submerged||portalEntryOf(body)||body.hp>=body.maxHp)continue;const e=visualEnemy(body),w=e.r*2+6,y=e.y-enemyBodyHeight(e)-6;g.fillRect(e.x-w/2-1,y-1,w+2,6);}
+  // One alpha cap for ALL overlap; health bars are drawn after this layer, so nothing is cut out of it.
+  g.globalAlpha=1;
   ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=FLAME_SMOKE.alpha;ctx.drawImage(flameSmokeLayer,0,0,flameSmokeLayer.width,flameSmokeLayer.height,0,0,W,H);ctx.restore();return true;
 }
 function drawPlantedWeapon(t,kick) {
@@ -3447,6 +3447,7 @@ function draw() {
   }
   actors.push({y:GATE_REAR.y,gatePart:'rear'},{y:GATE.y+.1,gatePart:'field'},{y:GATE_FRONT.y,gatePart:'front'});
   actors.sort((a,b)=>a.y-b.y);
+  const healthBars=[]; // drawn after jet and smoke so neither layer ever covers or cuts them
   for (const actor of actors) {
     if(actor.portal){drawPortalEntry(actor.portal);continue;}
     if(actor.polypDeath){drawPolypDeath(actor.polypDeath);continue;}
@@ -3486,11 +3487,12 @@ function draw() {
     }
     if (e.muts.includes('dispersal')) { ctx.strokeStyle = 'rgba(255,174,66,0.45)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);  // Dispersal: spacing halo
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 7, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
-    if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-enemyBodyHeight(e)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
-      ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
+    if (e.hp < e.maxHp) healthBars.push(e);
   }
   drawFuelJetsLayer();
   drawFlameSmoke();
+  for (const e of healthBars) { const w = e.r*2+6, barY=e.y-enemyBodyHeight(e)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
+    ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
     for (const e of S.enemies) {
