@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),WIDTH_FIRE=process.argv.includes('--flamethrower-width'),REF_FIRE=WIDTH_FIRE||process.argv.includes('--flamethrower-reference'),OUT=path.join(ROOT,'reports/generated',WIDTH_FIRE?'flamethrower-width':REF_FIRE?'flamethrower-reference-fire':'flamethrower');
+const ROOT=path.join(__dirname,'..'),CONTACT_FIRE=process.argv.includes('--flamethrower-contact'),WIDTH_FIRE=process.argv.includes('--flamethrower-width'),REF_FIRE=CONTACT_FIRE||WIDTH_FIRE||process.argv.includes('--flamethrower-reference'),OUT=path.join(ROOT,'reports/generated',CONTACT_FIRE?'flamethrower-contact':WIDTH_FIRE?'flamethrower-width':REF_FIRE?'flamethrower-reference-fire':'flamethrower');
 const BASE='58c1e8eeb350927ec16a2723eecb91171a71f718';
 function save(canvas,name){fs.writeFileSync(path.join(OUT,name+'.png'),canvas.toBuffer('image/png'));}
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
@@ -109,7 +109,7 @@ async function fireMain(){
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-fire-{base,A,B}-{flow,sweep,stop}-{game,zoom}.png and whole/gray views. Controlled actual-renderer poses: fixed-nozzle flow, full sweep, and final-pulse fade. Actual combat timing still needs the disk-browser check.');
 }
 async function approvedJetMain(){
-  const arg=process.argv.indexOf('--before'),rev=arg<0?'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5':process.argv[arg+1];
+  const arg=process.argv.indexOf('--before'),rev=arg<0?(CONTACT_FIRE?'5d8eb5fca77dd2fca4d0e24ccc39d3bdb39b0d72':'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5'):process.argv[arg+1];
   assert.ok(rev,'--before requires a revision');
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
   const report={before:rev,smoke:'iteration 2 not started',zones:{}};
@@ -159,6 +159,21 @@ async function approvedJetMain(){
         shot(w);save(w.canvas,`${label}-${zone}-${state}-whole`);states.push(patch(w,at));
       }
       save(grid(states,3),`${label}-${zone}-states-game`);
+      if(CONTACT_FIRE){
+        for(const type of ['forager','carapacid','leech','polyp']){
+          w.run(`reset();S.credits=10000;S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];build(SLOTS[2],'flamer');S.towers[0].level=3;S.towers[0].angle=0;S.selected=null;observeConstruction();presentationTime=9;observeConstruction();S.enemies=[makeEnemy(${JSON.stringify(type)},1)];{const t=S.towers[0],e=S.enemies[0];e.x=t.x+58;e.y=t.y;e.d=420;e.burnUntil=1.4;e.burnTower=t;}`);
+          const contactFrames=[];
+          for(let i=0;i<=36;i++){
+            const time=i/24;
+            w.run(`presentationTime=${9+time};S.time=${time};S.towers[0].jetAt=${Math.floor((Math.min(time,.6)+1e-9)/.2)*.2};`);
+            shot(w);const close=patch(w,at);contactFrames.push(close);
+            save(close,`${label}-${zone}-${type}-contact-${String(i).padStart(3,'0')}`);
+            if(i===8){save(w.canvas,`${label}-${zone}-${type}-contact-whole`);save(gray(w.canvas),`${label}-${zone}-${type}-contact-whole-gray`);}
+          }
+          save(grid(contactFrames,6),`${label}-${zone}-${type}-contact-full-cycle`);
+          save(grid(contactFrames.filter((_,i)=>[0,4,8,14,24,36].includes(i)),3),`${label}-${zone}-${type}-contact-stages`);
+        }
+      }
       // Same live combat and presentation steps must leave replay state identical in both renderers.
       w.run("reset();S.credits=10000;build(SLOTS[2],'flamer');S.towers[0].level=3;S.wave=5;S.phase='wave';S.spawnQueue=[];S.enemies=[makeEnemy('carapacid',1)];S.enemies[0].d=450;Object.assign(S.enemies[0],posAt(450));");
     }
