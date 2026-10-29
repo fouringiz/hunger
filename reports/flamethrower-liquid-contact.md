@@ -10,7 +10,7 @@ The user confirmed **all tests passed** for the preceding sheet integration, the
 | --- | --- |
 | Fuel visibly travels from the nozzle rather than only changing a stationary texture | Four narrow elongated highlights advect along the ray using presentation time. The approved full sheet, uniform transform, nozzle anchor, four-phase loop and pulse mirror remain. Contact GIFs and frame sequences show the stream before, during and after firing. |
 | A hit visibly meets the drawn body and bends around its edges | Active contact reads the existing `segHitsCircle` geometry used by firing. A mask stamps the current creature atlas frame, pose and own scale. An outer rim uses sprite alpha subtraction; scrolling approved fire texture breaks up that rim. It follows the Forager/Carapacid/Leech/Polyp silhouette instead of a circular halo. See matched before/after contact stages and 37-frame sequences. |
-| Body surface heats up without becoming an opaque flame rectangle | A directional warm film is masked inside the body, alpha at most .17. The larger fuel plume stays behind actors; edge wisps are outside the opaque body core. Native whole grayscale frames and contact boards were opened. New tests inspect the actual alpha mask and reject the blanket variant; they are not yet run. |
+| Body surface heats up without becoming an opaque flame rectangle | A directional warm film is masked inside the body, alpha at most .17. The larger fuel plume stays behind actors; edge wisps are outside the opaque body core. Native whole grayscale frames and contact boards were opened. Tests inspect the actual alpha mask and reject the blanket variant; user subsequently reported all tests passed for `6c66c10`. |
 | Wet burning fuel can remain after the stream moves away or stops | Residual film is driven exclusively by existing `burnUntil` and `burnTower`. It fades toward the actual burn expiry; no new burn, damage or lifetime is written. The former single triangular burn marker is replaced only when this textured film is available. Inactive/missing art retains the old marker. |
 | Clear targets and consistent camera | Same fixed camera/current creature pose; original full jet stays below actors. Body details remain visible in the inspected native grayscale frames. The bright flame is intentionally luminous; no quantitative whole-scene contrast hierarchy is claimed. Platforms/actors can still occlude the underlying jet. |
 
@@ -48,9 +48,9 @@ Capture `verification.json` confirms unchanged fingerprints **rules `9d3c412e`, 
 
 ## Tests and remaining review
 
-The user's preceding `all tests passed` applies to `5d8eb5f`, not this new refinement. No tests were run by the agent for this follow-up. Prepared `tests/flamethrower-contact.cjs`: directional flow, sixteen-heading contacts, misses, inactive/Cryojet filtering, actual burn lifetime, global cap, exact mask rim/core, read-only state and the same checks rejecting frozen flow and blanket-over-body variants.
+User subsequently reported **all tests passed** for this contact refinement, implementation `6c66c10`, on 2026-10-29. This records the user's result; the agent did not rerun tests. `tests/flamethrower-contact.cjs` covers directional flow, sixteen-heading contacts, misses, inactive/Cryojet filtering, actual burn lifetime, global cap, exact mask rim/core, read-only state and the same checks rejecting frozen flow and blanket-over-body variants.
 
-User-run from repository root:
+Recorded verification commands from repository root (no repeat needed for this documentation-only update):
 
 ```sh
 node tests/flamethrower-contact.cjs
@@ -60,4 +60,4 @@ open prototype/index.html
 
 Disk-browser firing/console verification remains incomplete from the prior URL block; no browser workaround attempted. New effects do not read canvas pixels, but that does not establish browser correctness.
 
-Next: user test output and visual verdict on this contact refinement. No smoke implementation or merge until approval.
+Next: user visual verdict on this contact refinement and disk-browser verification. No smoke implementation or merge until approval.
