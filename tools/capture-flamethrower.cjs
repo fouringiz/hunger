@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),CONTACT_FIRE=process.argv.includes('--flamethrower-contact'),WIDTH_FIRE=process.argv.includes('--flamethrower-width'),REF_FIRE=CONTACT_FIRE||WIDTH_FIRE||process.argv.includes('--flamethrower-reference'),OUT=path.join(ROOT,'reports/generated',CONTACT_FIRE?'flamethrower-contact':WIDTH_FIRE?'flamethrower-width':REF_FIRE?'flamethrower-reference-fire':'flamethrower');
+const ROOT=path.join(__dirname,'..'),LAYER_FIRE=process.argv.includes('--flamethrower-layer'),CONTACT_FIRE=process.argv.includes('--flamethrower-contact'),WIDTH_FIRE=process.argv.includes('--flamethrower-width'),REF_FIRE=LAYER_FIRE||CONTACT_FIRE||WIDTH_FIRE||process.argv.includes('--flamethrower-reference'),OUT=path.join(ROOT,'reports/generated',LAYER_FIRE?'flamethrower-layer':CONTACT_FIRE?'flamethrower-contact':WIDTH_FIRE?'flamethrower-width':REF_FIRE?'flamethrower-reference-fire':'flamethrower');
 const BASE='58c1e8eeb350927ec16a2723eecb91171a71f718';
 function save(canvas,name){fs.writeFileSync(path.join(OUT,name+'.png'),canvas.toBuffer('image/png'));}
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
@@ -109,7 +109,7 @@ async function fireMain(){
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-fire-{base,A,B}-{flow,sweep,stop}-{game,zoom}.png and whole/gray views. Controlled actual-renderer poses: fixed-nozzle flow, full sweep, and final-pulse fade. Actual combat timing still needs the disk-browser check.');
 }
 async function approvedJetMain(){
-  const arg=process.argv.indexOf('--before'),rev=arg<0?(CONTACT_FIRE?'5d8eb5fca77dd2fca4d0e24ccc39d3bdb39b0d72':'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5'):process.argv[arg+1];
+  const arg=process.argv.indexOf('--before'),rev=arg<0?(LAYER_FIRE?'6c66c10168309f6d51a805a94416fd41afcfb927':CONTACT_FIRE?'5d8eb5fca77dd2fca4d0e24ccc39d3bdb39b0d72':'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5'):process.argv[arg+1];
   assert.ok(rev,'--before requires a revision');
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
   const report={before:rev,smoke:'iteration 2 not started',zones:{}};
@@ -129,6 +129,7 @@ async function approvedJetMain(){
           w.run(`{const t=S.towers[0];t.level=${level};t.branch=${JSON.stringify(branch)};t.angle=${i*Math.PI/4};t.paused=false;t.selling=false;S.time=.05;t.jetAt=0;presentationTime=3.1;observeConstruction();S.enemies=['forager','carapacid','leech'].map((type,j)=>{const e=makeEnemy(type,1);e.d=420+j*40;const side=j===0?0:j===1?50:-55;e.x=t.x+Math.cos(t.angle)*(48+j*18)-Math.sin(t.angle)*side;e.y=t.y+Math.sin(t.angle)*(48+j*18)+Math.cos(t.angle)*side;return e;});}`);
           shot(w);save(w.canvas,`${label}-${zone}-${kind}-heading-${i}-whole`);save(gray(w.canvas),`${label}-${zone}-${kind}-heading-${i}-whole-gray`);
           headings.push(patch(w,at));
+          if(LAYER_FIRE&&kind==='level3'&&i===2){save(w.canvas,`${label}-${zone}-down-whole`);save(gray(w.canvas),`${label}-${zone}-down-whole-gray`);save(patch(w,at),`${label}-${zone}-down-close`);}
           if(i===0&&kind==='level3'){save(w.canvas,`${label}-${zone}-whole`);save(gray(w.canvas),`${label}-${zone}-whole-gray`);}
         }
         const headingsGrid=grid(headings);save(headingsGrid,`${label}-${zone}-${kind}-8-headings-game`);
@@ -174,6 +175,10 @@ async function approvedJetMain(){
           save(grid(contactFrames.filter((_,i)=>[0,4,8,14,24,36].includes(i)),3),`${label}-${zone}-${type}-contact-stages`);
         }
       }
+      if(LAYER_FIRE){
+        w.run("reset();S.credits=10000;S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];build(SLOTS[2],'flamer');S.towers[0].level=3;S.towers[0].angle=Math.PI/2;S.selected=null;observeConstruction();presentationTime=3.1;observeConstruction();S.time=.05;S.towers[0].jetAt=0;S.enemies=Array.from({length:6},(_,i)=>{const e=makeEnemy(i===0?'carapacid':i===1?'leech':'forager',1);e.d=420+i*20;e.x=S.towers[0].x+(i%3-1)*20;e.y=S.towers[0].y+62+Math.floor(i/3)*16;e.hp=e.maxHp*.5;return e;});");
+        shot(w);save(w.canvas,`${label}-${zone}-down-crowd-whole`);save(gray(w.canvas),`${label}-${zone}-down-crowd-whole-gray`);save(patch(w,at),`${label}-${zone}-down-crowd-close`);
+      }
       // Same live combat and presentation steps must leave replay state identical in both renderers.
       w.run("reset();S.credits=10000;build(SLOTS[2],'flamer');S.towers[0].level=3;S.wave=5;S.phase='wave';S.spawnQueue=[];S.enemies=[makeEnemy('carapacid',1)];S.enemies[0].d=450;Object.assign(S.enemies[0],posAt(450));");
     }
@@ -193,6 +198,12 @@ async function approvedJetMain(){
     const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
     const board=grid([ref,patch({canvas:old},at),patch({canvas:now},at)],3);save(board,`${zone}-reference-before-after`);
     const wholeBoard=grid([await loadImage(path.join(OUT,`before-${zone}-whole.png`)),await loadImage(path.join(OUT,`after-${zone}-whole.png`)),await loadImage(path.join(OUT,`before-${zone}-whole-gray.png`)),await loadImage(path.join(OUT,`after-${zone}-whole-gray.png`))],2);save(wholeBoard,`${zone}-whole-before-after`);
+    if(LAYER_FIRE){
+      for(const kind of ['down','down-crowd']){
+        const pair=grid([await loadImage(path.join(OUT,`before-${zone}-${kind}-close.png`)),await loadImage(path.join(OUT,`after-${zone}-${kind}-close.png`))],2);save(pair,`${zone}-${kind}-before-after`);
+        const z=createCanvas(pair.width*2,pair.height*2);z.getContext('2d').drawImage(pair,0,0,z.width,z.height);save(z,`${zone}-${kind}-before-after-zoom`);
+      }
+    }
   }
   fs.writeFileSync(path.join(OUT,'verification.json'),JSON.stringify(report,null,2)+'\n');
   console.log('Wrote '+OUT+': game-size before/after Mire/Ember, 8 headings for level3/Plasma/Cryojet, full cycles, stop and paused/sale/folded states. Fingerprints and 151 live steps per zone match. Reference is the committed approved sheet; no ignored photo required.');
