@@ -4,7 +4,7 @@ const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const html=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8');
 async function boot(sourceHtml=html){
   const w=await loadWorld({sourceHtml,viewport:[960,540]});
-  w.run("reset();S.credits=100000;build(SLOTS[2],'flamer');S.towers[0].level=3;S.towers[0].warm=0;S.time=.05;S.towers[0].jetAt=0;observeConstruction();presentationTime=3.1;observeConstruction();");return w;
+  w.run("reset();S.phase='build';S.credits=100000;build(SLOTS[2],'flamer');S.towers[0].level=3;S.towers[0].warm=0;S.time=.05;S.towers[0].jetAt=0;observeConstruction();presentationTime=3.1;observeConstruction();");return w;
 }
 async function rise(w){
   for(let n=0;n<16;n++){
