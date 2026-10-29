@@ -5,6 +5,7 @@ const {historical}=require('./lib/history.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const ROOT=path.join(__dirname,'..'),table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+const HEAD_SEAT_DROP=Number(fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8').match(/const HEAD_SEAT_DROP=([0-9.]+)/)[1]);
 // Independently measured foundation sockets, in world pixels of the existing 44 x 34 foundation.
 const oldTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-towers-v1.frames.json'));
 const yawTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-yaw-v1.frames.json'));
@@ -51,7 +52,7 @@ async function check(sourceHtml=null,{anchors=true}={}){
     const u=x+entry.bearing[0]/256*width,v=y+entry.bearing[1]/256*height;
     // Measure the atlas bearing in the ACTUAL draw matrix, not a reported pose helper.
     // Native capture renders at 2x; the 2px tolerance applies to those screen pixels.
-    const px=a*u+c*v+tx,py=b*u+d*v+ty,cx=128+socket[0]*2,cy=160+socket[1]*2;
+    const px=a*u+c*v+tx,py=b*u+d*v+ty,cx=128+socket[0]*2,cy=160+(socket[1]+HEAD_SEAT_DROP)*2;
     const distance=Math.hypot(px-cx,py-cy);maxAnchorDistance=Math.max(maxAnchorDistance,distance);
     assert.ok(distance<=2+1e-6,`${e.key} heading ${frame} age ${age}: head bearing anchor ${distance.toFixed(3)}px from socket centre (max 2px)`);
    }
@@ -84,7 +85,7 @@ async function main(){
  await assert.rejects(()=>check(bad,{anchors:false}),/foundation socket remains open/);
  // A closed socket alone is insufficient: deliberately raising the upper must also fail.
  const current=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8');
- const floating=current.replace('const mountY=socket.y,','const mountY=socket.y-10,');assert.notEqual(floating,current);
+ const floating=current.replace('const mountY=socket.y+HEAD_SEAT_DROP,','const mountY=socket.y+HEAD_SEAT_DROP-10,');assert.notEqual(floating,current);
  await assert.rejects(()=>check(floating),/head bearing anchor.*socket centre|upper bearing floats above/);
  const detached=current.replace('...art.rect,p.x,p.y,p.size,p.size','...art.rect,p.x,p.y-20,p.size,p.size');assert.notEqual(detached,current);
  await assert.rejects(()=>check(detached),/head bearing anchor.*socket centre|projected head floats above/);

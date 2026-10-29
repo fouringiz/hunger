@@ -2,7 +2,7 @@
 // Authored-pose presentation contracts; artistic approval requires actual-game captures.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const ROOT=path.join(__dirname,'..'),source=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-const HEAD_SCALE=Number(source.match(/const HEAD_SCALE=([0-9.]+)/)[1]);
+const HEAD_SCALE=Number(source.match(/const HEAD_SCALE=([0-9.]+)/)[1]),HEAD_SEAT_DROP=Number(source.match(/const HEAD_SEAT_DROP=([0-9.]+)/)[1]);
 const table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
 function boot(code=source,loaded=true){
  const draws=[],blendDraws=[],stack=[];let matrix=[1,0,0,1,0,0];
@@ -33,7 +33,7 @@ function check(r){
    const upper=upperDraw(r);assert.ok(upper,'selected branch draws its dedicated sprite');assert.deepEqual(r.draws[0].matrix,[1,0,0,1,0,0],'foundation must remain stationary');assert.deepEqual(upper.matrix,[1,0,0,1,0,0],'authored view keeps upright camera');
    assert.deepEqual(upper.args.slice(1,5),e.frames[n].rect,'correct authored source rectangle');selected.add(upper.args[1]);
    const tip=e.frames[n].muzzle,bearing=e.frames[n].bearing,muzzle=JSON.parse(r.run('JSON.stringify(weaponMuzzle(S.towers[0]))')),pos=JSON.parse(r.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})')),[x,y,w,h]=upper.args.slice(-4);
-   near(muzzle.x-pos.x,x+tip[0]/256*w);near(muzzle.y-pos.y,y+tip[1]/256*h);near(x+bearing[0]/256*w,0);near(y+bearing[1]/256*h,-5.5);
+   near(muzzle.x-pos.x,x+tip[0]/256*w);near(muzzle.y-pos.y,y+tip[1]/256*h);near(x+bearing[0]/256*w,0);near(y+bearing[1]/256*h,-5.5+HEAD_SEAT_DROP);
   }
   assert.equal(selected.size,count,'sixteen distinct authored frames over one turn');
   for(const boundary of[0,Math.PI,-Math.PI,2*Math.PI]){const left=r.run(`level4Views(${angle(boundary-1e-7)},${count}).frame`),right=r.run(`level4Views(${angle(boundary+1e-7)},${count}).frame`);assert.equal(left,right,e.key+': pose selector has a seam at the angular wrap');}
@@ -46,7 +46,7 @@ function check(r){
     assert.ok(Math.hypot(before.x-atSwitch.x,before.y-atSwitch.y)<.001,e.key+': muzzle jumps on pose switch');
     r.run(`presentationTime=${t0+.03};`);r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.equal(r.blendDraws.length,2);
     for(const[k,f]of[from,to].entries()){assert.deepEqual(r.blendDraws[k].args.slice(1,5),e.frames[f].rect);near(r.blendDraws[k].alpha,.5);assert.equal(r.blendDraws[k].mode,'lighter');}
-    const p=JSON.parse(r.run('JSON.stringify(level4Pose(S.towers[0]))'));for(let axis=0;axis<2;axis++)near(axis?p.muzzle.y+5.5:p.muzzle.x,((e.frames[from].muzzle[axis]+e.frames[to].muzzle[axis])/2-e.frames[from].bearing[axis])*e.renderSize*HEAD_SCALE/256);
+    const p=JSON.parse(r.run('JSON.stringify(level4Pose(S.towers[0]))'));for(let axis=0;axis<2;axis++)near(axis?p.muzzle.y+5.5-HEAD_SEAT_DROP:p.muzzle.x,((e.frames[from].muzzle[axis]+e.frames[to].muzzle[axis])/2-e.frames[from].bearing[axis])*e.renderSize*HEAD_SCALE/256);
     r.run(`presentationTime=${t0+.08};`);r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.deepEqual(upperDraw(r).args.slice(1,5),e.frames[to].rect,'held head settles to one opaque authored pose');
    }
    r.run('S.towers[0].angle=.123;level4Pose(S.towers[0]);presentationTime+=1;');r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.ok(upperDraw(r).args[0].src.endsWith('hunger-level4-towers-v2.png'),'held off-centre yaw must not remain a permanent ghost blend');
