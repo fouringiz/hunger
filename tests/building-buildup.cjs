@@ -44,7 +44,7 @@ for(const type of ['turret','cannon','voltaic','generator','barracks','flamer'])
  assert.deepEqual(b.cues.map(c=>c[0]).filter(c=>c.includes('-deploy-')),[1,2,3].map(i=>type+'-deploy-'+i));
  b.draws.length=0;b.run('drawTowerBody(S.towers[0])');const final=b.draws.slice();
  b.draws.length=0;b.run('constructionArt=new WeakMap();drawTowerBody(S.towers[0])');assert.deepEqual(b.draws,final,type+' hands off to normal artwork');
- const absent=boot(type);absent.run('lowBuildingArt.complete=false;structureArt.complete=false;voltaicArt.complete=false;voltaicNeutralArt.complete=false;flamerArt.complete=false;');
+ const absent=boot(type);absent.run('lowBuildingArt.complete=false;structureArt.complete=false;voltaicArt.complete=false;level4Art.complete=false;flamerArt.complete=false;');
  for(const time of [0,.3,.8,1.3,2])assert.doesNotThrow(()=>absent.run(`presentationTime=${time};draw();`),type+' has a missing-art fallback');
  if(['cannon','voltaic'].includes(type)){
    const battle=boot(type);battle.run("observeConstruction();S.phase='wave';S.wave=1;const e=makeEnemy('carapacid',1);e.d=180;Object.assign(e,posAt(e.d));S.enemies=[e];update(SIM_STEP);draw();");

@@ -42,11 +42,11 @@ assert.equal(angleSet.size,64,'the weapon has continuous yaw, not four direction
 for(const type of ['forager','carapacid','leech']){
  const r=boot();for(const d of [0,1,40,80]){r.draws.length=0;r.run(`const sample${d}=makeEnemy('${type}',1);sample${d}.d=${d};groundActorSprite(sample${d},0);`);const a=r.draws[0];assert.equal(a[6]+a[8],{forager:0,carapacid:3.5,leech:4}[type],'every crawling pose keeps its fixed ground/burial baseline');}
 }
-const tesla=boot();tesla.run("reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
+const tesla=boot();tesla.run("level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
 const firstLines=tesla.lines.slice();tesla.lines.length=0;tesla.run('S.towers[0].angle=Math.PI/2;drawTowerBody(S.towers[0]);');assert.deepEqual(tesla.lines,firstLines,'Tesla draws no changing directional pointer');
-const neutral=tesla.images.find(i=>i.src.endsWith('hunger-voltaic-neutral-v1.png'));
-const drawnNeutral=tesla.draws.find(d=>d[0]===neutral);
-assert.ok(drawnNeutral,'basic Voltaic uses its neutral upper, rather than the old complete column');
+const atlas=tesla.images.find(i=>i.src.endsWith('hunger-level4-towers-v2.png'));
+const drawnHead=tesla.draws.find(d=>d[0]===atlas&&d[1]===0&&d[2]===512);
+assert.ok(drawnHead,'basic Voltaic uses the Tesla head (atlas cell 0,512), rather than the old complete column');
 assert.ok(tesla.draws.some(d=>d[0]===tesla.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===59&&d[6]===-17&&d[8]===34),'basic Voltaic uses the same square foundation as the other weapons');
 const capStart=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],0))'),b2=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],Math.PI))');assert.equal(capStart,b2,'Tesla emits from its fixed cap independent of facing');
-console.log('PASS continuous projected yaw, exact barrel direction, fixed crawling contact and neutral omnidirectional Voltaic');
+console.log('PASS continuous projected yaw, exact barrel direction, fixed crawling contact and Tesla-headed omnidirectional Voltaic');

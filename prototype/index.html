@@ -1230,8 +1230,6 @@ const unitArt = typeof Image === 'undefined' ? null : new Image();
 if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
 const voltaicArt = typeof Image === 'undefined' ? null : new Image();
 if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-v1.png';
-const voltaicNeutralArt = typeof Image === 'undefined' ? null : new Image();
-if (voltaicNeutralArt) voltaicNeutralArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-neutral-v1.png';
 const infantryArt = typeof Image !== 'undefined' ? new Image() : null;
 if (infantryArt) infantryArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-infantry-trial-v1.png';
 const crawlerArt = typeof Image === 'undefined' ? null : new Image();
@@ -1795,7 +1793,8 @@ function drawTowerSupport(t,top){
   }
   drawLevel4Coupling(t,true);
 }
-const VOLTAIC_NEUTRAL={"key":"voltaic-neutral","rect":[0,0,256,256],"size":36.57142857142857,"bearing":[128,202.8846960167715],"muzzle":[128,30.30607966457023],"sourceBox":[350,120,620,954],"sourcePivot":[660,950]};
+// Voltaic levels 1-3 use the Tesla head from the level-4 atlas (decided 2026-10-29); the Tesla branch gets a new head later.
+const VOLTAIC_NEUTRAL={"key":"tesla","rect":[0,512,256,256],"size":52.5714,"bearing":[128,218.706],"muzzle":[127.488,29.645]};
 function neutralVoltaicMuzzle(){
   const a=VOLTAIC_NEUTRAL,k=a.size/256;
   return {x:(a.muzzle[0]-a.bearing[0])*k,y:LEVEL4_SOCKETS.voltaic.y-1+(a.muzzle[1]-a.bearing[1])*k};
@@ -1806,8 +1805,8 @@ function drawNeutralVoltaic(t,progress=1){
   const x=-a.bearing[0]*k,y=LEVEL4_SOCKETS.voltaic.y-1-a.bearing[1]*k;
   ctx.save();ctx.beginPath();ctx.rect(-40,-80,80,80+LEVEL4_SOCKETS.voltaic.y+4);ctx.clip();ctx.translate(0,drop);
   let drawn=false;
-  if(voltaicNeutralArt&&voltaicNeutralArt.complete&&voltaicNeutralArt.naturalWidth){
-    try{ctx.drawImage(voltaicNeutralArt,...a.rect,x,y,a.size,a.size);drawn=true;}catch(_){}
+  if(level4Ready()){
+    try{ctx.drawImage(level4Art,...a.rect,x,y,a.size,a.size);drawn=true;}catch(_){}
   }
   if(!drawn){
     // Same compact, upright neutral silhouette even while images are missing.
