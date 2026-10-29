@@ -102,7 +102,7 @@ const rec=JSON.parse(vm.runInContext(`(() => { reset(); beginReplayRecording(); 
   performPlayerAction({kind:'wave'}); for(let i=0;i<200;i++) update(SIM_STEP); performPlayerAction({kind:'wave'});
   let k=0; while(replay.mode==='recording'&&k++<600000){ if(S.phase==='build') performPlayerAction({kind:'wave'}); update(SIM_STEP); }
   return JSON.stringify(exportReplay()); })()`,c));
-assert.ok(rec.events.some(e=>e.stacked),'the overlapping call is recorded'); assert.equal(rec.gameVersion,'prototype-v0.14','exports carry the current version'); assert.ok(verifyParty(rec).verified,'an overlapping game verifies');
+assert.ok(rec.events.some(e=>e.stacked),'the overlapping call is recorded'); assert.equal(rec.gameVersion,'prototype-v0.15','exports carry the current version'); assert.ok(verifyParty(rec).verified,'an overlapping game verifies');
 console.log('PASS an overlapping game is recorded and verifies'); n++;
 const stub=new Proxy({},{get(o,k){if(k==='createLinearGradient'||k==='createRadialGradient'||k==='createPattern')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=()=>{});}});
 class StubImage{constructor(){this.complete=true;this.naturalWidth=768;}}

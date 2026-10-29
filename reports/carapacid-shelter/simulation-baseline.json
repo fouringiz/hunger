@@ -1,5 +1,5 @@
 {
-  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp), then v0.10.1: Grounding never makes a flying body a rod; the Leech hunt bends around foreign slab footings; a new building deploys for 1.65 s before it fights; then v0.11: the Leech hunts beneath the ooze (LEECH_OOZE, Leech 200/38/35, wave cap by free generators). Visual-task geometry baselines remain unchanged; then Polyp splits into six Polypoids (40 HP, speed 56, bounty 3; POLYP_SPLIT); then the Polyp bursts into six zygotes that hatch Polypoids over time (POLYP_HATCH 0.5..3.0 s); then the zygotes scatter pseudo-randomly along the lane (POLYP_SCATTER 40, seeded by the Polyp wave and seq).",
-  "rules": "9d3c412e",
-  "source": "5750d1fe"
+  "reason": "Approved simulation changes update this file: Carapacid shelter (v0.9), then the v0.10 castes (Aeroplankton, Polyp), then v0.10.1: Grounding never makes a flying body a rod; the Leech hunt bends around foreign slab footings; a new building deploys for 1.65 s before it fights; then v0.11: the Leech hunts beneath the ooze (LEECH_OOZE, Leech 200/38/35, wave cap by free generators). Visual-task geometry baselines remain unchanged; then Polyp splits into six Polypoids (40 HP, speed 56, bounty 3; POLYP_SPLIT); then the Polyp bursts into six zygotes that hatch Polypoids over time (POLYP_HATCH 0.5..3.0 s); then the zygotes scatter pseudo-randomly along the lane (POLYP_SCATTER 40, seeded by the Polyp wave and seq); then v0.15: taking a branch holds fire for BRANCH_SWAP 0.9 s while the head swaps (campaign only; balance presets keep the instant swap).",
+  "rules": "388d2ac9",
+  "source": "48035e01"
 }
