@@ -1238,6 +1238,8 @@ const structureArt = typeof Image === 'undefined' ? null : new Image();
 if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
 const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
+const level4Art = typeof Image === 'undefined' ? null : new Image();
+if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -1748,7 +1750,95 @@ const FLAMER_ART={rects:[[8,39,240,178],[264,66,240,123],[569,8,142,240]],mountY
 function flamerPoint(angle,x,y=0) {
   const m=weaponProjection(angle);return {x:m.a*x+m.c*y,y:FLAMER_ART.mountY+m.b*x+m.d*y};
 }
+// Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
+const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":41.7003,"tips":[[230.887,132.571],[207.93,168.581],[126.052,191.26],[48.229,178.246],[24.298,122.932],[76.015,74.097],[132.224,59.702],[199.702,75.543]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":62.4044,"tips":[[244.335,192.36],[211.076,221.804],[128.727,229.695],[44.356,219.876],[35.331,194.764],[69.789,120.727],[127.455,114.342],[191.273,118.764]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":40,"tips":[[159.887,94.147],[160.37,95.245],[128.275,97.189],[91.435,100.351],[79,101.504],[85.517,53.278],[127.725,45.482],[178.098,54.871]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":42.2857,"tips":[[194.446,49.325],[204.612,106.354],[128.538,46.692],[65.118,49.325],[59.12,47.683],[90.717,26.015],[128,25.498],[178.96,28.25]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":40.7822,"tips":[[223.508,147.135],[206.573,156.865],[127.459,166.595],[47.816,157.108],[40.816,146],[79.616,59.568],[128,58.638],[200.638,61.514]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":41.3738,"tips":[[212.935,145.924],[199.198,161.639],[126.209,189.488],[64.012,163.612],[36.094,161.858],[86.275,57.643],[132.543,53.666],[184.296,55.697]]}];
+const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240],LEVEL4_MOUNT_Y=-7;
+let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap();
+function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
+function level4Ready(){return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===2048&&level4Art.naturalHeight===2048);}
+function observeLevel4(t){
+  if(level4Scene!==S){level4Scene=S;level4Upgrades=new WeakMap();level4Shells=new WeakMap();}
+  let e=level4Upgrades.get(t);
+  if(!e){e={branch:t.branch,at:-Infinity};level4Upgrades.set(t,e);}
+  else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;}
+}
+function level4Pose(t,angle=t.angle,recoil=true){
+  const spec=level4Spec(t);if(!spec||!level4Ready())return null;
+  // Match the existing map's ground-plane yaw; never rotate upright artwork in the canvas plane.
+  const yaw=Math.atan2(Math.sin(angle)/.56,Math.cos(angle));
+  const frame=spec.tips.length===1?0:(Math.round(yaw/(Math.PI/4))+8)%8;
+  const feedback=weaponFeedback.get(t),age=feedback?presentationTime-feedback.at:Infinity;
+  const life=t.type==='cannon'?(t.branch==='A'?.42:.24):(t.branch==='B'?.28:.13);
+  const strength=t.type==='cannon'?(t.branch==='A'?5.5:2.5):(t.branch==='B'?3.5:1.2);
+  const kick=recoil&&!t.paused&&!t.selling&&['turret','cannon'].includes(t.type)&&age>=0&&age<life?Math.sin(Math.PI*age/life)*strength:0;
+  const dx=-Math.cos(angle)*kick,dy=-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
+  const tip=spec.tips[frame],scale=spec.size/LEVEL4_CELL;
+  return {spec,frame,age,kick,dx,dy,size:spec.size,x:-LEVEL4_ANCHOR[0]*scale+dx,y:LEVEL4_MOUNT_Y-LEVEL4_ANCHOR[1]*scale+dy,
+    muzzle:{x:(tip[0]-LEVEL4_ANCHOR[0])*scale+dx,y:LEVEL4_MOUNT_Y+(tip[1]-LEVEL4_ANCHOR[1])*scale+dy}};
+}
+function level4Muzzle(t,angle=t.angle,recoil=true){
+  const p=level4Pose(t,angle,recoil);return p?{x:t.x+p.muzzle.x,y:t.y+p.muzzle.y}:null;
+}
+function shellLaunchPoint(sh){
+  if(!level4Spec(sh.tower))return weaponMuzzle(sh.tower);
+  let p=level4Shells.get(sh);
+  if(!p){const x=sh.cluster?sh.cluster.cx:sh.tx,y=sh.cluster?sh.cluster.cy:sh.ty;
+    const angle=Math.atan2(y-sh.sy,x-sh.sx);p=level4Muzzle(sh.tower,angle,false)||weaponMuzzle(sh.tower,angle);level4Shells.set(sh,p);}
+  return p;
+}
+function drawLevel4Mechanism(t,p){
+  if(t.paused||t.selling)return;
+  const hot=t.type==='flamer'&&t.jetAt!==undefined&&S.time-t.jetAt>=0&&S.time-t.jetAt<.23;
+  const recent=p.age>=0&&p.age<.28;
+  const x=p.muzzle.x,y=p.muzzle.y;
+  ctx.save();
+  if(p.spec.key==='machine-gun'&&recent&&p.frame<=4){
+    // The barrel face turns; the receiver and ammunition box stay planted on their bearing.
+    const phase=presentationTime*65,fade=1-deploymentStep(p.age,.13,.28);
+    ctx.globalAlpha=.65*fade;ctx.fillStyle='#e3d3b2';
+    for(let i=0;i<6;i++){const a=phase+i*Math.PI/3;ctx.beginPath();ctx.ellipse(x+Math.cos(a)*1.15,y+Math.sin(a)*1.7,.45,.65,0,0,Math.PI*2);ctx.fill();}
+  }else if(p.spec.key==='tesla'){
+    const charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
+    ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;
+    // Successive bands climb the central coil between actual discharges.
+    for(let i=0;i<4;i++)if(charged>(i+1)/5){ctx.globalAlpha=.13;ctx.beginPath();ctx.ellipse(p.dx,LEVEL4_MOUNT_Y-18-i*5+p.dy,5.3,1.5,0,0,Math.PI*2);ctx.stroke();}
+    if(p.age>=0&&p.age<.12){ctx.globalAlpha=.65*(1-p.age/.12);ctx.lineWidth=1.2;
+      for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*10.5,LEVEL4_MOUNT_Y-34);ctx.lineTo(side*5.5,LEVEL4_MOUNT_Y-38+Math.sin(presentationTime*50)*1.5);ctx.lineTo(x,y);ctx.stroke();}}
+  }else if(p.spec.key==='prism'&&recent){
+    ctx.globalAlpha=.7*(1-p.age/.28);ctx.fillStyle='#ffe9a6';ctx.beginPath();ctx.arc(x,y,1.3+Math.sin(Math.min(1,p.age/.12)*Math.PI)*1.2,0,Math.PI*2);ctx.fill();
+  }else if(p.spec.key==='cluster'&&p.age>=0&&p.age<.5){
+    // Indexing marks rotate on the visible side magazine following a single capsule launch.
+    const phase=deploymentStep(p.age,.06,.42)*Math.PI*2/5;ctx.strokeStyle='#9c8a63';ctx.globalAlpha=.5;ctx.lineWidth=.7;
+    for(let i=0;i<3;i++){const a=phase+i*2.1;ctx.beginPath();ctx.moveTo(15,LEVEL4_MOUNT_Y-15);ctx.lineTo(15+Math.cos(a)*2,LEVEL4_MOUNT_Y-15+Math.sin(a)*4);ctx.stroke();}
+  }else if(hot&&p.frame<=4){
+    const cryo=p.spec.key==='cryojet';ctx.strokeStyle=cryo?'#c4eff4':'#ffc16b';ctx.lineWidth=cryo?.8:1.2;
+    ctx.globalAlpha=cryo?.3:.45+.13*Math.sin(S.time*28);ctx.beginPath();ctx.ellipse(x,y,cryo?2:1.6,2.3,0,0,Math.PI*2);ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawLevel4Tower(t,progress=1){
+  const p=level4Pose(t);if(!p)return false;
+  // Foundation and upper are independent; only the upper recoils or rises through the socket.
+  if(t.type==='flamer'&&flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768){
+    try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[0],-22,-17,44,34);}catch(_){lowBuildingSprite(0,-22,-17,44,34);}
+  }else if(!lowBuildingSprite(t.type==='cannon'?1:0,-22,-17,44,34)){
+    ctx.fillStyle='#34443c';roundRect(-22,-17,44,34,4);ctx.fill();ctx.strokeStyle='#82947b';ctx.stroke();
+  }
+  const e=level4Upgrades.get(t),feedback=weaponFeedback.get(t);
+  let upgrade=e?deploymentStep(presentationTime-e.at,0,.48):1;
+  // A real shot takes precedence over cosmetic assembly; it never waits for this observer.
+  if(feedback&&e&&feedback.at>=e.at)upgrade=1;
+  if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
+  const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
+  ctx.save();if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,118);ctx.clip();}
+  ctx.translate(0,drop);
+  try{ctx.drawImage(level4Art,p.frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();return false;}
+  if(open>=1)drawLevel4Mechanism(t,p);
+  ctx.restore();return true;
+}
+
 function weaponMuzzle(t,angle=t.angle) {
+  const specialized=level4Muzzle(t,angle);if(specialized)return specialized;
   if(t.type==='voltaic')return {x:t.x,y:t.y-58};
   if(t.type==='flamer'){const p=flamerPoint(angle,FLAMER_ART.muzzleX);return {x:t.x+p.x,y:t.y+p.y};}
   const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
@@ -2422,6 +2512,7 @@ function terrain() {
   if(worldPulseArt){ctx.save();ctx.globalAlpha=.35;ctx.drawImage(worldPulseArt,0,0,W,H);ctx.restore();}
 }
 function drawTowerBody(t) {
+    observeLevel4(t);
     const c = t.T.color;
     const feedback = weaponFeedback.get(t), age = feedback ? presentationTime - feedback.at : Infinity;
     const kick = age < 0.12 ? Math.sin((1 - age / 0.12) * Math.PI) * (feedback.kind === 'cannon' ? 7 : 2.5) : 0;
@@ -2438,7 +2529,7 @@ function drawTowerBody(t) {
     const buildProgress=constructionProgress(t),fold=['turret','cannon','voltaic'].includes(t.type)?buildingPauseProgress(t):1;
     const foldedPose=(t.type==='voltaic'?.65:.64)+(t.type==='voltaic'?.35:.36)*fold;
     const visibleProgress=saleProgress!==null?saleProgress:buildProgress<1?buildProgress:fold<1?foldedPose:1;
-    const deploying=drawBuildingDeployment(t,visibleProgress);
+    const deploying=drawLevel4Tower(t,visibleProgress)||drawBuildingDeployment(t,visibleProgress);
     if(!deploying){
     if (t.type === 'flamer') {
       drawFlamethrower(t);
@@ -3050,7 +3141,8 @@ function draw() {
       const d = age * 30;
       ctx.fillStyle='#e8bb62'; ctx.beginPath(); ctx.ellipse(b.x + Math.cos(b.angle+1.9)*d, b.y + Math.sin(b.angle+1.9)*d + age*age*24, 2, 1, b.angle, 0, Math.PI*2); ctx.fill();
     } else if (b.kind === 'cannonMuzzle') {
-      const {x,y}=weaponMuzzle({type:'cannon',x:b.x,y:b.y},b.angle);
+      const firingTower=S.towers.find(t=>t.type==='cannon'&&t.x===b.x&&t.y===b.y);
+      const {x,y}=weaponMuzzle(firingTower||{type:'cannon',x:b.x,y:b.y},b.angle);
       ctx.fillStyle='#ffd27f';ctx.beginPath();ctx.arc(x,y,5*k+1,0,Math.PI*2);ctx.fill();
     } else if (b.kind === 'impactDust') {
       ctx.strokeStyle='#d7c3a0';ctx.lineWidth=2;
@@ -3061,7 +3153,10 @@ function draw() {
   // The vector Voltaic charges between discharges and blooms briefly on each actual chain event.
   for (const t of S.towers) if (t.type === 'voltaic') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
-    if (age < 0.16) { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
+    if (age < 0.16) {
+      if(level4Ready()&&level4Spec(t)){const m=weaponMuzzle(t);ctx.globalAlpha=1-age/.16;ctx.strokeStyle=t.branch==='B'?'#ffe7a1':'#d5ffff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,4+age*24,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+      else { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(t.x,t.y-58,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
+    }
   }
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygotePose(zygote).y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
@@ -3140,6 +3235,11 @@ function draw() {
     const s={...original,x1:origin.x,y1:origin.y,y2:original.y2-8};
     if (original.to) { const v = tracerPoint(original.to); s.x2 = v.x; s.y2 = v.y - 8; }
     if (original.from) { const v = tracerPoint(original.from); s.x1 = v.x; s.y1 = v.y - 8; }
+    if(s.electro&&tower&&level4Spec(tower)?.key==='prism'&&!original.from){
+      // Prism's existing single-target hit is a straight optical pulse; damage timing is unchanged.
+      ctx.save();ctx.globalAlpha=Math.max(0,s.life/.12);ctx.strokeStyle=s.blocked?'#ff9f43':'#f6d680';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);ctx.stroke();ctx.strokeStyle='#fff7d5';ctx.lineWidth=1;ctx.stroke();ctx.restore();continue;
+    }
     if (s.electro) {                                             // jagged bolt: presentation-only jitter from time and endpoints
       ctx.strokeStyle = s.blocked ? '#ff9f43' : '#9df7ff'; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, s.life / 0.12);
       const dx = s.x2 - s.x1, dy = s.y2 - s.y1, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
@@ -3152,7 +3252,7 @@ function draw() {
   for (const q of S.pools) { const k = Math.max(0, Math.min(1, (q.until - S.time) / 3)), f = 0.6 + 0.4 * Math.sin(S.time * 9 + q.x);   // plasma pools
     ctx.globalAlpha = 0.35 + 0.35 * k; ctx.fillStyle = '#ff7a2a'; ctx.beginPath(); ctx.ellipse(q.x, q.y, q.r * f + 4, q.r * 0.55 * f + 2, 0, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; }
   for (const t of S.towers) if (t.type === 'flamer') drawFlameJet(t);
-  for (const sh of S.shells) { const k = sh.t / sh.flight, start=weaponMuzzle(sh.tower);
+  for (const sh of S.shells) { const k = sh.t / sh.flight, start=shellLaunchPoint(sh);
     if (sh.cluster) {                                             // one carrier flies to the burst point, then five bomblets fan out
       const BURST = 0.68, c = sh.cluster, arc = q => ({x:start.x + (c.cx-start.x)*q, y:start.y + (c.cy-start.y)*q - Math.sin(q*Math.PI)*70});
       if (k < BURST) { if (c.i === 0) { const q = arc(k); ctx.fillStyle = '#ffd27f'; ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, Math.PI*2); ctx.fill(); } continue; }

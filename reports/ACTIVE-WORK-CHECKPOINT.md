@@ -7,7 +7,7 @@
   baseline `2308926` from the existing Flamethrower work. Concurrent edits in the
   primary checkout are excluded. This branch includes the pre-existing Flamethrower
   integration/deployment/stream commits, whose checks were still pending.
-- Prepared final `assets/hunger-level4-towers-v1.png` (2048 × 2048) and frame table:
+- Atlas/provenance checkpoint saved in `3cfb29b`. Prepared final `assets/hunger-level4-towers-v1.png` (2048 × 2048) and frame table:
   50 upper-assembly poses, six eight-direction families plus static Tesla/Cluster.
   Built with `tools/bake-level4-towers.cjs`; final atlas opened and inspected.
 - Draw-side integration: branch selection, separate fixed foundations, common peg
@@ -26,7 +26,7 @@
   mounting/muzzle annotations, rear emitter occlusion and Prism contrast remain
   explicit review risks. Disk-browser console and independent second review pending.
 - Criteria, expected frame paths, exact commands and current limits:
-  `assets/art/level4-towers-v1.md`. Next: commit/upload the prepared integration, then user runs checks and supplies frames.
+  `assets/art/level4-towers-v1.md`. Next: upload the integration branch, then user runs checks and supplies frames.
 
 ---
 Previous checkpoint:
