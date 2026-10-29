@@ -59,5 +59,5 @@ const sig=r.run('replaySignature()');r.frame();assert.equal(r.run('replaySignatu
 function badContract(from,to,pattern){const bad=source.replace(from,to);assert.notEqual(bad,source);assert.throws(()=>sheetContract(boot(bad)),pattern);}
 badContract('ctx.scale(scale,scale*mirror)','ctx.scale(scale,1*mirror)',/uniform scale/);
 badContract('ctx.translate(m.x,m.y);ctx.rotate','ctx.translate(m.x,m.y+2);ctx.rotate',/anchor y/);
-badContract("if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t);","if(true)return drawRibbonJet(t);",/sheet plus soft halo/);
+badContract("if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t,ctx);","if(true)return drawRibbonJet(t,ctx);",/sheet plus soft halo/);
 console.log('PASS approved jet sheet: 64 level/heading anchors, uniform scale (bad stretch rejected), presentation loop, alternating mirror, halo, fade, folded/paused/sale, Cryojet and fallback');

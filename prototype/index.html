@@ -2170,7 +2170,7 @@ function drawFlamethrower(t,p=1) {
 }
 // A flowing fuel ribbon, not three stationary strokes. All turbulence/advected tongues are sampled from
 // simulation time; no particle state, combat RNG, canvas pixels or edits to the burn/sweep simulation.
-function drawRibbonJet(t) {
+function drawRibbonJet(t,ctx=canvas.getContext('2d')) {
   const age=S.time-t.jetAt;
   if(t.jetAt===undefined||age<0||age>=.23||t.paused||t.selling)return false;
   const muzzle=weaponMuzzle(t),st=tstats(t),cryo=t.branch==='B';
@@ -2219,9 +2219,9 @@ function flamePulseMirror(t){
   else if(pulse.at!==t.jetAt){pulse.at=t.jetAt;pulse.mirror=-pulse.mirror;}
   return pulse.mirror;
 }
-function drawFlameJet(t){
+function drawFlameJet(t,ctx=canvas.getContext('2d')){
   const fade=fuelJetFade(t);if(!fade)return false;
-  if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t);
+  if(t.branch==='B'||!flameJetReady())return drawRibbonJet(t,ctx);
   const m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
   const length=Math.hypot(dx,dy);if(length<1)return false;
   const [w,h]=FLAME_JET.cell,[ax,ay]=FLAME_JET.anchor,scale=length/w;
@@ -2235,8 +2235,8 @@ function drawFlameJet(t){
     ctx.drawImage(flameJetArt,frame*w,0,w,h,-ax,-ay,w,h);
     ctx.shadowBlur=0;ctx.globalAlpha=.85*fade;
     ctx.drawImage(flameJetArt,frame*w,0,w,h,-ax,-ay,w,h);
-  }catch(_){ctx.restore();return drawRibbonJet(t);}
-  ctx.restore();drawFuelFlow(t,fade);return true;
+  }catch(_){ctx.restore();return drawRibbonJet(t,ctx);}
+  ctx.restore();drawFuelFlow(t,fade,ctx);return true;
 }
 // Liquid highlights advect from the muzzle; they are samples, never simulation particles.
 function fuelFlowSamples(t){
@@ -2247,7 +2247,7 @@ function fuelFlowSamples(t){
     return {u,x:m.x+dx/length*along+nx*wave,y:m.y+dy/length*along+ny*wave,heading:Math.atan2(dy,dx),length:2+u*3,width:.4+u*.6,alpha:.34*Math.sin(Math.PI*u)};
   });
 }
-function drawFuelFlow(t,fade){
+function drawFuelFlow(t,fade,ctx=canvas.getContext('2d')){
   ctx.save();ctx.globalCompositeOperation='lighter';
   for(const p of fuelFlowSamples(t)){
     ctx.globalAlpha=p.alpha*fade;ctx.fillStyle=p.u<.2?'#fff3b4':'#ffb14d';
@@ -2282,7 +2282,10 @@ let fuelBodyMask=null,fuelBodyFilm=null;
 function stampFuelBody(g,e){
   const angle=enemyHeading(e),k=e.__k||1;
   g.save();g.translate(128,176);g.scale(2*k,2*k);
-  if(e.type==='forager'&&foragerMireReady()){
+  if(e.T.air){drawAirBody(e,angle,g);}
+  else if(e.type==='leech'&&e.state==='surfacing'&&leechSurfacingReady()){
+    const frame=leechEmergenceFrame(e);if(frame>=2){g.scale(leechFacesLeft(e)?-1:1,1);leechCell(g,frame,0,LEECH_SURFACING.px,LEECH_SURFACING.anchor);}
+  }else if(e.type==='forager'&&foragerMireReady()){
     const p=foragerMirePose(e,angle),c=FORAGER_MIRE.cell,s=FORAGER_MIRE.scale;
     g.drawImage(foragerMireArt,p.frame*c,p.direction*c,c,c,-c*.5*s,-130*s,c*s,c*s);
   }else if((e.type==='carapacid'||e.type==='leech')&&creatureMireReady(e)){
@@ -2322,6 +2325,29 @@ function drawFuelContact(e){
   ctx.globalAlpha=.58*p.strength;ctx.drawImage(fuelBodyFilm,e.x-64,e.y-88,128,128);ctx.restore();return true;
 }
 
+// A foreground jet layer with body-shaped holes: foundations cannot sever the nozzle connection.
+let fuelJetLayer=null;
+function maskFuelJetBodies(g){
+  g.globalCompositeOperation='destination-out';
+  for(const original of S.enemies){
+    if(original.dead||original.submerged||portalEntryOf(original))continue;
+    const e=visualEnemy(original);
+    g.save();g.translate(e.x-64,e.y-88);g.scale(.5,.5);stampFuelBody(g,e);g.restore();
+    if(e.hp<e.maxHp){const w=e.r*2+6,y=e.y-enemyBodyHeight(e)-6;g.fillStyle='#fff';g.fillRect(e.x-w/2-1,y-1,w+2,6);}
+  }
+  g.globalCompositeOperation='source-over';
+}
+function drawFuelJetsLayer(){
+  const towers=S.towers.filter(t=>t.type==='flamer'&&t.branch!=='B'&&fuelJetFade(t));
+  if(!towers.length)return false;
+  if(!fuelJetLayer)fuelJetLayer=document.createElement('canvas');
+  if(fuelJetLayer.width!==canvas.width||fuelJetLayer.height!==canvas.height){fuelJetLayer.width=canvas.width;fuelJetLayer.height=canvas.height;}
+  const g=fuelJetLayer.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.clearRect(0,0,fuelJetLayer.width,fuelJetLayer.height);
+  g.setTransform(scale*dpr,0,0,scale*dpr,0,0);
+  for(const t of towers)drawFlameJet(t,g);
+  maskFuelJetBodies(g);
+  ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='lighter';ctx.drawImage(fuelJetLayer,0,0,fuelJetLayer.width,fuelJetLayer.height,0,0,W,H);ctx.restore();return true;
+}
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon';
   drawTowerFoundation(t);drawTowerSupport(t,-14);
@@ -2787,7 +2813,7 @@ function drawTowerBody(t) {
     ctx.restore();
 }
 // Vector bodies for the v0.10 castes (sprites pending). The Aeroplankton floats above its ground shadow.
-function drawAirBody(e,angle) {
+function drawAirBody(e,angle,ctx=canvas.getContext('2d')) {
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(0,2,e.r*1.4,e.r*.5,0,0,Math.PI*2);ctx.fill();
   ctx.save();ctx.translate(0,-AIR_HOVER+Math.sin(presentationTime*3+e.d*.05)*2);ctx.rotate(angle);
   ctx.fillStyle='rgba(143,211,255,0.55)';ctx.beginPath();ctx.ellipse(0,0,e.r*1.9,e.r*1.1,0,0,Math.PI*2);ctx.fill();
@@ -3357,8 +3383,6 @@ function draw() {
     }
   }
   prepareFuelContacts();
-  // The full jet stays beneath actors so its incandescent core cannot erase enemy silhouettes.
-  for(const t of S.towers)if(t.type==='flamer'&&t.branch!=='B')drawFlameJet(t);
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
   const actors = [...S.towers.map(tower=>({y:tower.y,tower})),...S.enemies.map(visualEnemy).map(enemy=>({y:shelteredBy(enemy)?Math.min(enemy.y,shelteredBy(enemy).y-.01):enemy.y,enemy})),...S.zygotes.map(zygote=>({y:zygotePose(zygote).y,zygote})),...SLOTS.map(platform=>({y:platform.y+18+PLATFORM_HEIGHT,platform}))];
   for(const event of portalEntries)actors.push({y:event.hit.y,portal:event});
@@ -3410,6 +3434,7 @@ function draw() {
     if (e.hp < e.maxHp) { const w = e.r*2+6, barY=e.y-enemyBodyHeight(e)-6; ctx.fillStyle = '#101218'; ctx.fillRect(e.x-w/2, barY, w, 4);
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
+  drawFuelJetsLayer();
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
     for (const e of S.enemies) {
