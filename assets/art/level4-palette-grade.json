@@ -15,162 +15,176 @@
     "machine-gun": {
       "row": 0,
       "params": {
-        "saturation": 0.6359,
-        "gamma": 1,
-        "scale": 0.8682
+        "saturation": 0.6159,
+        "gamma": 1.06,
+        "scale": 0.99
       },
       "before": {
-        "saturation": 0.5429909599576567,
-        "value": 0.3915876873071669,
+        "saturation": 0.5394383760852184,
+        "value": 0.3562130375626746,
         "bright": 0.10059144752037483,
         "pixels": 242456
       },
       "after": {
-        "saturation": 0.34541451849336774,
-        "value": 0.3399798273486018,
-        "bright": 0.04852014386115419,
+        "saturation": 0.3451881178089497,
+        "value": 0.34030677569501133,
+        "bright": 0.09155888078661695,
         "pixels": 242456
       }
     },
     "rifle": {
       "row": 1,
       "params": {
-        "saturation": 0.6315,
+        "saturation": 0.6373,
         "gamma": 1.08,
-        "scale": 0.84
+        "scale": 0.92
       },
       "before": {
-        "saturation": 0.5473170969874418,
-        "value": 0.42396003245758224,
+        "saturation": 0.5445051795603064,
+        "value": 0.3845417404432045,
         "bright": 0.13696567511957158,
         "pixels": 146774
       },
       "after": {
-        "saturation": 0.3450637492805131,
-        "value": 0.33971646952493456,
-        "bright": 0.04414269557278537,
+        "saturation": 0.3163674413001277,
+        "value": 0.3388921262700276,
+        "bright": 0.0870249499230109,
         "pixels": 146774
       }
     },
     "tesla": {
       "row": 2,
       "params": {
-        "saturation": 0.7062,
-        "gamma": 1.22,
-        "scale": 0.81
+        "saturation": 0.728,
+        "gamma": 1.06,
+        "scale": 0.82
       },
       "before": {
-        "saturation": 0.4910839776403508,
-        "value": 0.4601553793195321,
-        "bright": 0.2357419980601358,
+        "saturation": 0.4879438482296108,
+        "value": 0.42503166543049786,
+        "bright": 0.23559650824442288,
         "pixels": 20620
       },
       "after": {
-        "saturation": 0.3436250656832968,
-        "value": 0.3391323862231357,
-        "bright": 0.062366634335596506,
+        "saturation": 0.3449110389959533,
+        "value": 0.33966185504268265,
+        "bright": 0.11115421920465568,
         "pixels": 20620
       }
     },
     "prism": {
       "row": 3,
       "params": {
-        "saturation": 0.6022,
-        "gamma": 1.28,
-        "scale": 0.82
+        "saturation": 0.6223,
+        "gamma": 1.16,
+        "scale": 0.83
       },
       "before": {
-        "saturation": 0.5735408734080062,
-        "value": 0.4753907942737689,
-        "bright": 0.204380907399621,
+        "saturation": 0.5718666156135491,
+        "value": 0.4420083331946419,
+        "bright": 0.20301007389829337,
         "pixels": 347234
       },
       "after": {
-        "saturation": 0.3417870185628974,
-        "value": 0.3398732413820677,
-        "bright": 0.04896697904007096,
+        "saturation": 0.3450696235996718,
+        "value": 0.34000464398347874,
+        "bright": 0.07882004642402529,
         "pixels": 347234
       }
     },
     "howitzer": {
       "row": 4,
       "params": {
-        "saturation": 0.6116,
-        "gamma": 1.04,
-        "scale": 0.84
+        "saturation": 0.5787,
+        "gamma": 1.14,
+        "scale": 0.96
       },
       "before": {
-        "saturation": 0.5643863463704416,
-        "value": 0.41408073516133626,
+        "saturation": 0.5619348941458118,
+        "value": 0.38374866110255074,
         "bright": 0.11373917811686052,
         "pixels": 284493
       },
       "after": {
-        "saturation": 0.34499610858112234,
-        "value": 0.3393612841227671,
-        "bright": 0.04710484967995698,
+        "saturation": 0.34624516267515165,
+        "value": 0.34047250068422374,
+        "bright": 0.09171754665316897,
         "pixels": 284493
       }
     },
     "cluster": {
       "row": 5,
       "params": {
-        "saturation": 0.7761,
-        "gamma": 0.82,
-        "scale": 0.82
+        "saturation": 0.7689,
+        "gamma": 0.84,
+        "scale": 0.92
       },
       "before": {
-        "saturation": 0.4429244405007597,
-        "value": 0.36097340287525914,
+        "saturation": 0.4389501388195253,
+        "value": 0.3303710597578654,
         "bright": 0.11983801855252625,
         "pixels": 21237
       },
       "after": {
-        "saturation": 0.3469875071710998,
-        "value": 0.3351462994200234,
-        "bright": 0.055280877713424686,
+        "saturation": 0.3456651645219351,
+        "value": 0.3373701281614247,
+        "bright": 0.10637095634976691,
         "pixels": 21237
       }
     },
     "plasma": {
       "row": 6,
       "params": {
-        "saturation": 0.645,
-        "gamma": 1.26,
-        "scale": 0.81
+        "saturation": 0.6052,
+        "gamma": 1.1,
+        "scale": 0.82
       },
       "before": {
-        "saturation": 0.5354438618586305,
-        "value": 0.46833461962180006,
-        "bright": 0.24509808510538708,
+        "saturation": 0.5329288218684693,
+        "value": 0.4306835610512206,
+        "bright": 0.2445808622876695,
         "pixels": 427282
       },
       "after": {
-        "saturation": 0.3369145532806001,
-        "value": 0.33863334597137107,
-        "bright": 0.031749523733740244,
+        "saturation": 0.3469347116904902,
+        "value": 0.3393700684055385,
+        "bright": 0.08862062993526523,
         "pixels": 427282
       }
     },
     "cryojet": {
       "row": 7,
       "params": {
-        "saturation": 0.6844,
-        "gamma": 1.16,
-        "scale": 0.81
+        "saturation": 0.6715,
+        "gamma": 1.04,
+        "scale": 0.83
       },
       "before": {
-        "saturation": 0.5044170551173576,
-        "value": 0.45289940519617194,
-        "bright": 0.20547752096220318,
+        "saturation": 0.5020201853531628,
+        "value": 0.41761252952446787,
+        "bright": 0.2052660663234523,
         "pixels": 354686
       },
       "after": {
-        "saturation": 0.3451869448524725,
-        "value": 0.33842821261521566,
-        "bright": 0.04185392149676052,
+        "saturation": 0.3457181673146912,
+        "value": 0.3403840878640408,
+        "bright": 0.1088060989156606,
         "pixels": 354686
       }
     }
+  },
+  "localContrast": {
+    "amount": 0.8,
+    "radius": 8,
+    "order": "before the palette grade"
+  },
+  "target": {
+    "saturation": 0.3452983282224794,
+    "value": 0.33989848171384063,
+    "bright": 0.09,
+    "brightRange": [
+      0.05,
+      0.15
+    ]
   }
 }

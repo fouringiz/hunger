@@ -8,7 +8,7 @@ const {paletteMetrics}=require('./palette-metrics.cjs');
 const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/hunger-level4-towers-v2.png');
 const META=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
 const RECORD=path.join(ROOT,'assets/art/level4-palette-grade.json');
-const FOUNDATION_RECT=[59,137,429,321];
+const FOUNDATION_RECT=[59,137,429,321],HEAD_BRIGHT=.09,HEAD_BRIGHT_RANGE=[.05,.15];
 function rgb2hsv(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
   if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h/=6;if(h<0)h+=1;}
   return [h,mx?d/mx:0,mx/255];}
@@ -24,7 +24,10 @@ function fit(data,width,rect,target){
     const pw=vs.map(v=>Math.pow(v,gamma));
     for(let scale=.5;scale<=1.8;scale+=.01){
       let sum=0,bright=0;for(const x of pw){const v=Math.min(1,scale*x);sum+=v;if(v>.8)bright++;}
-      const err=Math.abs(sum/pw.length-target.value)+Math.abs(bright/pw.length-target.bright);
+      // Mean value must match; the bright share must land inside HEAD_BRIGHT_RANGE, as close to HEAD_BRIGHT as the art allows
+      // (flat ivory panels sit at full white, so some rows can only jump between a low and a high share).
+      const share=bright/pw.length,outside=share<HEAD_BRIGHT_RANGE[0]?HEAD_BRIGHT_RANGE[0]-share:share>HEAD_BRIGHT_RANGE[1]?share-HEAD_BRIGHT_RANGE[1]:0;
+      const err=Math.abs(sum/pw.length-target.value)/.03+outside*100+Math.abs(share-target.bright);
       if(!best||err<best.err)best={gamma:+gamma.toFixed(2),scale:+scale.toFixed(3),err};
     }
   }
@@ -41,13 +44,22 @@ async function main(){
   const rows=META.entries.filter(e=>keys.includes('all')?!record.rows[e.key]:keys.includes(e.key));
   if(!rows.length)throw new Error(keys.includes('all')?'every row is already graded':'no such rows: '+keys.join(','));
   const fimg=await loadImage(path.join(ROOT,'assets/hunger-low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
-  const target=paletteMetrics(fg.getImageData(0,0,fc.width,fc.height).data,fc.width,FOUNDATION_RECT);record.foundation={rect:FOUNDATION_RECT,...target};
+  const foundation=paletteMetrics(fg.getImageData(0,0,fc.width,fc.height).data,fc.width,FOUNDATION_RECT);record.foundation={rect:FOUNDATION_RECT,...foundation};
+  // Heads match the foundation's saturation and mean value, but keep more highlights than the flat-lit foundation:
+  // with only its ~5% bright pixels a head loses its volume (decided 2026-10-30).
+  const target={...foundation,bright:HEAD_BRIGHT};record.target={saturation:target.saturation,value:target.value,bright:HEAD_BRIGHT,brightRange:HEAD_BRIGHT_RANGE};
   const img=await loadImage(ATLAS),c=createCanvas(img.width,img.height),g=c.getContext('2d');g.drawImage(img,0,0);
   const id=g.getImageData(0,0,c.width,c.height);
   for(const e of rows){
     if(record.rows[e.key])throw new Error(e.key+' is already graded; restore the atlas from git before grading it again');
     const rect=[0,e.row*256,4096,256],before=paletteMetrics(id.data,c.width,rect),p=fit(id.data,c.width,rect,target);
-    apply(id.data,c.width,rect,p);const after=paletteMetrics(id.data,c.width,rect);
+    // Rounding of dark pixels shifts the measured saturation; correct the factor on the real result (twice is enough).
+    const original=id.data.slice(rect[1]*c.width*4,(rect[1]+rect[3])*c.width*4);
+    for(let pass=0;pass<3;pass++){
+      id.data.set(original,rect[1]*c.width*4);apply(id.data,c.width,rect,p);
+      const m=paletteMetrics(id.data,c.width,rect);if(pass<2)p.saturation=+(p.saturation*target.saturation/m.saturation).toFixed(4);
+    }
+    const after=paletteMetrics(id.data,c.width,rect);
     record.rows[e.key]={row:e.row,params:p,before,after};
     console.log(e.key,'before',fmt(before),'after',fmt(after),'target',fmt(target),'params',JSON.stringify(p));
   }
