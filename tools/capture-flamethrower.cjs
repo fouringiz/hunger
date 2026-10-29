@@ -40,6 +40,7 @@ async function capture(zone,label,sourceHtml){
 }
 async function main(){
   fs.mkdirSync(OUT,{recursive:true});
+  if(process.argv.includes('--flamethrower-smoke'))return require('./capture-flamethrower-smoke.cjs').main();
   if(process.argv.includes('--flamethrower-deployment'))return deploymentMain();
   if(REF_FIRE)return approvedJetMain();
   if(process.argv.includes('--flamethrower-fire'))return fireMain();
