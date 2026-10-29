@@ -1,3 +1,22 @@
+# Infantry art test follow-up — 2026-10-29
+
+- User reran `node tests/flamethrower-art.cjs`: PASS, including negative variants.
+- User reran `npm test`: FAILED later at `tests/infantry-art.cjs:22` on the
+  asset path assertion. Full suite is not green.
+- Cause: the test selected `images[2]`; the newly inserted neutral Voltaic image
+  occupies that slot. Both loaded and failed-image cases now select the actual
+  `infantryArt` runtime binding. Keep the same asset-path, three-soldier drawing,
+  draw-parity and six-build-choice requirements; assert failed sheets aren't drawn.
+- Searched tests for numeric image-array indexing and `.at()` selections; no
+  other matches after this correction. No runtime/assets changed.
+- Agent did not run tests/captures. Next user commands:
+  `node tests/infantry-art.cjs` then `npm test`.
+- Howitzer capture evidence and incomplete visual-review status from the prior
+  checkpoint remain unchanged; no recapture needed for this test-only correction.
+
+---
+Previous checkpoint:
+
 # Shared foundation verification follow-up — 2026-10-29
 
 - User ran `npm test`: FAILED at the negative head-emergence case in
