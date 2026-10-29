@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Ultimate TD — core loop prototype v0.13</title>
+<title>Ultimate TD — core loop prototype v0.15</title>
 <style>
   :root { --ink: #101a1b; --mint: #a9d7bb; --brass: #d3ae68; }
   html, body { margin: 0; height: 100%; background: var(--ink); overflow: hidden;
@@ -16,6 +16,9 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script>
 'use strict';
+// v0.15 (rules change, campaign only): taking a branch swaps the weapon head and the tower holds fire for BRANCH_SWAP
+// (0.9 s) while the level-3 head sinks into the socket and the branch head rises; the picture follows the simulation's
+// warm-up. Balance presets keep the instant swap, so the reference replays play exactly as recorded.
 // v0.14 (presentation only, rules and source fingerprints unchanged): the Leech's hunt beneath the skin, its surfacing and
 // the wound it leaves are drawn from assets/hunger-leech-surfacing-v1.webp. Under the skin and in surfacing frames 1-2 it
 // lies on a ground layer under the platforms, towers and units; frames 3-8 stand on the unit layer; frame 8 hands over to
@@ -186,6 +189,9 @@ const BASE_POWER = 40, PAUSED_DRAW = 0.25, WARMUP = 2.5, BROWNOUT_MULT = 0.6, WA
 // simulation no longer fires while the picture still says "deploying". Resuming from pause keeps WARMUP.
 // Historical presets keep the instant build they were recorded with.
 const BUILD_WARMUP_SECONDS = 1.65, BUILD_WARMUP = BALANCE_PRESET ? 0 : BUILD_WARMUP_SECONDS;
+// Taking a branch swaps the weapon head: the level-3 head sinks into the socket, the branch head rises. The tower does not
+// fire for those BRANCH_SWAP_SECONDS (the upgrade costs time as well as credits). Historical presets keep the instant swap.
+const BRANCH_SWAP_SECONDS = 0.9, BRANCH_SWAP = BALANCE_PRESET ? 0 : BRANCH_SWAP_SECONDS;
 const RANK_KILLS = [0, 12, 35];
 const SELL_RATE = 0.6, SELL_TIME = 1.8;          // 60% refund, 1.8 s demolition
 const GATE_MAX = 20;
@@ -481,6 +487,7 @@ function upgrade(t, branch) {
     const b = t.level === 3 && !t.branch && BRANCHES[t.type] && BRANCHES[t.type][branch];
     if (!b || S.credits < b.cost) return false;
     S.credits -= b.cost; t.level = 4; t.branch = branch; t.invested += b.cost;
+    if (BRANCH_SWAP > 0 && !t.paused && t.warm <= 0) { t.warm = BRANCH_SWAP; t.warmFrom = BRANCH_SWAP; }
     return true;
   }
   if (t.level >= 3) return false;
@@ -709,7 +716,7 @@ function replayRulesFingerprint() {
   const rules = {SIM_STEP, PATH, SLOTS:SLOTS.map(s=>[s.x,s.y]), ENEMY, TOWER:towerRules, GEN_POWER, BASE_POWER, PAUSED_DRAW, WARMUP,
     BROWNOUT_MULT,WAVES,RANK_KILLS,SELL_RATE,SELL_TIME,GATE_MAX,ESCORT_WAVES,EVOLUTION_WAVES,MUT_STACK_CAP,SPRINTER_DASH_MULT,
     MUT,COUNTERS,LEDGER_ORDER,ROD_EVERY,FLAME_SHADOW_PASS,DISPERSAL_SPACING,GATE_D,HP_GROWTH,BRANCHES,BUILD_PAUSE,EARLY_CALL_BONUS,CASTE_SET,AIR_FROM_WAVE,POLYP_FROM_WAVE,POLYP_SPLIT,POLYP_HATCH,POLYP_SCATTER};
-  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;}
+  if(!BALANCE_PRESET){rules.CARAPACID_SHELTER=CARAPACID_SHELTER;rules.LEECH_SLAB_AVOIDANCE=LEECH_SLAB_AVOIDANCE;rules.BUILD_WARMUP=BUILD_WARMUP;rules.LEECH_OOZE=LEECH_OOZE;rules.BRANCH_SWAP=BRANCH_SWAP;}
   if (INFANTRY_TRIAL) { rules.INFANTRY_TRIAL = true; rules.INFANTRY = INFANTRY; }
   return replayHash(JSON.stringify(rules));
 }
@@ -775,7 +782,7 @@ function validateReplay(data) {
   catch(err) { if(err&&err.message==='Replay file exceeds the 5 MB limit.') throw err; throw new Error('Replay file is malformed.'); }
   if(!!data.infantryTrial!==INFANTRY_TRIAL) throw new Error(data.infantryTrial?'Replay was recorded in the infantry field trial; open the game with ?infantry=1.':'Replay was recorded without the infantry field trial; open the game without ?infantry=1.');
   if((data.balancePreset??null)!==BALANCE_PRESET_NAME) throw new Error(data.balancePreset?'Replay was recorded under balance preset '+data.balancePreset+'; open the game with ?balance='+data.balancePreset+'.':'Replay was recorded without a balance preset; open the game without ?balance.');
-  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12','prototype-v0.13','prototype-v0.14'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
+  if(data.protocol!==1||data.baseRevision!=='e607abf'||!['prototype-v0.4','prototype-v0.5','prototype-v0.6','prototype-v0.7','prototype-v0.8','prototype-v0.9','prototype-v0.10','prototype-v0.11','prototype-v0.12','prototype-v0.13','prototype-v0.14','prototype-v0.15'].includes(data.gameVersion)||data.rules!==replayRulesFingerprint()||data.source!==replaySourceFingerprint()) throw new Error('Replay is incompatible with this game version.');
   if(!data.initial||data.initial.map!=='perimeter-07'||data.initial.credits!==200||data.initial.gate!==GATE_MAX||data.initial.speed!==1||
     !Number.isFinite(data.initial.time)||data.initial.time<0||data.initial.time>1e7||!Number.isFinite(data.initial.accumulator)||data.initial.accumulator<0||data.initial.accumulator>=SIM_STEP||data.initial.buildTimer!==25) throw new Error('Replay starting state is invalid.');
   if(!Array.isArray(data.events)||data.events.length>REPLAY_EVENT_LIMIT||!Array.isArray(data.checkpoints)||!data.terminal||!Number.isInteger(data.terminal.tick)||data.terminal.tick<1||data.terminal.tick>REPLAY_TICK_LIMIT) throw new Error('Replay timeline is invalid.');
@@ -836,7 +843,7 @@ function advanceReplayTick(prepared=false) {
 }
 function exportReplay() {
   if(!replay.terminal||!replay.initial) throw new Error('No completed game replay is available.');
-  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.14',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
+  return {protocol:1,baseRevision:'e607abf',gameVersion:'prototype-v0.15',balancePreset:BALANCE_PRESET_NAME,infantryTrial:INFANTRY_TRIAL,rules:replayRulesFingerprint(),source:replaySourceFingerprint(),
     fingerprintMeaning:{rules:'FNV-1a of fixed simulation rules and map data.',source:'FNV-1a of combat, action, and fixed-step simulation function source.'},
     initial:{...replay.initial},events:replay.events.map(e=>({...e})),checkpoints:replay.checkpoints.map(c=>({...c})),terminal:{...replay.terminal}};
 }
@@ -2832,7 +2839,12 @@ function drawTowerBody(t) {
     const buildProgress=constructionProgress(t),fold=['turret','cannon','voltaic'].includes(t.type)?buildingPauseProgress(t):1;
     const foldedPose=(t.type==='voltaic'?.65:.64)+(t.type==='voltaic'?.35:.36)*fold;
     const visibleProgress=saleProgress!==null?saleProgress:buildProgress<1?buildProgress:fold<1?foldedPose:1;
-    const deploying=drawLevel4Tower(t,visibleProgress)||drawBuildingDeployment(t,visibleProgress);
+    // Branch swap, driven by the simulation's warm-up so picture and the pause end together at any game speed.
+    const swap=t.level===4&&t.branch&&t.warm>0&&t.warmFrom===BRANCH_SWAP_SECONDS&&!t.selling&&!t.paused&&buildProgress>=1?1-t.warm/t.warmFrom:null;
+    const deploying=swap!==null
+      ?(swap<.5?drawBuildingDeployment({...t,level:3,branch:null},Math.min(.999,1-.8*swap/.5))
+        :drawLevel4Tower(t,.55+.45*(swap-.5)/.5)||drawBuildingDeployment(t,Math.min(.999,(swap-.5)/.5)))
+      :drawLevel4Tower(t,visibleProgress)||drawBuildingDeployment(t,visibleProgress);
     if(!deploying){
     if (t.type === 'flamer') {
       drawFlamethrower(t);
