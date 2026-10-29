@@ -66,4 +66,5 @@ async function main(){
   g.putImageData(id,0,0);fs.writeFileSync(ATLAS,c.toBuffer('image/png'));fs.writeFileSync(RECORD,JSON.stringify(record,null,2)+'\n');
 }
 const fmt=m=>`sat ${m.saturation.toFixed(3)} value ${m.value.toFixed(3)} bright ${(m.bright*100).toFixed(1)}%`;
-main().catch(e=>{console.error(e);process.exitCode=1;});
+if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={fit,apply,FOUNDATION_RECT,HEAD_BRIGHT,HEAD_BRIGHT_RANGE};
