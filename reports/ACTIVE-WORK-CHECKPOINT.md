@@ -1,3 +1,104 @@
+# Iteration 2 — awaiting user verdict
+
+Checkout `/private/tmp/hunger-level4-sprites`, branch `codex/level4-sprites`, PR #69.
+Iteration 1 (`df6f8f5`) approved by user. Iteration 2 implementation complete;
+acceptance pending. Iteration 3 NOT STARTED. STOP after presenting this iteration.
+
+- Drawn bearing centred on TOWER_SOCKET; whole-head visual recoil bounded to
+  0.9 world units / 1.8 native screen pixels. Reduced visible carrier recoil is
+  an explicit tradeoff, not a simulation change.
+- Seating PASS: 490 heading/recoil states, max 1.800px; exact previous renderer
+  and actual 6-unit rearward shift rejected. Old coverage/contact thresholds kept.
+- Deployment PASS: 96 heading states; early front-panel exposure and final-frame
+  pop both rejected by negative controls. Smooth clip opening is final source.
+- Full npm test PASS including leech-crawl-atlas.
+- All 8 branches captured in Mire/Ember against df6f8f5: rules 9d3c412e,
+  source 5750d1fe, 151 identical live ticks in every scene. No combat, targeting,
+  balance, PATH, GATE_D, platform or atlas changes.
+- Final frames and logs: `reports/generated/level4-seat-anchor/` (ignored).
+  `before-after.png` and `reference-and-game-all.png` compare actual game views.
+  Earlier rejected clips remain in draft-before-occlusion/ and draft-front-clip/.
+- Flattened projected silhouettes still unresolved, reserved for iteration 3.
+  File-origin browser console check NOT performed. No art approval inferred.
+- Review details, precise frame paths and test-change explanation:
+  `reports/level4-review/iteration-2-seating.md`.
+
+Next: user reviews iteration-2 frames and gives verdict. Do not start 16-pose
+art or merge before that verdict. Commit/push state is recorded in the final
+session report; previous save attempt was blocked by automatic approval quota.
+
+---
+
+## Historical save checkpoint (superseded by the state above)
+
+# STOP / SAVE requested by user — iteration 2 WIP
+
+User: "сохраняйся - токены все". Stop after saving. No iteration 3 work.
+Checkout `/private/tmp/hunger-level4-sprites`, branch `codex/level4-sprites`, PR #69.
+Iteration 1 (`df6f8f5`) APPROVED by user: "отлично. давай дальше".
+Iteration 2 is NOT ready for acceptance; no verdict requested yet.
+
+## Saved implementation
+
+- Added independent screen-space bearing-anchor assertion to `tests/level4-seating.cjs`.
+  Measures atlas bearing through actual native ctx draw matrix, not pose helper.
+  Native scale 2x, tolerance <=2 raster pixels. 16 sampled headings for each
+  projected family and one fixed pose for Tesla/Cluster; five recoil ages = 490.
+- RED before renderer fix: exact previous renderer failed at Machine Gun frame 0,
+  age 0, distance 16.000px. New positive result: PASS, max 1.800px.
+- Renderer: mountY=socket.y, removed extra -7 projected offset, normalised whole-head
+  recoil displacement to <=.9 world units (1.8 native pixels), shortened projected
+  support to 4 units. Muzzle uses same pose. No simulation/art asset changes.
+- Old alpha coverage >=75% and both physical-contact checks retained. Old empty
+  socket is still tested with anchor checking disabled ONLY for that historical
+  negative, preserving its original coverage assertion. Raised/detached negatives
+  now may fail the stricter anchor assertion earlier; regex updated accordingly.
+  New negatives reject exact `df6f8f5` rearward renderer and actual image draw
+  shifted 6 units rearward. Explain these test changes in final iteration report.
+- Capture flag `--anchor-review` with `--tower-base <branch>` isolates against
+  `df6f8f5`, writes `reports/generated/level4-seat-anchor/<branch>/`.
+
+## Verified, current saved source
+
+- Focused seating: PASS 490 states, max 1.800px, all negative controls rejected.
+  `reports/generated/level4-seat-anchor/seating-test.log` (before clip-only tweak;
+  final full npm suite reran the same test after that tweak).
+- Final `npm test`: PASS, including leech-crawl-atlas; log under same root.
+- All 8 branch captures completed exit 0, Mire/Ember each: 151 identical live steps,
+  rules 9d3c412e, source 5750d1fe. Each branch results.json records baseline df6f8f5.
+  All capture processes have finished; no running tool session remains.
+- Opened final Rifle/Prism Mire turn sheets, Rifle/Howitzer upgrade strips,
+  Howitzer Mire whole and Prism Ember combat grayscale. Other branch images exist
+  but are NOT yet visually inspected. No final before/after board/report yet.
+
+## Known unresolved visual issue / exact next action
+
+Initial centered placement exposed that old projected deployment clip ended at
+socket.y+4 (=-1.5). That clipped the near part of a now-centred head until ready,
+causing a last-frame pop. Tried extending projected clip to y=20 (current source:
+`ctx.rect(-64,-110,128,130)` when open<1). Final upgrade sheets now show the head
+appearing too early on the foundation's front panel before it seats. Do NOT call
+this visually verified. First draft with old clip preserved under
+`reports/generated/level4-seat-anchor/draft-before-occlusion/`.
+
+Next proposal (NOT implemented): keep clip at socket.y+4 during initial lift,
+then open it smoothly toward y=20 during the final ~15% of `open`, e.g.
+`frontY=(socket.y+4)+(20-(socket.y+4))*deploymentStep(open,.85,1)`.
+Inspect actual upgraded motion before deciding; do not silently accept a pop or
+front-panel emergence. This is an assembly regression caused by placement and
+must be resolved inside iteration 2, without starting directional-art iteration 3.
+After any code change rerun npm test and matching captures for final source.
+Then inspect whole/close/full cycles/grayscale, write iteration-2 report listing
+exact before/after paths, commit/push, and STOP for user's verdict.
+
+Do not weaken <=2px, the rearward negative, coverage or contact requirements.
+No battle/targeting/balance/PATH/GATE_D/platform changes. Existing flattened
+silhouettes belong to iteration 3 and remain untouched. No image generation yet.
+No merge. User has explicitly authorized agent-run npm/capture for these iterations.
+
+---
+Previous checkpoint:
+
 # Iteration 1 — badge checked; WAITING FOR USER VERDICT
 
 - User ordered three separate visual iterations with an explicit stop after each.

@@ -1838,14 +1838,18 @@ function level4Pose(t,angle=t.angle,recoil=true){
   const life=t.type==='cannon'?(t.branch==='A'?.42:.24):(t.branch==='B'?.28:.13);
   const strength=t.type==='cannon'?(t.branch==='A'?5.5:2.5):(t.branch==='B'?3.5:1.2);
   const kick=recoil&&!t.paused&&!t.selling&&['turret','cannon'].includes(t.type)&&age>=0&&age<life?Math.sin(Math.PI*age/life)*strength:0;
-  const dx=spec.key==='cluster'?0:-Math.cos(angle)*kick,dy=spec.key==='cluster'?kick:-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
+  // The whole carrier stays seated. Bound its presentation-only recoil in screen
+  // space; larger barrel/charge effects must not drag the mounting bearing off its socket.
+  const rawDx=spec.key==='cluster'?0:-Math.cos(angle)*kick,rawDy=spec.key==='cluster'?kick:-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
+  const seatTravel=Math.hypot(rawDx,rawDy),seatScale=seatTravel>.9?.9/seatTravel:1;
+  const dx=rawDx*seatScale,dy=rawDy*seatScale;
   const art=projected?LEVEL4_YAW.find(a=>a.key===spec.key):null;
   const tip=art?art.muzzle:spec.tips[frame],seat=art?art.bearing:spec.seats[frame];
   const size=art?art.size:spec.size,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
   // Seat the broad bearing on the socket, not the bottom of the narrow insertion peg.
-  const mountY=socket.y-1,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
+  const mountY=socket.y,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
   if(projected){
-    const matrix=weaponProjection(angle),originX=socket.x+dx,originY=mountY-7+dy;
+    const matrix=weaponProjection(angle),originX=socket.x+dx,originY=mountY+dy;
     const u=(tip[0]-seat[0])*scale,v=(tip[1]-seat[1])*scale;
     return {spec,art,projected,matrix,frame,age,kick,dx,dy,seat,bodyY,size,originX,originY,
       x:-seat[0]*scale,y:-seat[1]*scale,
@@ -1911,10 +1915,13 @@ function drawLevel4Tower(t,progress=1){
     // The shaft stays upright; only the flat upper is projected. A ready muzzle may
     // extend in front of the foundation, so never clip it at the socket's near edge.
     ctx.save();
-    if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+LEVEL4_SOCKETS[t.type].y+4);ctx.clip();}
+    // Keep early emergence inside the socket; uncover the near half only as the
+    // carrier seats. This avoids front-panel emergence and a last-frame clip pop.
+    const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
+    if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
     ctx.translate(0,drop);
-    ctx.fillStyle='#334039';ctx.fillRect(p.originX-4,p.originY,8,8);
-    ctx.fillStyle='#9a9d83';ctx.fillRect(p.originX-3,p.originY,1.5,8);
+    ctx.fillStyle='#334039';ctx.fillRect(p.originX-4,p.originY-2,8,4);
+    ctx.fillStyle='#9a9d83';ctx.fillRect(p.originX-3,p.originY-2,1.5,4);
     // The fixed lip covers the foot of the shaft, below the rotating upper.
     ctx.save();ctx.translate(0,-drop);drawLevel4Coupling(t,true);ctx.restore();
     for(const z of [3,1.5,0]){
