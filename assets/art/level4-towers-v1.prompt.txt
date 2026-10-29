@@ -1,0 +1,65 @@
+Built-in ImageGen prompt/provenance record — 2026-10-29
+
+Approved concept reference: level4-selected-approved-v1.png
+Original reference output: exec-1222ac49-3c2f-467c-87a2-fae90c5120b7.png
+All paths below were outputs in the same conversation's generated_images directory.
+Original generations remain outside Git; final atlas source hashes are in the frame table.
+transparent_background=true was requested for every source below.
+
+DIRECTIONAL SOURCE PROMPT
+Used verbatim with each SUBJECT substituted from the list below:
+
+Production game sprite extraction and turntable. Source image is approved design reference. Extract ONLY SUBJECT Preserve exact mechanical identity, material palette, proportions and chunky worn painted RTS rendering. Create a transparent sprite sheet of this ONE weapon's upper rotating assembly, NO square foundation, NO four anchoring feet, NO platform. Include a short cylindrical central mounting peg at bottom of upper assembly, identical in all views; its bottom center is the rotation pivot. Separate gun head from base cleanly.
+Exactly EIGHT complete isolated poses, strict grid FOUR COLUMNS TWO ROWS, equal cells and substantial clear transparent gutters. Canvas landscape 2:1. Camera fixed elevated orthographic three-quarter RTS view, always see top and vertical sides, constant upper-left world lighting, no change of camera elevation. Rotate the machine in world yaw, not the camera or the image plane.
+Order matters: TOP ROW points screen RIGHT (east), DOWN-RIGHT (southeast), DOWN toward viewer (south), DOWN-LEFT (southwest). BOTTOM ROW points LEFT (west), UP-LEFT away (northwest), UP away from viewer (north), UP-RIGHT away (northeast). All eight views same physical scale and SAME mounting-peg center position relative to each equal cell, lower middle. The barrel should visibly foreshorten toward and away from the camera. Show true rear views in last three cells, not mirrored front views. Entire assembly contained within each cell. Upright parts always vertical. NO TEXT, NO labels, NO numbers, no borders, no ground shadows, no firing, no beam, no particles, no glow clouds, no black background or checkerboard. Actual transparent alpha. Only small restrained internal indicator glow and Prism gold lens permitted. Not full towers: upper machinery only, foundation omitted.
+
+SUBJECTS / OUTPUTS
+
+machine-gun.png — exec-81e6b515-9c1b-4dfc-b0fe-eeb1cf75c31c.png
+Machine Gun, top-left: C design. Single rotary multi-barrel cluster, ivory collar, olive angular armor, tall ammunition box and curved feed belt. No second barrel cluster.
+
+rifle.png — exec-ea7ee6b8-b597-4528-b6fb-1db6c0ac8bd7.png
+Rifle, top row second: C design. One long thin precision barrel with perforated muzzle brake, tall rectangular olive breech, pale side plate, small dark optics block, recoil support.
+
+prism.png — exec-43002e9a-e5af-4e17-a6de-67970f9ebea1.png
+Prism, top row fourth: A design. Large golden faceted manufactured lens inside three thick olive and ivory protective petals, heavy copper collar, dark mechanical pedestal.
+
+plasma.png — exec-522b85b0-ec38-426b-962f-00e62ac0e326.png
+Plasma, bottom row third: C design. Open ivory ceramic upper and lower jaws around thick copper cylindrical emitter, olive boxy rear machinery, black cable loops. No orange side tanks.
+
+cryojet initial source — exec-90d8299e-0a96-4da7-aee8-903d16f335c5.png
+Cryojet, bottom-right: C design. Large pale ivory crescent cooling assembly surrounding short round steel emitter, bundle of pale insulated cylinders behind, dark hoses and olive machine housing.
+
+CRYOJET CORRECTION — final cryojet.png
+Input: exec-90d8299e-0a96-4da7-aee8-903d16f335c5.png
+Output: exec-05f12fc9-c350-4ca1-91b8-6281a8a92a80.png
+
+Correct only the bottom-row columns 2,3,4 (rear three views) of this fictional Cryojet tower sprite sheet. Preserve all other sprites. The three rear views incorrectly have a second blue output nozzle on the REAR. Replace that erroneous rear nozzle with a closed olive rectangular machinery panel, vents and dark bundled hoses. The ONE true nozzle is on the front facing AWAY in these views, concealed by the body; pale ceramic crescent around it only visible from behind at the far upper edge. Keep pale tank bundles, same camera, scale, small bottom peg, materials, exact 4 by 2 layout. Actual transparent alpha. No new openings, no text, no effects.
+
+TESLA — final tesla.png
+Input: approved concept reference
+Output: exec-5fed13e9-f2cc-4beb-a2c1-626997a84d56.png
+
+Extract ONLY the Tesla tower upper assembly, third object in the top row, for this fictional tower defense game. Precisely preserve the three electrodes, central tall ivory ceramic column with copper coils, two thinner side rods and silver balls, olive supports. Remove square foundation and all four corner feet. A short central mounting peg at bottom. One isolated upright upper assembly, same fixed elevated RTS camera, upper-left lighting and painted material. Actual transparent alpha, no floor, no text, no lightning, no particles, no shadow, not a sheet.
+
+CLUSTER — final cluster.png
+Input: approved concept reference
+Output: exec-69e3965a-da3a-4089-b7d2-69e54b7feead.png
+
+Extract ONLY the Cluster tower upper assembly, second object in the bottom row, for this fictional tower defense game. Precisely preserve the one short wide upright cylinder, dark hollow top opening, copper collar, olive cylindrical housing, SIDE feed drum on the right and black cables. Remove the square foundation and four corner feet. Short central mounting peg at bottom. One isolated upright upper assembly, same fixed elevated RTS camera, upper-left lighting and painted material. Actual transparent alpha, no floor, no text, no particles, no shadow, not a sheet.
+
+HOWITZER — final howitzer.png
+Initial directional prompt was discarded because it produced a duplicated barrel.
+Replacement input: approved concept reference
+Replacement output: exec-e0d89dac-1669-4d43-96bd-4cc1a10858c9.png
+
+Create an eight-view turntable sprite sheet of ONLY the Howitzer upper assembly, bottom-left design in the source, for this fictional tower defense game. Preserve exact design. It has ONE elevated barrel with ONE dark opening, TWO SEALED CLOSED hydraulic cylinders alongside. No extra barrel. Remove square foundation and four feet; short mounting peg at bottom remains. Four columns two rows. Fixed elevated RTS orthographic camera and upper-left light. Same physical scale and same small peg anchor position in every cell. Row 1 headings right, down-right, down, down-left. Row 2 left, up-left, up, up-right. Rear headings must show rear of housing, barrel facing away. Maintain barrel elevation. Actual transparent alpha, no text, no particles, no ground shadows. Generous transparent gutters. Entire objects inside cells.
+
+Final correction input: exec-e0d89dac-1669-4d43-96bd-4cc1a10858c9.png
+Final accepted bake source output: exec-d8285559-1578-42c0-b1e0-136d6778bfa8.png
+
+Precise production sprite edit of this fictional game object turntable. Remove the entire brown/black background to actual transparent alpha, no ground or shadow. Preserve the design and eight complete upper mechanical assemblies. Correct TOP LEFT and TOP SECOND objects so their ONE elevated barrel aims RIGHT and DOWN-RIGHT respectively, instead of left. Rotate their world yaw, keep camera and lighting fixed. Leave top THIRD toward viewer, top FOURTH down-left, bottom FIRST left, bottom SECOND away-left, bottom THIRD away, bottom FOURTH away-right. Strict four columns two rows. Exactly one elevated barrel per object, two closed hydraulic pistons, olive housing, central bottom peg. Do not add extra components or extra barrels. Every silhouette isolated on genuine alpha transparency, no backdrop, no text. Same scale and spacing.
+
+Two subsequent background-removal trials were discarded. The final bake uses the
+PNG source above, whose alpha contains the isolated component silhouettes. Its RGB
+background appearance is not copied by the connected alpha-object packer.
