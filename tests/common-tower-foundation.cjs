@@ -1,4 +1,5 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 // User-run contracts for one shared foundation. These do not establish visual approval.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const ROOT=path.join(__dirname,'..'),source=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -49,7 +50,7 @@ function check(r){
 check(boot());
 // The known old split bases and a moving foundation must fail the SAME contract.
 const {execFileSync}=require('node:child_process');
-const old=execFileSync('git',['show','528cb0b:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}).match(/<script>([\s\S]*?)<\/script>/)[1];
+const old=historical('528cb0b','prototype/index.html').match(/<script>([\s\S]*?)<\/script>/)[1];
 assert.throws(()=>check(boot(old)),/shared foundation|exact Turret|same central attachment|planted/);
 const moved=source.replace('function drawTowerFoundation(t){','function drawTowerFoundation(t){ctx.translate(2,0);');assert.notEqual(moved,source);
 assert.throws(()=>check(boot(moved)),/planted/);

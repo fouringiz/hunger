@@ -1,4 +1,5 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 // Actual head alpha: the seated placement must not introduce a deployment pop.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
@@ -34,7 +35,7 @@ async function check(sourceHtml=html){
  // The narrow boundary was visibly bad for the former overhead art. Upright
  // authored art mostly ends above it; keep that historical negative on its
  // actual renderer instead of inventing a new failure or loosening the limit.
- const previous=execFileSync('git',['show','15ad9ed:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),narrow=previous.replace(target,'front=near');
+ const previous=historical('15ad9ed','prototype/index.html'),narrow=previous.replace(target,'front=near');
  assert.notEqual(wide,html);assert.notEqual(narrow,previous);
  await assert.rejects(()=>check(wide),/front panel before seating/);
  await assert.rejects(()=>check(narrow),/near half pops in/);

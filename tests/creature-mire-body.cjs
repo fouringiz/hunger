@@ -1,8 +1,9 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 (async()=>{
- const rejectedHtml=execFileSync('git',['show','c01c1b9:prototype/index.html'],{cwd:path.join(__dirname,'..'),encoding:'utf8'});
+ const rejectedHtml=historical('c01c1b9','prototype/index.html');
  const rejectedMask=rejectedHtml.match(/function creatureMireMask\(e,pose\)\{[\s\S]*?\n\}\n(?=function drawCreatureContactShadow)/)[0];
  const sourceHtml=process.env.CREATURE_MIRE_CANDIDATE?fs.readFileSync(process.env.CREATURE_MIRE_CANDIDATE,'utf8'):null;
  const {run,canvas}=await loadWorld({sourceHtml});

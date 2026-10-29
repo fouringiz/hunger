@@ -1,8 +1,9 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 const assert=require('node:assert/strict'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 (async()=>{
- const sourceHtml=execFileSync('git',['show','22e4d45:prototype/index.html'],{cwd:path.join(__dirname,'..'),encoding:'utf8'});
+ const sourceHtml=historical('22e4d45','prototype/index.html');
  for(const zone of ['mire','ember']){
   const before=await loadWorld({zone,sourceHtml}),after=await loadWorld({zone});
   const setup="reset();S.phase='wave';S.spawnQueue=[];S.enemies=[makeEnemy('forager',1)];S.enemies[0].d=70;Object.assign(S.enemies[0],posAt(70));";
