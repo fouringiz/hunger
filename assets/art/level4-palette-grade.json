@@ -186,5 +186,31 @@
       0.05,
       0.15
     ]
+  },
+  "sprites": {
+    "tesla-toroid": {
+      "file": "assets/hunger-tesla-toroid-v1.png",
+      "localContrast": {
+        "amount": 0.8,
+        "radius": 8
+      },
+      "params": {
+        "saturation": 0.8094,
+        "gamma": 1.08,
+        "scale": 0.85
+      },
+      "before": {
+        "saturation": 0.45022917462300494,
+        "value": 0.4460286144744256,
+        "bright": 0.16720882407926715,
+        "pixels": 26745
+      },
+      "after": {
+        "saturation": 0.3447542615291246,
+        "value": 0.3388650251650872,
+        "bright": 0.09919611142269583,
+        "pixels": 26745
+      }
+    }
   }
 }
