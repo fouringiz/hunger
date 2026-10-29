@@ -2236,8 +2236,92 @@ function drawFlameJet(t){
     ctx.shadowBlur=0;ctx.globalAlpha=.85*fade;
     ctx.drawImage(flameJetArt,frame*w,0,w,h,-ax,-ay,w,h);
   }catch(_){ctx.restore();return drawRibbonJet(t);}
-  ctx.restore();return true;
+  ctx.restore();drawFuelFlow(t,fade);return true;
 }
+// Liquid highlights advect from the muzzle; they are samples, never simulation particles.
+function fuelFlowSamples(t){
+  const m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
+  const length=Math.hypot(dx,dy)||1,nx=-dy/length,ny=dx/length,seed=Math.max(0,SLOTS.indexOf(t.slot))*.137;
+  return Array.from({length:4},(_,i)=>{
+    const u=(presentationTime*3.4+i/4+seed)%1,wave=Math.sin(presentationTime*24-u*17+seed)*u*1.2,along=u*Math.max(0,length-5);
+    return {u,x:m.x+dx/length*along+nx*wave,y:m.y+dy/length*along+ny*wave,heading:Math.atan2(dy,dx),length:2+u*3,width:.4+u*.6,alpha:.34*Math.sin(Math.PI*u)};
+  });
+}
+function drawFuelFlow(t,fade){
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(const p of fuelFlowSamples(t)){
+    ctx.globalAlpha=p.alpha*fade;ctx.fillStyle=p.u<.2?'#fff3b4':'#ffb14d';
+    ctx.beginPath();ctx.ellipse(p.x,p.y,p.length,p.width,p.heading,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+function fuelContactFor(t,e){
+  const body=simOf(e);
+  if(t.type!=='flamer'||t.branch==='B'||!fuelJetFade(t)||body.dead||body.submerged||body.T.air||(body.type==='leech'&&body.state==='surfacing'&&leechSurfacingReady())||portalEntryOf(body))return null;
+  // Read the existing hit geometry. This does not call fireFlame, damage, or write burn status.
+  const st=tstats(t),x=t.x+Math.cos(t.angle)*st.range,y=t.y+Math.sin(t.angle)*st.range;
+  const u=segHitsCircle(t.x,t.y,x,y,body.x,body.y,10+body.r*.5);if(u<0)return null;
+  const v=visualEnemy(body),m=weaponMuzzle(t),p=enemyBodyPoint(v),dx=p.x-m.x,dy=p.y-m.y,len=Math.hypot(dx,dy)||1;
+  return {tower:t,body,vx:dx/len,vy:dy/len,u,strength:fuelJetFade(t),active:true};
+}
+let fuelContactFrame=new Map();
+function prepareFuelContacts(){
+  fuelContactFrame=new Map();if(!flameJetReady())return;let count=0;
+  for(const e of S.enemies){
+    let contact=null;
+    for(const t of S.towers){const p=fuelContactFor(t,e);if(p&&(!contact||p.strength>contact.strength))contact=p;}
+    // A retained film is shown only for a real, still-active simulation burn.
+    if(!contact&&!e.dead&&!e.submerged&&!e.T.air&&!(e.type==='leech'&&e.state==='surfacing'&&leechSurfacingReady())&&!portalEntryOf(e)&&e.burnUntil>S.time&&e.burnTower?.type==='flamer'&&e.burnTower.branch!=='B'){
+      const p=enemyBodyPoint(visualEnemy(e)),m=weaponMuzzle(e.burnTower),dx=p.x-m.x,dy=p.y-m.y,len=Math.hypot(dx,dy)||1;
+      contact={tower:e.burnTower,body:e,vx:dx/len,vy:dy/len,u:1,strength:.38*Math.min(1,(e.burnUntil-S.time)/.35),active:false};
+    }
+    if(contact&&count++<24)fuelContactFrame.set(e,contact);
+  }
+}
+let fuelBodyMask=null,fuelBodyFilm=null;
+function stampFuelBody(g,e){
+  const angle=enemyHeading(e),k=e.__k||1;
+  g.save();g.translate(128,176);g.scale(2*k,2*k);
+  if(e.type==='forager'&&foragerMireReady()){
+    const p=foragerMirePose(e,angle),c=FORAGER_MIRE.cell,s=FORAGER_MIRE.scale;
+    g.drawImage(foragerMireArt,p.frame*c,p.direction*c,c,c,-c*.5*s,-130*s,c*s,c*s);
+  }else if((e.type==='carapacid'||e.type==='leech')&&creatureMireReady(e)){
+    const p=creatureCrawlPose(e,angle),size=e.type==='carapacid'?76:80,art=e.type==='carapacid'?carapacidShelterArt:leechMireArt;
+    g.drawImage(art,p.frame*256,p.row*256,256,208,-size/2,-208/256*size+CREATURE_MIRE[e.type].sink,size,208/256*size);
+  }else if((e.type==='polyp'||e.type==='polypoid')&&polypFamilyReady(e.type)){
+    const p=polypFamilyPose(e,angle),size=polypCellSize(e.type);
+    g.drawImage(POLYP_FAMILY[e.type].art(),p.frame*256,p.row*256,256,256,-size/2,-size*POLYP_BASE/256,size,size);
+  }else if(['forager','carapacid','leech'].includes(e.type)&&groundActorArt&&groundActorArt.complete&&groundActorArt.naturalWidth){
+    const m=groundActorMetrics(e.type);g.scale(Math.cos(angle)<0?-1:1,1);g.drawImage(groundActorArt,...m.r,-m.width/2,-m.height,m.width,m.height);
+  }else{
+    g.fillStyle='#fff';g.beginPath();g.ellipse(0,-e.r*.4,e.r*1.1,e.r*.8,0,0,Math.PI*2);g.fill();
+  }
+  g.restore();
+}
+function drawFuelContact(e){
+  const p=fuelContactFrame.get(simOf(e));if(!p||!flameJetReady())return false;
+  if(!fuelBodyMask){fuelBodyMask=document.createElement('canvas');fuelBodyFilm=document.createElement('canvas');fuelBodyMask.width=fuelBodyMask.height=fuelBodyFilm.width=fuelBodyFilm.height=256;}
+  const mask=fuelBodyMask.getContext('2d'),g=fuelBodyFilm.getContext('2d');
+  mask.setTransform(1,0,0,1,0,0);mask.globalAlpha=1;mask.globalCompositeOperation='source-over';mask.clearRect(0,0,256,256);stampFuelBody(mask,e);
+  const reset=()=>{g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.clearRect(0,0,256,256);};
+  reset();g.drawImage(fuelBodyMask,0,0);g.globalCompositeOperation='source-in';
+  const b=enemyBodyPoint(e),cx=128+2*(b.x-e.x),cy=176+2*(b.y-e.y);
+  const heat=g.createLinearGradient(cx-p.vx*48,cy-p.vy*48,cx+p.vx*48,cy+p.vy*48);
+  heat.addColorStop(0,'#ffb546');heat.addColorStop(.35,'#e85514');heat.addColorStop(1,'#6b1d0800');g.fillStyle=heat;g.fillRect(0,0,256,256);
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.17*p.strength;ctx.drawImage(fuelBodyFilm,e.x-64,e.y-88,128,128);
+  // An actual sprite-alpha rim, broken by moving flame texture: no geometric halo around a body.
+  reset();
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,r=3.5+Math.sin(presentationTime*19+i*2)*1.2;g.drawImage(fuelBodyMask,Math.cos(a)*r,Math.sin(a)*r);}
+  g.globalCompositeOperation='destination-out';g.drawImage(fuelBodyMask,0,0);
+  g.globalCompositeOperation='source-in';
+  const frame=Math.floor(presentationTime*12+p.u*2)%4;
+  g.save();g.translate(cx,cy);g.rotate(Math.atan2(p.vy,p.vx));g.translate(-128,-128);
+  // Distal fuel texture keeps its aspect; scrolling is along the incident flow.
+  const travel=(presentationTime*38)%24;
+  g.drawImage(flameJetArt,frame*512+128,0,384,256,-12+travel,32,252,168);g.restore();
+  ctx.globalAlpha=.58*p.strength;ctx.drawImage(fuelBodyFilm,e.x-64,e.y-88,128,128);ctx.restore();return true;
+}
+
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon';
   drawTowerFoundation(t);drawTowerSupport(t,-14);
@@ -3272,6 +3356,7 @@ function draw() {
       else { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(weaponMuzzle(t).x,weaponMuzzle(t).y,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
     }
   }
+  prepareFuelContacts();
   // The full jet stays beneath actors so its incandescent core cannot erase enemy silhouettes.
   for(const t of S.towers)if(t.type==='flamer'&&t.branch!=='B')drawFlameJet(t);
   // Ground anchors determine depth consistently for buildings, creatures and soldiers.
@@ -3299,10 +3384,11 @@ function draw() {
     if(portalEntryOf(e))continue; // The frozen presentation snapshot owns the body and its disappearance now.
     if (e.submerged) { if (!leechSurfacingReady()) drawOozeRipple(e); continue; }   // v0.11: beneath the ooze no body, no bar, no markers; v0.14: the ground layer drew it
     if (e.type === 'leech' && e.state === 'surfacing' && leechSurfacingReady()) drawLeechEmergence(e); else enemyArt(e);
+    drawFuelContact(e);
     if (e.type === 'leech') drawLeechCue(e);
     if (e.type === 'leech' && e.state === 'attached') { ctx.strokeStyle = '#c77dff'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 3 + 2*Math.sin(S.time*8), 0, Math.PI*2); ctx.stroke(); }
-    if (e.burnUntil > S.time) { const f = 0.5 + 0.5 * Math.sin(S.time * 22 + e.d);        // burning fuel on the body
+    if (e.burnUntil > S.time&&!fuelContactFrame.has(simOf(e))) { const f = 0.5 + 0.5 * Math.sin(S.time * 22 + e.d);        // burning fuel on the body
       ctx.fillStyle = 'rgba(255,' + (120 + 60 * f | 0) + ',40,0.75)'; ctx.beginPath(); ctx.moveTo(e.x - e.r*0.5, e.y - e.r*0.2);
       ctx.quadraticCurveTo(e.x, e.y - e.r - 8 - 4*f, e.x + e.r*0.5, e.y - e.r*0.2); ctx.fill(); }
     if (e.slowUntil > S.time) { ctx.strokeStyle = 'rgba(157,247,255,0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, Math.PI*2); ctx.stroke(); }
