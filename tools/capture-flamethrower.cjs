@@ -3,7 +3,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),OUT=path.join(ROOT,'reports/generated/flamethrower');
+const ROOT=path.join(__dirname,'..'),WIDTH_FIRE=process.argv.includes('--flamethrower-width'),REF_FIRE=WIDTH_FIRE||process.argv.includes('--flamethrower-reference'),OUT=path.join(ROOT,'reports/generated',WIDTH_FIRE?'flamethrower-width':REF_FIRE?'flamethrower-reference-fire':'flamethrower');
 const BASE='58c1e8eeb350927ec16a2723eecb91171a71f718';
 function save(canvas,name){fs.writeFileSync(path.join(OUT,name+'.png'),canvas.toBuffer('image/png'));}
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
@@ -41,6 +41,7 @@ async function capture(zone,label,sourceHtml){
 async function main(){
   fs.mkdirSync(OUT,{recursive:true});
   if(process.argv.includes('--flamethrower-deployment'))return deploymentMain();
+  if(REF_FIRE)return fireMain();
   if(process.argv.includes('--flamethrower-fire'))return fireMain();
   const arg=process.argv.indexOf('--before'),rev=arg<0?BASE:process.argv[arg+1];
   const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
@@ -75,16 +76,19 @@ async function deploymentMain(){
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{deploy,retract}-{game,zoom}.png and deployment whole/gray views. Review full assembly and retraction independently of the fire effect.');
 }
 async function fireMain(){
-  const before=execFileSync('git',['show','198ef68:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),fingerprints={};
+  const arg=process.argv.indexOf('--before');
+  const rev=arg<0?(WIDTH_FIRE?'c56b950':REF_FIRE?'2308926':'198ef68'):process.argv[arg+1];
+  assert.ok(rev,'--before requires a Git revision');
+  const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),fingerprints={};
   for(const zone of ['mire','ember'])for(const label of ['before','after']){
     const w=await loadWorld({zone,sourceHtml:label==='before'?before:null});
     fingerprints[label]={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
     for(const branch of ['', 'A','B']){
       w.run(`reset();S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;S.towers[0].branch=${JSON.stringify(branch)};observeConstruction();presentationTime=3;observeConstruction();S.enemies=[makeEnemy('forager',1),makeEnemy('carapacid',1)];S.enemies.forEach((e,i)=>{e.x=S.towers[0].x+65+i*18;e.y=S.towers[0].y+(i?18:0);});`);
       const at=JSON.parse(w.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})')),flow=[],sweep=[],stop=[],name=`${label}-${zone}-fire-${branch||'base'}`;
-      // Hold the nozzle still to expose intrinsic flow; sample two complete 0.2 s firing intervals.
-      for(let i=0;i<=12;i++){
-        const time=i/30;w.run(`S.time=${time};S.towers[0].angle=0;S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
+      // Reference pass spans two complete billow advections and two full eight-phase texture clips (1.33 s).
+      for(let i=0;i<=(REF_FIRE?20:12);i++){
+        const time=i/(REF_FIRE?15:30);w.run(`S.time=${time};S.towers[0].angle=0;S.towers[0].jetAt=${Math.floor((time+1e-9)/.2)*.2};`);
         flow.push(crop(shot(w),at.x,at.y,true));
         if(i===3){save(w.canvas,name+'-whole');save(gray(w.canvas),name+'-whole-gray');}
       }
@@ -102,7 +106,22 @@ async function fireMain(){
     }
     if(label==='after')assert.deepEqual(fingerprints.after,fingerprints.before,'fire presentation leaves simulation fingerprints unchanged');
   }
+  if(REF_FIRE)await fireReferenceBoard(before);
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-fire-{base,A,B}-{flow,sweep,stop}-{game,zoom}.png and whole/gray views. Controlled actual-renderer poses: fixed-nozzle flow, full sweep, and final-pulse fade. Actual combat timing still needs the disk-browser check.');
+}
+async function fireReferenceBoard(before){
+  const photo=await loadImage(path.join(ROOT,'reports/generated/flamethrower/references/fire-1.png'));
+  const board=createCanvas(600,320),g=board.getContext('2d');g.fillStyle='#292e29';g.fillRect(0,0,600,320);
+  // Photo 1's nozzle-to-tip crop is ~600 source pixels; scale to the game's 66-unit visible jet (132 screen px).
+  g.drawImage(photo,267,30,600,280,16,39.4,132,61.6);
+  for(const [i,sourceHtml]of [before,null].entries()){
+    const w=await loadWorld({sourceHtml});
+    w.run("reset();S.phase='wave';S.wave=1;S.spawnQueue=[];S.streams=[];S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;observeConstruction();presentationTime=3;observeConstruction();S.time=.2;S.towers[0].jetAt=.2;");
+    const m=JSON.parse(w.run('JSON.stringify(weaponMuzzle(S.towers[0]))'));shot(w);
+    g.drawImage(w.canvas,(m.x-8)*2,(m.y-45)*2,200,160,200*(i+1),0,200,160);
+  }
+  g.drawImage(gray(board),0,160);g.fillStyle='#fff';g.font='12px sans-serif';['REFERENCE','BEFORE','AFTER'].forEach((s,i)=>g.fillText(s,i*200+8,15));
+  save(board,'reference-before-after');
 }
 module.exports={main};
 if(require.main===module)main().catch(e=>{console.error(e);process.exitCode=1;});

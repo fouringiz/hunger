@@ -1,0 +1,90 @@
+{
+  "columns": 4,
+  "frames": 4,
+  "cell": [
+    512,
+    256
+  ],
+  "anchor": [
+    0,
+    128
+  ],
+  "scale": 0.7299524196586011,
+  "source": "reports/generated/flamethrower/flame-jet-four-source-v1.png",
+  "sourceSha256": "116d75c7da40a8245dda1afac9c7b0437bb2a42734dbaf1924c189ff675b4589",
+  "sources": [
+    {
+      "source": [
+        0,
+        0,
+        543,
+        724
+      ],
+      "emission": [
+        14,
+        368.53128775524885
+      ],
+      "bounds": [
+        14,
+        216,
+        532,
+        485
+      ]
+    },
+    {
+      "source": [
+        543,
+        0,
+        543,
+        724
+      ],
+      "emission": [
+        549,
+        368.5039895719402
+      ],
+      "bounds": [
+        549,
+        211,
+        1069,
+        489
+      ]
+    },
+    {
+      "source": [
+        1086,
+        0,
+        543,
+        724
+      ],
+      "emission": [
+        1088,
+        368.48498564080705
+      ],
+      "bounds": [
+        1088,
+        212,
+        1629,
+        487
+      ]
+    },
+    {
+      "source": [
+        1629,
+        0,
+        543,
+        724
+      ],
+      "emission": [
+        1629,
+        368.5445150983752
+      ],
+      "bounds": [
+        1629,
+        211,
+        2143,
+        486
+      ]
+    }
+  ],
+  "status": "source sheet; not integrated or loop-approved"
+}

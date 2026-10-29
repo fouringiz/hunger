@@ -1,3 +1,25 @@
+# Flamethrower VFX PR from fresh main — checks pending (2026-10-29)
+
+- User requested including the fire/smoke work in a PR, explicitly based on fresh `main`. Fetched `origin/main` at `3eec37f01b65fda62275f37441babeb433679052` (merged PR #69); created `codex/flamethrower-vfx` directly from it. Original `codex/level4-tower-art` remains intact at `c975659`.
+- Main already contains the tower artwork, deployment/retraction and first ribbon animation. Transferred only the remaining fuel-fire changes and final source sheets. Resolved adjacent additions by retaining main's level-four artwork loading, capture material support and pinned `shellLaunchPoint(sh)` behavior.
+- Runtime change: the narrow ribbon opens into expanding, rolling textured billows; distant size multiplier reaches 1.6 while retaining the narrow origin and forward visual reach. Upright billows share actor depth; adjacent texture frames crossfade. Cryojet retains its coolant effect. No simulation, combat, balance, PATH, GATE_D or platform-position edits.
+- Final runtime billow atlas: `assets/hunger-flame-billows-v1.png` (eight 128px cells). Separate full-jet source: `assets/hunger-flamethrower-jet-v1.png` (four 512×256 cells; emitter `(0,128)`), explicitly approved by the user. Smoke source: `assets/hunger-flamethrower-smoke-v1.png` (six 256px cells; centre `(128,128)`), birth/growth/dissipation. The new full-jet and smoke sheets are included as assets and are NOT yet wired into gameplay. Prompts, frame/provenance metadata and packers accompany all three sheets; heavy masters/references/previews remain ignored.
+- Observable criteria remain pending gameplay evidence: broad rolling silhouette with a narrow bright nozzle; continuous flow/sweep/fade; unchanged visual reach; fixed camera; readable enemies/towers in colour and grayscale. Separate rejection pass must check gaps, pops, cell edges, repetitive balls, occlusion and perspective. Source-art inspection/approval does not establish these gameplay properties.
+- Prepared regression checks include known-bad ribbon-only, frozen, constant-size and narrow variants. No tests, game captures or browser checks run for this transfer. Per `AGENTS.md`, the user runs them. Historical main results below do not validate this VFX change.
+- User-run commands from repository root:
+
+  ```sh
+  npm test
+  node tools/capture-organic-world.cjs --flamethrower-reference --before 3eec37f01b65fda62275f37441babeb433679052
+  open prototype/index.html
+  ```
+
+  The reference-board capture needs the local ignored photo `reports/generated/flamethrower/references/fire-1.png` (present in this workspace). Expected, not yet captured: `reports/generated/flamethrower-reference-fire/reference-before-after.png`, `{before,after}-{mire,ember}-fire-{base,A,B}-whole{,-gray}.png`, and full `flow/sweep/stop` game/zoom sheets. `--before` now applies to fire captures so the comparison can use this exact main base. Inspect whole and close views, full cycles and real `file://` console; second independent frame review remains required before merge.
+- Next: publish a draft PR, then await user-run results and frame review. No claim of visual completion.
+
+---
+Historical checkpoint inherited from main (PR #69 is now merged):
+
 # Iteration 3 — awaiting the user's visual verdict
 
 Checkout: `/private/tmp/hunger-level4-sprites`
