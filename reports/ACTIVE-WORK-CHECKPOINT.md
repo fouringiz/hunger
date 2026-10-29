@@ -1,3 +1,26 @@
+# Socket coverage test follow-up — 2026-10-29
+
+- User reran `node tests/infantry-art.cjs`: PASS. `npm test` FAILED later at
+  `tests/level4-seating.cjs`, Rifle heading 1, age 0: 83/112 colour-change samples.
+  Full suite remains unverified/failed; earlier focused Flamethrower test passed.
+- The coverage test inferred occlusion from RGB distance against the underlying
+  foundation. That is invalid when an opaque olive upper matches the foundation
+  colour. The actual filled bearing includes an opaque rectangle enclosing the
+  entire sampled ellipse; the user result is not proof of a physical hole.
+- Replaced RGB distance with alpha of the actual head/support/bearing rendering
+  with the foundation image omitted. Same sample ellipse, >128 alpha threshold
+  and >=75% coverage remain. No padding, recolouring, geometry changes or lowered
+  pass threshold. Exact old empty-socket renderer, raised-upper and detached-head
+  negatives still use the same checks. Upper/bearing and head/support contact
+  requirements are unchanged.
+- No runtime/assets modified. No tests/captures run by agent. User must rerun
+  `node tests/level4-seating.cjs` and `npm test`; existing game frames remain valid.
+- Howitzer native combat parity and incomplete visual-review status from earlier
+  checkpoints remain unchanged. Do not call the full suite or visual work passed.
+
+---
+Previous checkpoint:
+
 # Infantry art test follow-up — 2026-10-29
 
 - User reran `node tests/flamethrower-art.cjs`: PASS, including negative variants.

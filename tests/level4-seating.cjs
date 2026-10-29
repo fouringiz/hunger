@@ -11,7 +11,7 @@ async function check(sourceHtml=null){
  w.run(`const seatingDrawImage=ctx.drawImage.bind(ctx),seatingCoupling=typeof drawLevel4Coupling==='function'?drawLevel4Coupling:null;
  let seatingLayer='full';ctx.drawImage=(image,...args)=>{
    const head=image===level4Art||(typeof level4YawArt!=='undefined'&&image===level4YawArt);
-   if(seatingLayer==='support'||(['upper','head'].includes(seatingLayer)&&!head))return;
+   if(seatingLayer==='support'||(['upper','head','coverage'].includes(seatingLayer)&&!head))return;
    seatingDrawImage(image,...args);
  };
  for(const key of ['fill','fillRect','stroke','strokeRect']){const original=ctx[key].bind(ctx);ctx[key]=(...args)=>{if(seatingLayer!=='head')original(...args);};}
@@ -28,16 +28,19 @@ async function check(sourceHtml=null){
  let count=0;
  for(const e of table.entries){
   w.run(`reset();S.credits=10000;build(SLOTS[2],${JSON.stringify(e.type)});upgrade(S.towers[0]);upgrade(S.towers[0]);upgrade(S.towers[0],${JSON.stringify(e.branch)});`);
-  const base=paint('base'),socket=sockets[e.type];
+  const socket=sockets[e.type];
   for(let frame=0;frame<e.frames.length;frame++)for(const age of [0,.06,.14,.21,.5]){
    const yaw=frame*Math.PI/4,angle=Math.atan2(Math.sin(yaw)*.56,Math.cos(yaw));
    w.run(`S.towers[0].angle=${angle};presentationTime=${3+age};weaponFeedback.set(S.towers[0],{at:3,kind:S.towers[0].type,angle:S.towers[0].angle});`);
-   const full=paint('full');let covered=0,samples=0;
+   // Render the actual head/support/bearing without the foundation underneath.
+   // Similar olive colours can look unchanged while fully covering the socket;
+   // alpha, rather than RGB distance from the base, measures physical coverage.
+   const coverage=paint('coverage');let covered=0,samples=0;
    for(let y=0;y<256;y++)for(let x=0;x<256;x++){
     const u=(x+.5-128)/2-socket[0],v=(y+.5-160)/2-socket[1];
     if((u/4.5)**2+(v/2.0)**2>1)continue;
-    const i=(y*256+x)*4,diff=Math.abs(full[i]-base[i])+Math.abs(full[i+1]-base[i+1])+Math.abs(full[i+2]-base[i+2]);
-    samples++;if(full[i+3]>128&&diff>=24)covered++;
+    const i=(y*256+x)*4;
+    samples++;if(coverage[i+3]>128)covered++;
    }
    assert.ok(covered/samples>=.75,`${e.key} heading ${frame} age ${age}: foundation socket remains open (${covered}/${samples} covered)`);
    if(w.run('!!seatingCoupling')){

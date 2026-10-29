@@ -34,8 +34,12 @@ pre-correction evidence only.
 | Muzzle still follows the visible emitter after seating | Shared corrected pose; updated art contract and game close-ups pending. |
 | Towers/enemies remain readable in grayscale and the support does not dominate | Whole/color/grayscale views prepared; review pending. |
 
-The native regression checks changed pixels over the open socket and overlap of
-the actual atlas upper with its actual fixed bearing mask. It must reject both
+The native regression measures alpha over the socket in a separate render of
+head/support/bearing, omitting the foundation image. It checks overlap of the
+actual atlas upper with the fixed bearing and contact between projected heads
+and their shafts. RGB change from the base is not a valid occlusion measure:
+opaque olive upper pixels may match the foundation's colour. The original
+sample ellipse and 75% coverage requirement remain unchanged. It must reject both
 the exact prior renderer `e4d136f` and a raised upper over an otherwise closed
 socket. Passing it is not artistic acceptance.
 
