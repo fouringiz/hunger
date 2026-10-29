@@ -1244,6 +1244,8 @@ const level4Art = typeof Image === 'undefined' ? null : new Image();
 if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
 const flameJetArt = typeof Image === 'undefined' ? null : new Image();
 if (flameJetArt) flameJetArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-jet-v1.png';
+const flameSmokeArt = typeof Image === 'undefined' ? null : new Image();
+if (flameSmokeArt) flameSmokeArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-smoke-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -2352,6 +2354,55 @@ function drawFuelJetsLayer(){
   maskFuelJetBodies(g);
   ctx.save();ctx.globalAlpha=1;ctx.globalCompositeOperation='lighter';ctx.drawImage(fuelJetLayer,0,0,fuelJetLayer.width,fuelJetLayer.height,0,0,W,H);ctx.restore();return true;
 }
+// Presentation-owned smoke; never stored in S or advanced by simulation ticks.
+const FLAME_SMOKE={cell:256,anchor:[128,128],life:1.2,interval:.2,perTower:6,cap:96,alpha:.45};
+let flameSmokeScene=null,flameSmokePuffs=[],flameSmokeEmitters=new Map(),flameSmokeLayer=null;
+function flameSmokeReady(){return !!(flameSmokeArt&&flameSmokeArt.complete&&flameSmokeArt.naturalWidth>=1536&&flameSmokeArt.naturalHeight>=256);}
+function smokeTowerVisible(t){return S.towers.includes(t)&&t.type==='flamer'&&t.branch!=='B'&&!t.paused&&!t.selling&&constructionProgress(t)>=1;}
+function updateFlameSmoke(){
+  if(flameSmokeScene!==S){flameSmokeScene=S;flameSmokePuffs=[];flameSmokeEmitters=new Map();}
+  if(!flameSmokeReady()){flameSmokePuffs=[];flameSmokeEmitters.clear();return;}
+  const now=presentationTime;
+  flameSmokePuffs=flameSmokePuffs.filter(p=>smokeTowerVisible(p.tower)&&now>=p.at&&now-p.at<FLAME_SMOKE.life);
+  for(const [t]of flameSmokeEmitters)if(!smokeTowerVisible(t))flameSmokeEmitters.delete(t);
+  for(const t of S.towers){
+    if(!smokeTowerVisible(t)||!fuelJetFade(t))continue;
+    let emitter=flameSmokeEmitters.get(t);
+    if(!emitter){emitter={next:now};flameSmokeEmitters.set(t,emitter);}
+    if(now<emitter.next)continue;
+    // Never backfill a gap with invented historical emissions after a stalled render.
+    emitter.next=now+FLAME_SMOKE.interval;
+    if(flameSmokePuffs.length>=FLAME_SMOKE.cap||flameSmokePuffs.filter(p=>p.tower===t).length>=FLAME_SMOKE.perTower)continue;
+    const slot=Math.max(0,SLOTS.indexOf(t.slot)),tick=Math.floor(now/FLAME_SMOKE.interval),seed=slot*17+tick*13;
+    const u=.2+.7*((Math.sin(seed*1.37)+1)*.5),m=weaponMuzzle(t),st=tstats(t);
+    const dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;
+    flameSmokePuffs.push({tower:t,at:now,x:m.x+dx*u,y:m.y+dy*u,drift:Math.sin(seed*2.71)*6});
+  }
+}
+function flameSmokePose(p,now=presentationTime){
+  const age=Math.max(0,now-p.at),u=age/FLAME_SMOKE.life;
+  // Sheet frame 5 (zero-based 4) is a ring: blend 4 directly into 6 instead.
+  let cells;
+  if(u<.2)cells=[[0,1]];else if(u<.35)cells=[[1,1]];else if(u<.5)cells=[[2,1]];
+  else if(u<.65)cells=[[3,1]];else if(u<.9){const f=(u-.65)/.25;cells=[[3,1-f],[5,f]];}
+  else cells=[[5,1]];
+  return {x:p.x+p.drift*age,y:p.y-22*age,size:64,cells,alpha:Math.max(0,Math.min(1,age/.1,(FLAME_SMOKE.life-age)/.35))};
+}
+function drawFlameSmoke(){
+  updateFlameSmoke();if(!flameSmokePuffs.length)return false;
+  if(!flameSmokeLayer)flameSmokeLayer=document.createElement('canvas');
+  if(flameSmokeLayer.width!==canvas.width||flameSmokeLayer.height!==canvas.height){flameSmokeLayer.width=canvas.width;flameSmokeLayer.height=canvas.height;}
+  const g=flameSmokeLayer.getContext('2d');g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-over';g.clearRect(0,0,flameSmokeLayer.width,flameSmokeLayer.height);
+  g.setTransform(scale*dpr,0,0,scale*dpr,0,0);
+  for(const puff of flameSmokePuffs){
+    const p=flameSmokePose(puff),c=FLAME_SMOKE.cell,k=p.size/c;
+    for(const [frame,weight]of p.cells){g.globalAlpha=p.alpha*weight;g.drawImage(flameSmokeArt,frame*c,0,c,c,p.x-FLAME_SMOKE.anchor[0]*k,p.y-FLAME_SMOKE.anchor[1]*k,p.size,p.size);}
+  }
+  // Protect health bars; smoke itself remains above bodies, with one cap for ALL overlap.
+  g.globalAlpha=1;g.globalCompositeOperation='destination-out';g.fillStyle='#fff';
+  for(const body of S.enemies){if(body.dead||body.submerged||portalEntryOf(body)||body.hp>=body.maxHp)continue;const e=visualEnemy(body),w=e.r*2+6,y=e.y-enemyBodyHeight(e)-6;g.fillRect(e.x-w/2-1,y-1,w+2,6);}
+  ctx.save();ctx.globalCompositeOperation='source-over';ctx.globalAlpha=FLAME_SMOKE.alpha;ctx.drawImage(flameSmokeLayer,0,0,flameSmokeLayer.width,flameSmokeLayer.height,0,0,W,H);ctx.restore();return true;
+}
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon';
   drawTowerFoundation(t);drawTowerSupport(t,-14);
@@ -3439,6 +3490,7 @@ function draw() {
       ctx.fillStyle = '#7cffb2'; ctx.fillRect(e.x-w/2, barY, w*(e.hp/e.maxHp), 4); }
   }
   drawFuelJetsLayer();
+  drawFlameSmoke();
   if (DEBUG_HIT_BOUNDS) {
     // These rings mirror the geometry used by targeting/interception and shell impact checks.
     for (const e of S.enemies) {
