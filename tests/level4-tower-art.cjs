@@ -48,7 +48,7 @@ function check(r){
  }
 }
 const metadata=boot();
-assert.deepEqual(JSON.parse(metadata.run('JSON.stringify(LEVEL4_ART)')),table.entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle)})),'embedded disk-browser table must match the baked atlas');
+assert.deepEqual(JSON.parse(metadata.run('JSON.stringify(LEVEL4_ART)')),table.entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle),seats:e.frames.map(f=>f.bearing)})),'embedded disk-browser table must match the baked atlas');
 check(boot());
 function checkDispatch(r){for(const e of table.entries){setup(r,e);r.clear();r.run('drawTowerBody(S.towers[0]);');assert.ok(r.draws.some(d=>d.args[0].src.endsWith('hunger-level4-towers-v1.png')),'tower render must actually dispatch to its branch sprite');}}
 checkDispatch(boot());

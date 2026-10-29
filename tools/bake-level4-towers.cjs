@@ -36,6 +36,16 @@ async function bake(dir=path.join(ROOT,'reports/generated/level4/sources')){
    // Bottom peg is narrower than the upper assembly. Its bottom strip locates the mount, not silhouette midpoint.
    const strip=a.b-Math.max(3,Math.round((a.b-a.t)*.025)),xs=a.pixels.filter(n=>Math.floor(n/im.width)>=strip).map(n=>n%im.width);
    a.pivot=[(Math.min(...xs)+Math.max(...xs))/2,a.b];
+   // The peg is inserted into the socket, not an exposed load-bearing post.
+   // Locate the first persistent widening above its narrow lower shaft: the bearing's underside.
+   const rows=new Uint32Array(a.b-a.t+1);for(const n of a.pixels)rows[Math.floor(n/im.width)-a.t]++;
+   const shaft=[];for(let y=a.b-Math.round((a.b-a.t)*.055);y<=a.b-Math.round((a.b-a.t)*.02);y++)shaft.push(rows[y-a.t]);
+   shaft.sort((x,y)=>x-y);const shaftWidth=shaft[Math.floor(shaft.length/2)];let bearingY=null;
+   for(let y=a.b-Math.round((a.b-a.t)*.055);y>a.b-(a.b-a.t)*.3;y--){
+    if(rows[y-a.t]>=shaftWidth*1.5&&rows[y-a.t-1]>=shaftWidth*1.5){bearingY=y;break;}
+   }
+   if(bearingY===null)throw Error(spec.key+': cannot locate a bearing above the mounting peg');
+   a.bearing=[a.pivot[0],bearingY];
   }
   const h=Math.max(...parts.map(a=>a.b-a.t+1));
   let scale=Math.min(224/h,...parts.map(a=>Math.min(120/Math.max(1,a.pivot[0]-a.l),120/Math.max(1,a.r-a.pivot[0]))));
@@ -49,7 +59,7 @@ async function bake(dir=path.join(ROOT,'reports/generated/level4/sources')){
    const x=ANCHOR[0]-(a.pivot[0]-a.l)*scale,y=ANCHOR[1]-(a.pivot[1]-a.t)*scale;
    out.drawImage(tile,col*CELL+x,row*CELL+y,tw*scale,th*scale);
    const tip=spec.tips[col],muzzle=[x+tip[0]*tw*scale,y+tip[1]*th*scale];
-   frames.push({rect:[col*CELL,row*CELL,CELL,CELL],anchor:ANCHOR,muzzle:muzzle.map(v=>+v.toFixed(3)),sourceBox:[a.l,a.t,tw,th],sourcePivot:a.pivot});
+   frames.push({rect:[col*CELL,row*CELL,CELL,CELL],anchor:ANCHOR,bearing:[ANCHOR[0],+(y+(a.bearing[1]-a.t)*scale).toFixed(3)],muzzle:muzzle.map(v=>+v.toFixed(3)),sourceBox:[a.l,a.t,tw,th],sourcePivot:a.pivot});
   }
   entries.push({...spec,row,renderSize:+renderSize.toFixed(4),frames,source:path.relative(ROOT,file),sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')});
  }
@@ -57,7 +67,7 @@ async function bake(dir=path.join(ROOT,'reports/generated/level4/sources')){
  fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.png'),atlas.toBuffer('image/png'));
  fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),JSON.stringify(table,null,2)+'\n');
  // Small inline table: file:// requires no fetch of JSON or pixels from cross-origin canvases.
- const runtime=entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle)}));
+ const runtime=entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle),seats:e.frames.map(f=>f.bearing)}));
  fs.writeFileSync(path.join(ROOT,'reports/generated/level4/runtime-table.json'),JSON.stringify(runtime));
  console.log('Packed '+entries.length+' families; '+entries.reduce((n,e)=>n+e.frames.length,0)+' poses into 2048 x 2048.');
 }

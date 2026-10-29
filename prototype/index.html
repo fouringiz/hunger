@@ -1751,8 +1751,29 @@ function flamerPoint(angle,x,y=0) {
   const m=weaponProjection(angle);return {x:m.a*x+m.c*y,y:FLAMER_ART.mountY+m.b*x+m.d*y};
 }
 // Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
-const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":41.7003,"tips":[[230.887,132.571],[207.93,168.581],[126.052,191.26],[48.229,178.246],[24.298,122.932],[76.015,74.097],[132.224,59.702],[199.702,75.543]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":62.4044,"tips":[[244.335,192.36],[211.076,221.804],[128.727,229.695],[44.356,219.876],[35.331,194.764],[69.789,120.727],[127.455,114.342],[191.273,118.764]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":40,"tips":[[159.887,94.147],[160.37,95.245],[128.275,97.189],[91.435,100.351],[79,101.504],[85.517,53.278],[127.725,45.482],[178.098,54.871]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":42.2857,"tips":[[194.446,49.325],[204.612,106.354],[128.538,46.692],[65.118,49.325],[59.12,47.683],[90.717,26.015],[128,25.498],[178.96,28.25]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":40.7822,"tips":[[223.508,147.135],[206.573,156.865],[127.459,166.595],[47.816,157.108],[40.816,146],[79.616,59.568],[128,58.638],[200.638,61.514]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":41.3738,"tips":[[212.935,145.924],[199.198,161.639],[126.209,189.488],[64.012,163.612],[36.094,161.858],[86.275,57.643],[132.543,53.666],[184.296,55.697]]}];
-const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240],LEVEL4_MOUNT_Y=-7;
+const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":41.7003,"tips":[[230.887,132.571],[207.93,168.581],[126.052,191.26],[48.229,178.246],[24.298,122.932],[76.015,74.097],[132.224,59.702],[199.702,75.543]],"seats":[[128,215.155],[128,216.646],[128,215.652],[128,217.143],[128,216.149],[128,215.652],[128,216.149],[128,216.149]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":62.4044,"tips":[[244.335,192.36],[211.076,221.804],[128.727,229.695],[44.356,219.876],[35.331,194.764],[69.789,120.727],[127.455,114.342],[191.273,118.764]],"seats":[[128,223.636],[128,228],[128,225.091],[128,229.455],[128,223.636],[128,222.909],[128,224],[128,225.091]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":40,"tips":[[159.887,94.147],[160.37,95.245],[128.275,97.189],[91.435,100.351],[79,101.504],[85.517,53.278],[127.725,45.482],[178.098,54.871]],"seats":[[128,208.157],[128,208.157],[128,208.157],[128,207.608],[128,207.608],[128,206.51],[128,207.059],[128,206.51]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":42.2857,"tips":[[194.446,49.325],[204.612,106.354],[128.538,46.692],[65.118,49.325],[59.12,47.683],[90.717,26.015],[128,25.498],[178.96,28.25]],"seats":[[128,218.462],[128,217.923],[128,218.462],[128,219],[128,217.923],[128,220.615],[128,218.462],[128,221.154]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":40.7822,"tips":[[223.508,147.135],[206.573,156.865],[127.459,166.595],[47.816,157.108],[40.816,146],[79.616,59.568],[128,58.638],[200.638,61.514]],"seats":[[128,208.649],[128,220],[128,217.838],[128,219.459],[128,208.649],[128,204.865],[128,206.486],[128,204.865]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":41.3738,"tips":[[212.935,145.924],[199.198,161.639],[126.209,189.488],[64.012,163.612],[36.094,161.858],[86.275,57.643],[132.543,53.666],[184.296,55.697]],"seats":[[128,216.481],[128,220.223],[128,219.688],[128,220.223],[128,210.601],[128,211.136],[128,212.205],[128,212.205]]}];
+const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240];
+// A filled, stationary bearing closes the empty foundation socket. Its near lip hides the inserted peg.
+// Socket centres are measured on the foundation art drawn at 44 x 34, independently of upper-frame anchors.
+const LEVEL4_SOCKETS={turret:{x:0,y:-5.5},voltaic:{x:0,y:-5.5},cannon:{x:0,y:-3.2},flamer:{x:0,y:-6}};
+function drawLevel4Coupling(t,front=false){
+  const {x,y}=LEVEL4_SOCKETS[t.type];
+  ctx.save();ctx.translate(x,y);
+  if(!front){
+    ctx.fillStyle='#303b34';ctx.beginPath();ctx.ellipse(0,2,7.2,2.7,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#536052';ctx.fillRect(-7.2,-3,14.4,5);
+    ctx.fillStyle='#76816b';ctx.strokeStyle='#27332c';ctx.lineWidth=.8;
+    ctx.beginPath();ctx.ellipse(0,-3,7.2,2.7,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#9a9c80';ctx.lineWidth=.6;ctx.beginPath();ctx.ellipse(0,-3,5.8,1.9,0,Math.PI,Math.PI*1.85);ctx.stroke();
+  }else{
+    // Near lip occludes the bottom of the upper bearing. It never follows yaw or recoil.
+    ctx.fillStyle='#46513f';ctx.strokeStyle='#27332c';ctx.lineWidth=.7;
+    ctx.beginPath();ctx.moveTo(-7.2,-3);ctx.bezierCurveTo(-4,0,4,0,7.2,-3);ctx.lineTo(7.2,2);ctx.bezierCurveTo(4,5,-4,5,-7.2,2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='#8a8e75';ctx.fillRect(-5.6,.9,1.1,.8);ctx.fillRect(4.5,.9,1.1,.8);
+  }
+  ctx.restore();
+}
+
 let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap();
 function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
 function level4Ready(){return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===2048&&level4Art.naturalHeight===2048);}
@@ -1772,9 +1793,12 @@ function level4Pose(t,angle=t.angle,recoil=true){
   const strength=t.type==='cannon'?(t.branch==='A'?5.5:2.5):(t.branch==='B'?3.5:1.2);
   const kick=recoil&&!t.paused&&!t.selling&&['turret','cannon'].includes(t.type)&&age>=0&&age<life?Math.sin(Math.PI*age/life)*strength:0;
   const dx=-Math.cos(angle)*kick,dy=-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
-  const tip=spec.tips[frame],scale=spec.size/LEVEL4_CELL;
-  return {spec,frame,age,kick,dx,dy,size:spec.size,x:-LEVEL4_ANCHOR[0]*scale+dx,y:LEVEL4_MOUNT_Y-LEVEL4_ANCHOR[1]*scale+dy,
-    muzzle:{x:(tip[0]-LEVEL4_ANCHOR[0])*scale+dx,y:LEVEL4_MOUNT_Y+(tip[1]-LEVEL4_ANCHOR[1])*scale+dy}};
+  const tip=spec.tips[frame],seat=spec.seats[frame],scale=spec.size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
+  // Seat the broad bearing on the socket, not the bottom of the narrow insertion peg.
+  const mountY=socket.y-1,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
+  return {spec,frame,age,kick,dx,dy,seat,bodyY,size:spec.size,
+    x:socket.x-seat[0]*scale+dx,y:mountY-seat[1]*scale+dy,
+    muzzle:{x:socket.x+(tip[0]-seat[0])*scale+dx,y:mountY+(tip[1]-seat[1])*scale+dy}};
 }
 function level4Muzzle(t,angle=t.angle,recoil=true){
   const p=level4Pose(t,angle,recoil);return p?{x:t.x+p.muzzle.x,y:t.y+p.muzzle.y}:null;
@@ -1801,15 +1825,15 @@ function drawLevel4Mechanism(t,p){
     const charged=Number.isFinite(p.age)?Math.min(1,p.age/Math.max(.1,tstats(t).interval)):0;
     ctx.strokeStyle='#b9f5ff';ctx.lineWidth=.8;
     // Successive bands climb the central coil between actual discharges.
-    for(let i=0;i<4;i++)if(charged>(i+1)/5){ctx.globalAlpha=.13;ctx.beginPath();ctx.ellipse(p.dx,LEVEL4_MOUNT_Y-18-i*5+p.dy,5.3,1.5,0,0,Math.PI*2);ctx.stroke();}
+    for(let i=0;i<4;i++)if(charged>(i+1)/5){ctx.globalAlpha=.13;ctx.beginPath();ctx.ellipse(p.dx,p.bodyY-18-i*5+p.dy,5.3,1.5,0,0,Math.PI*2);ctx.stroke();}
     if(p.age>=0&&p.age<.12){ctx.globalAlpha=.65*(1-p.age/.12);ctx.lineWidth=1.2;
-      for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*10.5,LEVEL4_MOUNT_Y-34);ctx.lineTo(side*5.5,LEVEL4_MOUNT_Y-38+Math.sin(presentationTime*50)*1.5);ctx.lineTo(x,y);ctx.stroke();}}
+      for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(side*10.5,p.bodyY-34);ctx.lineTo(side*5.5,p.bodyY-38+Math.sin(presentationTime*50)*1.5);ctx.lineTo(x,y);ctx.stroke();}}
   }else if(p.spec.key==='prism'&&recent){
     ctx.globalAlpha=.7*(1-p.age/.28);ctx.fillStyle='#ffe9a6';ctx.beginPath();ctx.arc(x,y,1.3+Math.sin(Math.min(1,p.age/.12)*Math.PI)*1.2,0,Math.PI*2);ctx.fill();
   }else if(p.spec.key==='cluster'&&p.age>=0&&p.age<.5){
     // Indexing marks rotate on the visible side magazine following a single capsule launch.
     const phase=deploymentStep(p.age,.06,.42)*Math.PI*2/5;ctx.strokeStyle='#9c8a63';ctx.globalAlpha=.5;ctx.lineWidth=.7;
-    for(let i=0;i<3;i++){const a=phase+i*2.1;ctx.beginPath();ctx.moveTo(15,LEVEL4_MOUNT_Y-15);ctx.lineTo(15+Math.cos(a)*2,LEVEL4_MOUNT_Y-15+Math.sin(a)*4);ctx.stroke();}
+    for(let i=0;i<3;i++){const a=phase+i*2.1;ctx.beginPath();ctx.moveTo(15+p.dx,p.bodyY-15+p.dy);ctx.lineTo(15+p.dx+Math.cos(a)*2,p.bodyY-15+p.dy+Math.sin(a)*4);ctx.stroke();}
   }else if(hot&&p.frame<=4){
     const cryo=p.spec.key==='cryojet';ctx.strokeStyle=cryo?'#c4eff4':'#ffc16b';ctx.lineWidth=cryo?.8:1.2;
     ctx.globalAlpha=cryo?.3:.45+.13*Math.sin(S.time*28);ctx.beginPath();ctx.ellipse(x,y,cryo?2:1.6,2.3,0,0,Math.PI*2);ctx.stroke();
@@ -1830,11 +1854,12 @@ function drawLevel4Tower(t,progress=1){
   if(feedback&&e&&feedback.at>=e.at)upgrade=1;
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
-  ctx.save();if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,118);ctx.clip();}
+  drawLevel4Coupling(t);
+  ctx.save();ctx.beginPath();ctx.rect(-64,-110,128,110+LEVEL4_SOCKETS[t.type].y+4);ctx.clip();
   ctx.translate(0,drop);
   try{ctx.drawImage(level4Art,p.frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();return false;}
   if(open>=1)drawLevel4Mechanism(t,p);
-  ctx.restore();return true;
+  ctx.restore();drawLevel4Coupling(t,true);return true;
 }
 
 function weaponMuzzle(t,angle=t.angle) {

@@ -14,7 +14,9 @@ is preserved at `references/towers/level4-selected-approved-v1.png`.
   Tesla and the vertical Cluster mortar each have one fixed-camera pose.
 - `../../tools/bake-level4-towers.cjs`: connected alpha-object packing; ignores
   disconnected debris, locates the bottom peg, uses one scale per family, keeps
-  a common mount at cell (128, 240). No game renderer is executed by the bake.
+  the insertion-peg anchor at cell (128, 240), and separately locates the broad
+  bearing above the peg for each pose. The renderer seats that bearing on the
+  foundation and occludes the buried peg with the near socket lip. No game renderer is executed by the bake.
   Source PNGs are under ignored `reports/generated/level4/sources/` in the authoring
   checkout. Exploratory sheets are excluded from Git.
 - Rebuild with `node tools/bake-level4-towers.cjs [source directory]`. The tool
@@ -48,16 +50,25 @@ No combat, targeting, balance, PATH, GATE_D or platform-position edits. No runti
 canvas pixel reads or JSON fetch. No simulation restamp is required by the
 intended scope; actual fingerprint parity is part of the user-run capture.
 
+## Seating follow-up
+
+The user reported tests passing, then supplied four game close-ups showing an
+open socket and a suspended upper assembly. The previous coordinate contracts
+did not test physical bearing contact. A fixed filled bearing, per-pose bearing
+anchors and near-lip occlusion are now prepared; the atlas pixels and layout are
+unchanged. New native regression and before/after capture are prepared, not run.
+See `../../reports/level4-seating.md` for criteria, evidence and commands.
+
 ## Observable criteria and evidence status
 
 | Criterion | Evidence/status |
 | --- | --- |
 | Each branch preserves the selected design and a distinct silhouette | Approved concept; final atlas opened and inspected. In-game scale/perspective/readability pending. |
-| Fixed base and upright axes throughout a complete turn | Implemented with separate base and directional upper sprites; user-run art contract and full-turn capture pending. |
+| Fixed base, seated upper and upright axes throughout a complete turn | Prior tests passed per user, but game close-ups show suspension. Bearing-contact correction and new regression pending user verification. |
 | Muzzle, flash, beam and stream attached throughout turn/recoil | Per-frame annotations and shared pose; contract and close-up game frames pending. |
 | Complete attack, upgrade, pause and sale cycles have no gaps/pops/sliding | Implemented; actual-game cycles pending. |
 | Towers/enemies remain the most contrasting elements, including grayscale | Whole-frame and grayscale capture prepared; no gameplay evidence yet. |
-| Combat remains identical | Only draw-side code changed by diff inspection; fingerprints and live-tick parity not yet run. |
+| Combat remains identical | User-run Machine Gun capture recorded identical fingerprints and 151 live ticks in Mire/Ember before the seating follow-up; follow-up parity pending. |
 | Disk-browser game opens without SecurityError | Pixel-free path prepared; actual `file://` console check pending. |
 
 Known limitations to inspect critically: eight discrete headings may visibly step;

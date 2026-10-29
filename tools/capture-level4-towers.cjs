@@ -3,7 +3,7 @@
 // node tools/capture-organic-world.cjs --level4 machine-gun
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),BASE='2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8'));
+const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),BASE=SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8'));
 const REFERENCES=[[30,94,354,337],[424,98,346,336],[804,75,329,360],[1174,90,346,344],[28,491,359,391],[427,553,342,331],[794,510,365,378],[1170,505,352,383]];
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
 function save(c,file){fs.writeFileSync(file+'.png',c.toBuffer('image/png'));}
@@ -40,9 +40,9 @@ async function capture(spec,zone,label,sourceHtml,out){
  return {fingerprint,signatures};
 }
 async function main(){
- const arg=process.argv.indexOf('--level4'),key=process.argv[arg+1]||'machine-gun',spec=TABLE.entries.find(e=>e.key===key);
+ const arg=process.argv.indexOf(SEATING?'--level4-seat':'--level4'),key=process.argv[arg+1]||'machine-gun',spec=TABLE.entries.find(e=>e.key===key);
  if(!spec)throw Error('Choose one branch: '+TABLE.entries.map(e=>e.key).join(', '));
- const out=path.join(ROOT,'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
+ const out=path.join(ROOT,SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
  const before=execFileSync('git',['show',BASE+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),results={};
  for(const zone of ['mire','ember']){
   const a=await capture(spec,zone,'before',before,out),b=await capture(spec,zone,'after',null,out);

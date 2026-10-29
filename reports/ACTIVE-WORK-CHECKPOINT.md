@@ -1,3 +1,35 @@
+# Level 4 seating follow-up — prepared, verification pending (2026-10-29)
+
+- User reports the previously requested tests passed. Original Machine Gun native
+  capture results exist for Mire/Ember: rules `9d3c412e`, source `5750d1fe`, 151 live
+  ticks matched. These results precede this correction and do not validate it.
+- User supplied Tesla, Howitzer, Machine Gun and Plasma close-ups showing a narrow
+  exposed peg over a visibly empty socket. Opened the existing native Machine Gun
+  reference/game comparison and turn/gray strip; they show the same attachment issue.
+  Previous coordinate-only contracts missed physical bearing contact.
+- Prepared one visual iteration: seat the upper by its wide bearing rather than
+  the insertion-peg end; hide the inserted peg behind the near lip; fill the socket with a
+  stationary bearing and draw its near lip over the junction. The wide support
+  overlaps the recoiling upper. Sizes, headings, platforms and combat are unchanged.
+- Per-pose bearing coordinates are added to metadata/inline table and the bake.
+  Atlas PNG pixels/layout are unchanged (no PNG diff); no asset cache rename needed.
+  Existing shot origins use the adjusted upper pose automatically.
+- Prepared, NOT RUN: `node tests/level4-seating.cjs`, updated `node tests/level4-tower-art.cjs`,
+  `npm test`. Native seating check covers all 50 views at five recoil ages and must
+  reject the exact uploaded bad renderer (`e4d136f`) plus a deliberately raised upper.
+- Prepared actual-game comparison from the bad uploaded renderer, one branch at
+  a time: `node tools/capture-organic-world.cjs --level4-seat machine-gun` (also
+  rifle/tesla/prism/howitzer/cluster/plasma/cryojet). Output is separate from the
+  original capture at `reports/generated/level4-seating/<branch>/`.
+- Source before-evidence and review criteria: `reports/level4-seating.md`.
+  No corrected game frames or browser evidence exist yet. Do not mark this fixed
+  or visually verified. Next: user runs the prepared checks after upload,
+  then inspect complete turn/attack/upgrade/sale cycles, whole and close views,
+  grayscale hierarchy and disk-browser console. Letter badges are unchanged.
+
+---
+Previous checkpoint:
+
 # Level 4 tower sprites — integration prepared, checks pending (2026-10-29)
 
 - User selected Machine Gun C, Rifle C, Tesla C, Prism A, Howitzer A, Cluster A,

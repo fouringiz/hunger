@@ -89,4 +89,4 @@ async function main(){
   console.log('PASS '+zone+': '+(motion?180:90)+' actual renderer frames, pause/resume and no stone obstruction of build slots. '+path.join(dir,'scene.png'));
 }
 module.exports={loadWorld};
-if(require.main===module)(process.argv.includes('--level4')?require('./capture-level4-towers.cjs').main():process.argv.some(a=>a.startsWith('--flamethrower'))?require('./capture-flamethrower.cjs').main():main()).catch(e=>{console.error(e);process.exitCode=1;});
+if(require.main===module)((process.argv.includes('--level4')||process.argv.includes('--level4-seat'))?require('./capture-level4-towers.cjs').main():process.argv.some(a=>a.startsWith('--flamethrower'))?require('./capture-flamethrower.cjs').main():main()).catch(e=>{console.error(e);process.exitCode=1;});
