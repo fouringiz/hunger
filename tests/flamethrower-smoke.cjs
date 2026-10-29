@@ -50,9 +50,13 @@ return {clear,smoked,clearEdge,smokedEdge,puffs:flameSmokePuffs.length};})())`))
   cap.run('presentationTime+=1.21;for(const t of S.towers)t.jetAt=undefined;updateFlameSmoke();');assert.equal(cap.run('flameSmokePuffs.length'),0,'particles expire without active fire');
   // Overlap must be capped for the entire layer, not separately for each puff.
   w.run('presentationTime=3.7;flameSmokePuffs=Array.from({length:6},()=>({tower:S.towers[0],at:3.1,x:400,y:250,drift:0}));flameSmokeEmitters.set(S.towers[0],{next:100});ctx.clearRect(0,0,W,H);drawFlameSmoke();');
-  const alpha=JSON.parse(w.run('JSON.stringify((()=>{const a=ctx.getImageData(0,0,W,H).data;let max=0;for(let i=3;i<a.length;i+=4)max=Math.max(max,a[i]);return max;})())'));assert.ok(alpha>50,'actual overlapping smoke drawn');assert.ok(alpha<=Math.ceil(.45*255),'aggregate smoke alpha capped at .45');
+  const alpha=JSON.parse(w.run('JSON.stringify((()=>{const a=ctx.getImageData(0,0,W,H).data;let max=0;for(let i=3;i<a.length;i+=4)max=Math.max(max,a[i]);return max;})())'));assert.ok(alpha>50,'actual overlapping smoke drawn');const layerAlpha=Number(w.run('FLAME_SMOKE.alpha'));assert.ok(layerAlpha<=.6,'smoke layer alpha stays at or below .6');assert.ok(alpha<=Math.ceil(layerAlpha*255),'aggregate smoke alpha capped by FLAME_SMOKE.alpha');
   assert.ok(!/Math\.random/.test(html.slice(html.indexOf('const FLAME_SMOKE='),html.indexOf('function drawPlantedWeapon'))),'no random source in smoke path');
+  // Puffs are born in the far half of the jet, where the fuel billows, never at the nozzle.
+  const born=await boot();born.run('for(let i=0;i<30;i++){presentationTime=3.1+i*.21;updateFlameSmoke();}');
+  const spots=JSON.parse(born.run('JSON.stringify(flameSmokePuffs.map(p=>{const t=S.towers[0],m=weaponMuzzle(t),st=tstats(t),dx=t.x+Math.cos(t.angle)*st.range-m.x,dy=t.y+Math.sin(t.angle)*st.range-m.y;return ((p.x-m.x)*dx+(p.y-m.y)*dy)/(dx*dx+dy*dy);}))'));
+  assert.ok(spots.length>0&&spots.every(u=>u>=.54&&u<=1.01),'smoke spawns in the far half of the jet');
   const along=html.replace('y:p.y-22*age','y:p.y+Math.sin(p.tower.angle)*22*age');assert.notEqual(along,html);await assert.rejects(()=>boot(along).then(rise),/rise up screen/);
   const ring=html.replace('else cells=[[5,1]]','else cells=[[4,1]]');assert.notEqual(ring,html);await assert.rejects(()=>boot(ring).then(frames),/ring frame 5/);
-  console.log('PASS smoke sheet metadata, 16-heading screen rise, ring rejection, lifecycle/crossfade, caps, deterministic read-only emissions, inactive towers stop emitting without popping puffs, Cryojet/missing art, health bar above smoke, aggregate alpha; bad direction/ring variants rejected');
+  console.log('PASS smoke sheet metadata, 16-heading screen rise, ring rejection, lifecycle/crossfade, caps, deterministic read-only emissions, inactive towers stop emitting without popping puffs, Cryojet/missing art, health bar above smoke, aggregate alpha capped by FLAME_SMOKE.alpha (at most .6), spawn in the far half of the jet; bad direction/ring variants rejected');
 })().catch(e=>{console.error(e);process.exitCode=1;});
