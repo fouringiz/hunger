@@ -15,7 +15,7 @@ async function main(){
   {key:'cryojet',box:[1064,589,450,287],width:38,pivot:[1239,736],tip:[1488,736]}
  ];
  const entries=specs.map((s,i)=>{
-  const [x,y,w,h]=s.box,scale=Math.min(224/w,224/h),dx=128-(s.pivot[0]-x)*scale,dy=neutral?8:128-(s.pivot[1]-y)*scale;
+  const [x,y,w,h]=s.box,scale=Math.min(224/w,224/h,120/(s.pivot[0]-x),120/(x+w-s.pivot[0]),...(neutral?[]:[112/(s.pivot[1]-y),112/(y+h-s.pivot[1])])),dx=128-(s.pivot[0]-x)*scale,dy=neutral?8:128-(s.pivot[1]-y)*scale;
   const rect=[i%3*256,Math.floor(i/3)*256,256,256];
   g.drawImage(im,x,y,w,h,rect[0]+dx,rect[1]+dy,w*scale,h*scale);
   const bearing=neutral?[128,dy+(s.pivot[1]-y)*scale]:[128,128];

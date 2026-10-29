@@ -9,11 +9,16 @@ const sockets={turret:[0,-5.5],voltaic:[0,-5.5],cannon:[0,-3.2],flamer:[0,-6]};
 async function check(sourceHtml=null){
  const w=await loadWorld({sourceHtml});
  w.run(`const seatingDrawImage=ctx.drawImage.bind(ctx),seatingCoupling=typeof drawLevel4Coupling==='function'?drawLevel4Coupling:null;
- let seatingLayer='full';ctx.drawImage=(image,...args)=>{if(seatingLayer!=='upper'||image===level4Art)seatingDrawImage(image,...args);};
+ let seatingLayer='full';ctx.drawImage=(image,...args)=>{
+   const head=image===level4Art||(typeof level4YawArt!=='undefined'&&image===level4YawArt);
+   if(seatingLayer==='support'||(['upper','head'].includes(seatingLayer)&&!head))return;
+   seatingDrawImage(image,...args);
+ };
+ for(const key of ['fill','fillRect','stroke','strokeRect']){const original=ctx[key].bind(ctx);ctx[key]=(...args)=>{if(seatingLayer!=='head')original(...args);};}
  drawLevel4Mechanism=()=>{};`);
  function paint(kind){
   w.run(`seatingLayer=${JSON.stringify(kind)};ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.globalAlpha=1;ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.setTransform(2,0,0,2,128,160);
-   if(seatingCoupling)drawLevel4Coupling=seatingLayer==='upper'?()=>{}:seatingCoupling;
+   if(seatingCoupling)drawLevel4Coupling=['upper','head','support'].includes(seatingLayer)?()=>{}:seatingCoupling;
    if(seatingLayer==='base'){
     if(S.towers[0].type==='flamer')ctx.drawImage(flamerArt,...FLAMER_ART.rects[0],-22,-17,44,34);
     else lowBuildingSprite(S.towers[0].type==='cannon'?1:0,-22,-17,44,34);
@@ -41,6 +46,11 @@ async function check(sourceHtml=null){
     for(let i=3;i<upper.length;i+=4)if(upper[i]>=64&&bearing[i]>=64)overlap++;
     assert.ok(overlap>=3,`${e.key} heading ${frame} age ${age}: upper bearing floats above the fixed socket (${overlap} contact pixels)`);
    }
+   if(w.run("typeof level4Pose(S.towers[0]).projected!=='undefined'&&level4Pose(S.towers[0]).projected")){
+    const head=paint('head'),support=paint('support');let joint=0;
+    for(let i=3;i<head.length;i+=4)if(head[i]>=64&&support[i]>=64)joint++;
+    assert.ok(joint>=3,`${e.key} heading ${frame} age ${age}: projected head floats above its upright support (${joint} contact pixels)`);
+   }
    count++;
   }
  }
@@ -55,6 +65,8 @@ async function main(){
  const current=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8');
  const floating=current.replace('const mountY=socket.y-1,','const mountY=socket.y-11,');assert.notEqual(floating,current);
  await assert.rejects(()=>check(floating),/upper bearing floats above/);
- console.log('PASS level-4 seating: '+count+' authored view/recoil states, filled sockets, physical upper/bearing contact; exact old and raised-upper variants rejected');
+ const detached=current.replace('ctx.translate(p.originX,p.originY+z);','ctx.translate(p.originX,p.originY-20+z);');assert.notEqual(detached,current);
+ await assert.rejects(()=>check(detached),/projected head floats above/);
+ console.log('PASS level-4 seating: '+count+' authored view/recoil states, filled sockets, physical upper/bearing contact; exact old, raised-upper and detached-head variants rejected');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

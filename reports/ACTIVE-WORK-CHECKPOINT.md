@@ -1,3 +1,30 @@
+# PR #69 review follow-up — implementation prepared, verification pending
+
+- Separate base-change iteration saved in `acb6218`: one neutral upper for
+  Voltaic levels 1–3, exact shared square base and fixed bearing through Tesla/Prism.
+- Separate rotation iteration: six new overhead upper sprites, continuously
+  projected through `weaponProjection`; no discrete yaw selection. Upright support
+  and layered side depth retain seating. Tesla/Cluster remain stationary. The
+  muzzle uses the head transform; artillery launch points remain pinned in flight.
+- Sprites packed/opened as isolated assets, no runtime pixel reads introduced.
+  No changes to combat/balance/PATH/GATE_D/platform positions or simulation.
+- Prepared tests: Voltaic shared foundation/origin/fallback, level-4 projected
+  geometry/muzzle/recoil and negative quantized-yaw case, existing native contact
+  regression adapted for both atlases. NONE RUN by agent, per user agreement.
+- Prepared actual-game captures, one issue per command: `--voltaic-base tesla`
+  (`a434efa` baseline) and `--level4-yaw machine-gun` (`acb6218` baseline).
+  Yaw captures save 361 frames for a complete turn plus full attack/upgrade/sale
+  cycles, whole views and grayscale. No new captures exist yet.
+- Observable criteria, exact commands, expected before/after paths and review
+  risks: `reports/level4-review-followup.md`. Tests and actual file:// browser
+  console check belong to user. No visual success or art acceptance claimed.
+- Next: user runs checks and supplies game frames; inspect before/after whole and
+  close, full cycles, contrast/grayscale and perspective. Independent second
+  visual review required before merge. PR remains open for the user's review.
+
+---
+Previous checkpoint:
+
 # Voltaic base review finding — prepared, checks pending (2026-10-29)
 
 - PR #69: user requests one neutral upper for Voltaic levels 1–3 on the exact

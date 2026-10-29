@@ -6,12 +6,14 @@ is preserved at `references/towers/level4-selected-approved-v1.png`.
 
 ## Assets and reproduction
 
-- `../hunger-level4-towers-v1.png`: final 2048 × 2048 transparent atlas, 8 rows,
+- `../hunger-level4-towers-v1.png`: original 2048 × 2048 transparent atlas, 8 rows,
   8 cells per row, 256 px per cell. Rows follow the selection order above.
 - `../hunger-level4-towers-v1.frames.json`: source hashes, source bounds, per-family
   scale, mount pivots and annotated muzzle points.
-- Six directional families have eight poses E / SE / S / SW / W / NW / N / NE.
-  Tesla and the vertical Cluster mortar each have one fixed-camera pose.
+- Original six directional families have eight archived poses E / SE / S / SW / W / NW / N / NE.
+  Only Tesla and the vertical Cluster mortar now consume this atlas at runtime.
+  Six aimed families use the new `hunger-level4-yaw-v1.png` atlas (see
+  `tower-review-art-v1.md`) and continuous `weaponProjection` instead.
 - `../../tools/bake-level4-towers.cjs`: connected alpha-object packing; ignores
   disconnected debris, locates the bottom peg, uses one scale per family, keeps
   the insertion-peg anchor at cell (128, 240), and separately locates the broad
@@ -28,10 +30,13 @@ is preserved at `references/towers/level4-selected-approved-v1.png`.
 
 ## Implemented presentation
 
-Level 4 selects a dedicated upper assembly by its existing specialization. The
-44 × 34 foundation remains stationary; authored views turn around a common mount
-without rotating upright parts in the canvas plane. Existing levels 1–3 retain
-their rendering. Loading/failed-image states retain the previous fallback.
+Level 4 selects a dedicated upper assembly by specialization. The 44 × 34
+foundation remains stationary. Six aimed heads use an overhead source with the
+same continuous ground-plane projection as levels 1–3, with a shallow layered
+side and an upright support shaft. Head and muzzle share one transform. Upright
+Tesla/Cluster retain their fixed-camera source. Voltaic levels 1–3 now use the new
+neutral upper on the exact square foundation shared with Tesla/Prism. Missing
+assets retain the pixel-free fallback. These follow-ups await user-run checks.
 
 Machine Gun: rapid shallow recoil and animated barrel-face marks. Rifle: slower,
 deeper recoil. Howitzer: heavy recoil and recovery. Cluster: vertical recoil and
@@ -71,11 +76,10 @@ See `../../reports/level4-seating.md` for criteria, evidence and commands.
 | Combat remains identical | User-run Machine Gun capture recorded identical fingerprints and 151 live ticks in Mire/Ember before the seating follow-up; follow-up parity pending. |
 | Disk-browser game opens without SecurityError | Pixel-free path prepared; actual `file://` console check pending. |
 
-Known limitations to inspect critically: eight discrete headings may visibly step;
-generated views can have small shape/lighting differences; the source peg and
-muzzle annotations need close-up confirmation; rear-view emitters may be occluded
-by their housing; the golden Prism lens may dominate nearby enemies in grayscale.
-Mechanical motion is layered over static directional sprites, not an authored
+Review risks: the six new overhead sources must retain approved identities
+after projection; the shallow side depth, support contact and muzzle annotations
+need close-up confirmation throughout a full turn; the golden Prism lens may dominate nearby enemies in grayscale.
+Mechanical motion is layered over continuously projected sprites, not an authored
 frame-by-frame animation of every piston or armor plate.
 
 ## User-run checks (from repository root)
@@ -83,9 +87,12 @@ frame-by-frame animation of every piston or armor plate.
 ```sh
 node tests/level4-tower-art.cjs
 npm test
-node tools/capture-organic-world.cjs --level4 machine-gun
+node tools/capture-organic-world.cjs --voltaic-base tesla
+node tools/capture-organic-world.cjs --level4-yaw machine-gun
 ```
 
+Use the review follow-up instructions in `../../reports/level4-review-followup.md`.
+The original integration commands/evidence below remain historical.
 Run one branch at a time, inspect it, then move to the next. Replace `machine-gun`
 with `rifle`, `tesla`, `prism`, `howitzer`, `cluster`, `plasma`, or `cryojet`.
 The actual-game capture compares against commit `2308926`, independently in Mire

@@ -42,7 +42,7 @@ for (const image of [true,false]) {
   assert.ok(rt.calls.arcs.some(([, ,r])=>r===3.5),'fallback keeps the neutral discharge terminal');
 }
 const loaded=runtime();
-loaded.run('voltaicNeutralArt.complete=true;voltaicNeutralArt.naturalWidth=256;lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4Art.complete=true;level4Art.naturalWidth=level4Art.naturalHeight=2048;');
+loaded.run('voltaicNeutralArt.complete=true;voltaicNeutralArt.naturalWidth=256;lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4YawArt.complete=true;level4YawArt.naturalWidth=768;level4YawArt.naturalHeight=512;level4Art.complete=true;level4Art.naturalWidth=level4Art.naturalHeight=2048;');
 const neutral=loaded.calls.images.find(im=>im.src.endsWith('hunger-voltaic-neutral-v1.png'));
 const low=loaded.calls.images.find(im=>im.src.endsWith('hunger-low-buildings-v3.png'));
 let foundation;

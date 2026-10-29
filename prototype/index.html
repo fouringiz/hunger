@@ -1242,6 +1242,8 @@ const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
 if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v1.png';
+const level4YawArt = typeof Image === 'undefined' ? null : new Image();
+if (level4YawArt) level4YawArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-yaw-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -1754,6 +1756,7 @@ function flamerPoint(angle,x,y=0) {
 }
 // Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
 const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":41.7003,"tips":[[230.887,132.571],[207.93,168.581],[126.052,191.26],[48.229,178.246],[24.298,122.932],[76.015,74.097],[132.224,59.702],[199.702,75.543]],"seats":[[128,215.155],[128,216.646],[128,215.652],[128,217.143],[128,216.149],[128,215.652],[128,216.149],[128,216.149]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":62.4044,"tips":[[244.335,192.36],[211.076,221.804],[128.727,229.695],[44.356,219.876],[35.331,194.764],[69.789,120.727],[127.455,114.342],[191.273,118.764]],"seats":[[128,223.636],[128,228],[128,225.091],[128,229.455],[128,223.636],[128,222.909],[128,224],[128,225.091]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":40,"tips":[[159.887,94.147],[160.37,95.245],[128.275,97.189],[91.435,100.351],[79,101.504],[85.517,53.278],[127.725,45.482],[178.098,54.871]],"seats":[[128,208.157],[128,208.157],[128,208.157],[128,207.608],[128,207.608],[128,206.51],[128,207.059],[128,206.51]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":42.2857,"tips":[[194.446,49.325],[204.612,106.354],[128.538,46.692],[65.118,49.325],[59.12,47.683],[90.717,26.015],[128,25.498],[178.96,28.25]],"seats":[[128,218.462],[128,217.923],[128,218.462],[128,219],[128,217.923],[128,220.615],[128,218.462],[128,221.154]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":40.7822,"tips":[[223.508,147.135],[206.573,156.865],[127.459,166.595],[47.816,157.108],[40.816,146],[79.616,59.568],[128,58.638],[200.638,61.514]],"seats":[[128,208.649],[128,220],[128,217.838],[128,219.459],[128,208.649],[128,204.865],[128,206.486],[128,204.865]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":41.3738,"tips":[[212.935,145.924],[199.198,161.639],[126.209,189.488],[64.012,163.612],[36.094,161.858],[86.275,57.643],[132.543,53.666],[184.296,55.697]],"seats":[[128,216.481],[128,220.223],[128,219.688],[128,220.223],[128,210.601],[128,211.136],[128,212.205],[128,212.205]]}];
+const LEVEL4_YAW=[{"key":"machine-gun","rect":[0,0,256,256],"size":49.18651685393259,"bearing":[128,128],"muzzle":[244,128.44444444444446]},{"key":"rifle","rect":[256,0,256,256],"size":77.94626865671641,"bearing":[128,128],"muzzle":[245.5,127.16666666666666]},{"key":"prism","rect":[512,0,256,256],"size":41.76313725490196,"bearing":[128,128],"muzzle":[214.53846153846155,128.5769230769231]},{"key":"howitzer","rect":[0,256,256,256],"size":50.271321013004794,"bearing":[128,128],"muzzle":[239.25827814569533,128]},{"key":"plasma","rect":[256,256,256,256],"size":51.5239334779465,"bearing":[128,128],"muzzle":[229.97952218430032,128.81911262798633]},{"key":"cryojet","rect":[512,256,256,256],"size":49.540740740740745,"bearing":[128,128],"muzzle":[236.65454545454543,128]}];
 const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240];
 // A filled, stationary bearing closes the empty foundation socket. Its near lip hides the inserted peg.
 // Socket centres are measured on the foundation art drawn at 44 x 34, independently of upper-frame anchors.
@@ -1812,7 +1815,9 @@ function drawNeutralVoltaic(t,progress=1){
 
 let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap();
 function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
-function level4Ready(){return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===2048&&level4Art.naturalHeight===2048);}
+function level4Ready(spec=null){
+  if(spec&&spec.tips.length>1)return !!(level4YawArt&&level4YawArt.complete&&level4YawArt.naturalWidth>=768&&level4YawArt.naturalHeight>=512);
+  return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===2048&&level4Art.naturalHeight===2048);}
 function observeLevel4(t){
   if(level4Scene!==S){level4Scene=S;level4Upgrades=new WeakMap();level4Shells=new WeakMap();}
   let e=level4Upgrades.get(t);
@@ -1820,21 +1825,30 @@ function observeLevel4(t){
   else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;}
 }
 function level4Pose(t,angle=t.angle,recoil=true){
-  const spec=level4Spec(t);if(!spec||!level4Ready())return null;
-  // Match the existing map's ground-plane yaw; never rotate upright artwork in the canvas plane.
-  const yaw=Math.atan2(Math.sin(angle)/.56,Math.cos(angle));
-  const frame=spec.tips.length===1?0:(Math.round(yaw/(Math.PI/4))+8)%8;
+  const spec=level4Spec(t);if(!spec||!level4Ready(spec))return null;
+  // Upright omnidirectional Tesla/Cluster stay fixed. Every aimed head uses a continuous yaw.
+  const projected=spec.tips.length>1,frame=0;
   const feedback=weaponFeedback.get(t),age=feedback?presentationTime-feedback.at:Infinity;
   const life=t.type==='cannon'?(t.branch==='A'?.42:.24):(t.branch==='B'?.28:.13);
   const strength=t.type==='cannon'?(t.branch==='A'?5.5:2.5):(t.branch==='B'?3.5:1.2);
   const kick=recoil&&!t.paused&&!t.selling&&['turret','cannon'].includes(t.type)&&age>=0&&age<life?Math.sin(Math.PI*age/life)*strength:0;
-  const dx=-Math.cos(angle)*kick,dy=-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
-  const tip=spec.tips[frame],seat=spec.seats[frame],scale=spec.size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
+  const dx=spec.key==='cluster'?0:-Math.cos(angle)*kick,dy=spec.key==='cluster'?kick:-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
+  const art=projected?LEVEL4_YAW.find(a=>a.key===spec.key):null;
+  const tip=art?art.muzzle:spec.tips[frame],seat=art?art.bearing:spec.seats[frame];
+  const size=art?art.size:spec.size,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
   // Seat the broad bearing on the socket, not the bottom of the narrow insertion peg.
   const mountY=socket.y-1,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
-  return {spec,frame,age,kick,dx,dy,seat,bodyY,size:spec.size,
+  if(projected){
+    const matrix=weaponProjection(angle),originX=socket.x+dx,originY=mountY-7+dy;
+    const u=(tip[0]-seat[0])*scale,v=(tip[1]-seat[1])*scale;
+    return {spec,art,projected,matrix,frame,age,kick,dx,dy,seat,bodyY,size,originX,originY,
+      x:-seat[0]*scale,y:-seat[1]*scale,
+      muzzle:{x:originX+matrix.a*u+matrix.c*v,y:originY+matrix.b*u+matrix.d*v}};
+  }
+  return {spec,projected,frame,age,kick,dx,dy,seat,bodyY,size,
     x:socket.x-seat[0]*scale+dx,y:mountY-seat[1]*scale+dy,
     muzzle:{x:socket.x+(tip[0]-seat[0])*scale+dx,y:mountY+(tip[1]-seat[1])*scale+dy}};
+
 }
 function level4Muzzle(t,angle=t.angle,recoil=true){
   const p=level4Pose(t,angle,recoil);return p?{x:t.x+p.muzzle.x,y:t.y+p.muzzle.y}:null;
@@ -1887,6 +1901,26 @@ function drawLevel4Tower(t,progress=1){
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
   drawLevel4Coupling(t);
+  if(p.projected){
+    // The shaft stays upright; only the flat upper is projected. A ready muzzle may
+    // extend in front of the foundation, so never clip it at the socket's near edge.
+    ctx.save();
+    if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+LEVEL4_SOCKETS[t.type].y+4);ctx.clip();}
+    ctx.translate(0,drop);
+    ctx.fillStyle='#334039';ctx.fillRect(p.originX-4,p.originY,8,8);
+    ctx.fillStyle='#9a9d83';ctx.fillRect(p.originX-3,p.originY,1.5,8);
+    // The fixed lip covers the foot of the shaft, below the rotating upper.
+    ctx.save();ctx.translate(0,-drop);drawLevel4Coupling(t,true);ctx.restore();
+    for(const z of [3,1.5,0]){
+      ctx.save();ctx.translate(p.originX,p.originY+z);
+      const m=p.matrix;ctx.transform(m.a,m.b,m.c,m.d,0,0);
+      if(z)ctx.filter='brightness(0.38)';
+      try{ctx.drawImage(level4YawArt,...p.art.rect,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();ctx.restore();return false;}
+      ctx.restore();
+    }
+    if(open>=1)drawLevel4Mechanism(t,p);
+    ctx.restore();return true;
+  }
   ctx.save();ctx.beginPath();ctx.rect(-64,-110,128,110+LEVEL4_SOCKETS[t.type].y+4);ctx.clip();
   ctx.translate(0,drop);
   try{ctx.drawImage(level4Art,p.frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();return false;}
@@ -2570,7 +2604,6 @@ function drawTowerBody(t) {
     // Retraction follows sellT, so the shell is closed before the existing refund/removal tick.
     const saleProgress=t.selling?(constructionArt.get(t)?.saleFrom??1)*Math.max(0,Math.min(1,t.sellT/SELL_TIME)):null;
     ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(2,8,22,13,0,0,Math.PI*2);ctx.fill();
-      const artSize=t.type==='voltaic'?56:48;
     const buildProgress=constructionProgress(t),fold=['turret','cannon','voltaic'].includes(t.type)?buildingPauseProgress(t):1;
     const foldedPose=(t.type==='voltaic'?.65:.64)+(t.type==='voltaic'?.35:.36)*fold;
     const visibleProgress=saleProgress!==null?saleProgress:buildProgress<1?buildProgress:fold<1?foldedPose:1;
@@ -3189,7 +3222,7 @@ function draw() {
   for (const t of S.towers) if (t.type === 'voltaic') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age < 0.16) {
-      if(level4Ready()&&level4Spec(t)){const m=weaponMuzzle(t);ctx.globalAlpha=1-age/.16;ctx.strokeStyle=t.branch==='B'?'#ffe7a1':'#d5ffff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,4+age*24,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
+      if(level4Spec(t)&&level4Ready(level4Spec(t))){const m=weaponMuzzle(t);ctx.globalAlpha=1-age/.16;ctx.strokeStyle=t.branch==='B'?'#ffe7a1':'#d5ffff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,4+age*24,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
       else { ctx.globalAlpha=1-age/0.16;ctx.strokeStyle='#d5ffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(weaponMuzzle(t).x,weaponMuzzle(t).y,7+age*38,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1; }
     }
   }

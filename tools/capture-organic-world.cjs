@@ -11,6 +11,7 @@ async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHt
   const images={};
   files.flamerArt='hunger-flamethrower-v1.png';
   files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
+  files.level4YawArt='hunger-level4-yaw-v1.png';
   files.level4Art='hunger-level4-towers-v1.png';
   for(const [name,file]of Object.entries(files)){
     images[name]=await loadImage(assetOverrides[name]||path.join(root,'assets',file));
@@ -90,4 +91,4 @@ async function main(){
   console.log('PASS '+zone+': '+(motion?180:90)+' actual renderer frames, pause/resume and no stone obstruction of build slots. '+path.join(dir,'scene.png'));
 }
 module.exports={loadWorld};
-if(require.main===module)((process.argv.includes('--level4')||process.argv.includes('--level4-seat')||process.argv.includes('--voltaic-base'))?require('./capture-level4-towers.cjs').main():process.argv.some(a=>a.startsWith('--flamethrower'))?require('./capture-flamethrower.cjs').main():main()).catch(e=>{console.error(e);process.exitCode=1;});
+if(require.main===module)((process.argv.includes('--level4')||process.argv.includes('--level4-seat')||process.argv.includes('--voltaic-base')||process.argv.includes('--level4-yaw'))?require('./capture-level4-towers.cjs').main():process.argv.some(a=>a.startsWith('--flamethrower'))?require('./capture-flamethrower.cjs').main():main()).catch(e=>{console.error(e);process.exitCode=1;});
