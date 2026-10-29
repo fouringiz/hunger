@@ -43,7 +43,9 @@ Opened the downward before/after close pairs and zoom, native crowd/grayscale vi
 
 No test runs by the agent. Replaced the old call-order test with Node-only actual-pixel checks: nozzle-to-platform bridge on Mire/Ember, opaque enemy core and health-bar preservation across16 headings. The same checks must reject (1) moving the whole layer back under platforms, and (2) removing the body mask and painting a blanket jet over enemies. Updated the existing jet test's fallback mutation to forward the explicit context; uniform-scale/anchor negatives are retained.
 
-User runs:
+The first user run failed at the heading-0 overlap precondition. The body atlas contains only 17 pixels at alpha255 across the full1024×1024 image; most dense body pixels have alpha253. Requiring exact255 after resampling excluded the actual body core. The corrected fixture samples alpha≥250 and still requires at least12 pixels actually hit by the unmasked jet in every heading. Its permitted residual is bounded by `3*(255-bodyAlpha)` summed over RGB, matching `destination-out`; the existing mean excess-error limit of3 and exact health-bar equality remain. The known-bad blanket variant must still fail the same core/bar checks. Runtime and assets are unchanged. This correction has not yet been run.
+
+User reruns:
 
 ```sh
 node tests/flamethrower-readability.cjs
