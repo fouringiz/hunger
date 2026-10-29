@@ -1,3 +1,31 @@
+# Iteration 1 — badge checked; WAITING FOR USER VERDICT
+
+- User ordered three separate visual iterations with an explicit stop after each.
+  Only iteration 1 implemented: loaded level-4 specialization art hides the round
+  branch-letter badge; loading/failed art keeps the fallback identifier.
+- New `tests/level4-branch-badge.cjs`: PASS, 96 branch/state/image-state cases and
+  exact old renderer rejection. No existing test rewritten.
+- Agent ran `npm test` by the user's explicit request: PASS, including
+  `tests/leech-crawl-atlas.cjs`. Log: `reports/generated/level4-badge/npm-test.log`.
+- Agent ran `--tower-base {rifle,howitzer,prism} --badge-review`: PASS in Mire and
+  Ember, 151 identical live combat steps each, rules `9d3c412e`, source `5750d1fe`.
+  Exact before baseline `c00cc8e`; outputs under `reports/generated/level4-badge/`.
+- Opened actual-game before/after comparison board, representative whole/close
+  and combat grayscale scenes. Offline comparison of 1650 frame/state pairs:
+  zero differences outside the badge footprint. Board: `before-after.png`;
+  audit: `audit.json`; detailed paths/commands/limitations in
+  `reports/level4-review/iteration-1-badge.md`.
+- Iteration 1 addresses only badge overlap. The rearward head/visible disk and
+  flattened projected shapes remain visible and unresolved. No changes to
+  combat/targeting/balance/PATH/GATE_D/platforms or head geometry. File:// browser
+  check and visual acceptance remain pending; no merge.
+- STOP. Do not begin iteration 2 (<=2px screen-space bearing-anchor constraint,
+  -6 back-shift negative, then placement fix) until user approves iteration 1.
+  Iteration 3 (six 16-pose families and new anchors/assets) also has not started.
+
+---
+Previous checkpoint:
+
 # Sale animation test follow-up — 2026-10-29
 
 - User reran `node tests/level4-seating.cjs`: PASS for all 250 heading/recoil

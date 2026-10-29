@@ -2639,7 +2639,8 @@ function drawTowerBody(t) {
     }
     if (t.type !== 'generator') {
       for (let i = 0; i < Math.min(t.level, 3) - 1; i++) { ctx.fillStyle = '#e8ecf2'; ctx.fillRect(-14 + i*6, 16, 4, 4); }  // level pips
-      if (t.branch && BRANCHES[t.type]) { ctx.fillStyle = '#0b1918e0'; ctx.beginPath(); ctx.arc(14, -14, 8, 0, Math.PI*2); ctx.fill();   // branch badge
+      const specialization=level4Spec(t);
+      if (t.branch && BRANCHES[t.type] && !(specialization&&level4Ready(specialization))) { ctx.fillStyle = '#0b1918e0'; ctx.beginPath(); ctx.arc(14, -14, 8, 0, Math.PI*2); ctx.fill();   // fallback branch badge
         ctx.strokeStyle = t.branch === 'A' ? '#ffb454' : '#9df7ff'; ctx.lineWidth = 1.5; ctx.stroke();
         text(BRANCHES[t.type][t.branch].name[0], 14, -13, 10, ctx.strokeStyle, 'center', '800'); }
       for (let i = 0; i < rank(t); i++) { ctx.fillStyle = '#ffe66d'; ctx.fillRect(6 + i*6, 16, 4, 4); }       // veterancy stripes
