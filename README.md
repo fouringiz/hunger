@@ -64,7 +64,7 @@ node tests/prototype-regression.cjs
 
 ## Структура
 
-- [Паспорт проекта v2.16](docs/ultimate-td-passport-v2-16.md) — актуальные решения и текущая повестка.
+- [Паспорт проекта v2.17](docs/ultimate-td-passport-v2-17.md) — актуальные решения и текущая повестка.
 - [Английский глоссарий v1.5](docs/ultimate-td-glossary-en.md).
 - Лор v1.3: [RU](docs/ultimate-td-lore-ru.md), [EN](docs/ultimate-td-lore-en.md).
 - [Внутриигровые документы v1.6](docs/ultimate-td-documents-en.md) — зафиксированные тексты бланков, ассигнований, роликов и агиток.
