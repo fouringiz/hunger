@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // User-run only: one branch per invocation, through the actual game renderer.
 // node tools/capture-organic-world.cjs --level4 machine-gun
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
@@ -57,7 +58,7 @@ async function main(){
  const arg=process.argv.indexOf(COMMON?'--tower-base':YAW?'--level4-yaw':NEUTRAL?'--voltaic-base':SEATING?'--level4-seat':'--level4'),key=process.argv[arg+1]||(NEUTRAL?'tesla':'machine-gun'),spec=TABLE.entries.find(e=>e.key===key);
  if(!spec)throw Error('Choose one branch: '+TABLE.entries.map(e=>e.key).join(', '));
  const out=path.join(ROOT,POSE?'reports/generated/level4-poses/game':ANCHOR?'reports/generated/level4-seat-anchor':BADGE?'reports/generated/level4-badge':COMMON?'reports/generated/common-tower-base':YAW?'reports/generated/level4-yaw':NEUTRAL?'reports/generated/voltaic-base':SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
- const before=execFileSync('git',['show',BASE+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),candidate=NEUTRAL?execFileSync('git',['show','acb6218:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}):null,results={};
+ const before=readRevision(BASE,'prototype/index.html'),candidate=NEUTRAL?readRevision('acb6218','prototype/index.html'):null,results={};
  for(const zone of ['mire','ember']){
   const a=await capture(spec,zone,'before',before,out),b=await capture(spec,zone,'after',candidate,out);
   assert.deepEqual(b.fingerprint,a.fingerprint,'simulation rules/source must match the baseline');

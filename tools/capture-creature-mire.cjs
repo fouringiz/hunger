@@ -1,10 +1,11 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
 const ROOT=path.join(__dirname,'..'),BASE='22e4d45';
 async function capture(stage='after',zone='mire',poses=false){
  assert.ok(['before','after'].includes(stage),'stage must be before or after');
- const {canvas,run}=await loadWorld({zone,sourceHtml:stage==='before'?execFileSync('git',['show',BASE+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}):null});
+ const {canvas,run}=await loadWorld({zone,sourceHtml:stage==='before'?readRevision(BASE,'prototype/index.html'):null});
  const out=path.join(ROOT,'reports/creature-mire-contact');fs.mkdirSync(out,{recursive:true});
  run("reset();S.phase='wave';S.wave=1;S.spawnQueue=[];S.enemies=['carapacid','leech','forager'].map((type,i)=>{const e=makeEnemy(type,1);e.seq=i;e.d=[420,550,70][i];Object.assign(e,posAt(e.d));return e;});");
  const strips=Array.from({length:3},()=>createCanvas(8*240,240));

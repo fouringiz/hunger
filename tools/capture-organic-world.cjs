@@ -23,7 +23,7 @@ async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHt
     if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;
     const local=path.join(root,'assets',file);
     const rev=assetGitRef||(name==='fuelFireArt'?'ed1b683':'15ad9ed'),pinned=path.join(root,'tests','fixtures','history',rev,'assets',file);
-    const input=assetOverrides[name]||(fs.existsSync(local)?local:fs.existsSync(pinned)?pinned:execFileSync('git',['show',rev+':assets/'+file],{cwd:root,maxBuffer:32*1024*1024}));
+    const input=assetOverrides[name]||(fs.existsSync(local)?local:fs.existsSync(pinned)?pinned:require('./history.cjs').readRevision(rev,'assets/'+file,null));
     images[name]=await loadImage(input);
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }

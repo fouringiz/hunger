@@ -1,11 +1,12 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // Real renderer/simulation: follow a Leech past an empty pad to a generator.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
 const root=path.join(__dirname,'..'),out=process.env.CREATURE_MIRE_CAPTURE_DIR||path.join(root,'reports/generated/leech-platform-occlusion');
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
- const rejected=execFileSync('git',['show','62409dc:prototype/index.html'],{cwd:root,encoding:'utf8'});
+ const rejected=readRevision('62409dc','prototype/index.html');
  const candidate=process.env.CREATURE_MIRE_CANDIDATE?fs.readFileSync(process.env.CREATURE_MIRE_CANDIDATE,'utf8'):null;
  for(const zone of ['mire','ember'])for(const stage of ['before','after']){
   const {run,canvas}=await loadWorld({zone,sourceHtml:stage==='before'?rejected:candidate});

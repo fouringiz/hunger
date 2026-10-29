@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // Run by the user. Frames of the Polyp family from the actual inline game renderer (loadWorld), not a browser session.
 // node tools/capture-polyp-family.cjs [--before REV]   (default REV: HEAD; the "before" strips use that commit's prototype)
 // Writes reports/generated/polyp-family/{before,after}-<scene>-{game,zoom}.png: per scene one colour row and one greyscale
@@ -72,7 +73,7 @@ function sheet(cells,file){
 async function main(){
  const rev=process.argv.includes('--before')?process.argv[process.argv.indexOf('--before')+1]:'HEAD';
  fs.mkdirSync(OUT,{recursive:true});
- const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+ const before=readRevision(rev,'prototype/index.html');
  for(const [label,sourceHtml] of [['before',before],['after',null]]){
   const world=await loadWorld({zone:'mire',sourceHtml});
   const {rows,lanes}=await scenes(world);

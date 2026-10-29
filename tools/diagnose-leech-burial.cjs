@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // User-run diagnostic. Tests candidate HTML copies; never edits the working game.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {spawnSync,execFileSync}=require('node:child_process');
@@ -15,7 +16,7 @@ for(const depth of [3.5,4.5,5.5])for(const reach of [5,7])for(const feather of [
 }
 // A distinct geometry candidate: authored contact dabs with the same baked core protection.
 const maskPattern=/function creatureMireMask\(e,pose\)\{[\s\S]*?\n\}\n(?=function drawCreatureContactShadow)/;
-const rejected=execFileSync('git',['show','c01c1b9:prototype/index.html'],{cwd:root,encoding:'utf8'});
+const rejected=readRevision('c01c1b9','prototype/index.html');
 const oldMask=rejected.match(maskPattern)[0];
 const protection="if(e.type==='leech'){g.globalCompositeOperation='destination-out';g.fillStyle='#fff';for(const [x,y,width]of CREATURE_MIRE_CONTACTS.leech.rows[pose.row][pose.frame].bodyCore)g.fillRect(x,y,width,1);g.globalCompositeOperation='source-over';}\n  ";
 for(const reach of [5,7]){
