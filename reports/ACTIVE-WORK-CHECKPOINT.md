@@ -1,3 +1,22 @@
+# Voltaic base review finding — prepared, checks pending (2026-10-29)
+
+- PR #69: user requests one neutral upper for Voltaic levels 1–3 on the exact
+  square foundation used by Tesla/Prism. Added `hunger-voltaic-neutral-v1.png`.
+- Common foundation and filled coupling are shared across all four levels.
+  Neutral assembly, deployment, pause/sale and shot/charge origin use the new terminal.
+- Observable criterion: the base source cell, placement and scale never change at
+  the level-3 -> Tesla/Prism handoff. Neutral head must sit on its bearing, retain
+  platform perspective and remain legible in the whole scene and grayscale.
+- Prepared `tests/voltaic-art.cjs` and `--voltaic-base tesla` / `prism` captures
+  against `a434efa`. No tests, game captures or browser checks run by the agent.
+- Before/after expected at `reports/generated/voltaic-base/<branch>/`; none yet.
+  User must run and supply whole/close/upgrade/pause/sale views for inspection.
+- No simulation, balance or route/platform changes. Next separate iteration:
+  continuous level-4 aiming. Do not call either visual issue verified.
+
+---
+Previous checkpoint:
+
 # Level 4 seating follow-up — prepared, verification pending (2026-10-29)
 
 - User reports the previously requested tests passed. Original Machine Gun native
