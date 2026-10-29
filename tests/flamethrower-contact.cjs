@@ -34,11 +34,13 @@ async function rim(w){
   w.run('S.enemies[0].burnUntil=1;S.enemies[0].burnTower=S.towers[0];prepareFuelContacts();');assert.equal(w.run('fuelContactFrame.size'),1,'retained film follows authoritative burn');
   w.run('S.time=1.1;prepareFuelContacts();');assert.equal(w.run('fuelContactFrame.size'),0,'film stops when actual burn ends');
   const r=await boot();await rim(r);
-  r.run("S.enemies=Array.from({length:40},(_,i)=>{const e=makeEnemy('forager',1);e.x=S.towers[0].x+48;e.y=S.towers[0].y;e.d=420+i;return e;});prepareFuelContacts();");assert.equal(r.run('fuelContactFrame.size'),24,'global presentation contact cap');
+  r.run("S.enemies=Array.from({length:40},(_,i)=>{const e=makeEnemy('forager',1);e.x=S.towers[0].x+48;e.y=S.towers[0].y;e.d=420+i;return e;});prepareFuelContacts();");assert.equal(r.run('fuelContactFrame.size'),r.run('FUEL_CONTACT_CAP'),'global presentation contact cap');assert.equal(r.run('FUEL_CONTACT_CAP'),8);
+  r.run("S.enemies=Array.from({length:30},(_,i)=>{const e=makeEnemy('forager',1);const near=i>=20;e.x=S.towers[0].x+48;e.y=S.towers[0].y+(near?0:200);e.d=420+i;if(!near){e.burnUntil=S.time+1;e.burnTower=S.towers[0];}return e;});prepareFuelContacts();");
+  assert.equal(r.run('[...fuelContactFrame.values()].every(c=>c.active!==false)'),true,'live jet contacts take cap slots before retained films');
   const frozen=html.replace('presentationTime*3.4','0');assert.notEqual(frozen,html);
   // Run the same checks against the two known bad appearances, not weaker alternate assertions.
   await assert.rejects(async()=>flow(await boot(frozen)),/must travel outward/);
   const blanket=html.replace("g.globalCompositeOperation='destination-out';g.drawImage(fuelBodyMask,0,0);","g.globalCompositeOperation='source-over';g.drawImage(fuelBodyMask,0,0);");assert.notEqual(blanket,html);
   await assert.rejects(async()=>rim(await boot(blanket)),/opaque body core/);
-  console.log('PASS directional fuel flow, 16-heading contact, misses/inactive/Cryojet, real burn lifetime, 24-contact cap, actual sprite-alpha rim and frozen/blanket negatives');
+  console.log('PASS directional fuel flow, 16-heading contact, misses/inactive/Cryojet, real burn lifetime, 8-contact cap with live contacts first, actual sprite-alpha rim and frozen/blanket negatives');
 })().catch(e=>{console.error(e);process.exitCode=1;});
