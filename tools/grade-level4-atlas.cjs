@@ -2,9 +2,11 @@
 // Colour-grades rows of the level-4 head atlas into the palette of the shared tower foundation.
 // Hue and alpha are untouched: saturation is scaled, value goes through scale*v^gamma (gamma > 1 compresses highlights).
 // Usage: node tools/grade-level4-atlas.cjs machine-gun [rifle ...]   (or: all = every row not graded yet)
+//        node tools/grade-level4-atlas.cjs --replace howitzer        (a row replaced with fresh raw art: contrast + grade again)
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {paletteMetrics}=require('./palette-metrics.cjs');
+const lazyContrast=()=>require('./level4-local-contrast.cjs').localContrast;
 const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/hunger-level4-towers-v2.png');
 const META=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
 const RECORD=path.join(ROOT,'assets/art/level4-palette-grade.json');
@@ -38,8 +40,15 @@ function apply(data,width,rect,p){const [x0,y0,w,h]=rect;
     const [hh,s,v]=rgb2hsv(data[i],data[i+1],data[i+2]);const [r,g,b]=hsv2rgb(hh,Math.min(1,s*p.saturation),Math.min(1,p.scale*Math.pow(v,p.gamma)));
     data[i]=Math.round(r);data[i+1]=Math.round(g);data[i+2]=Math.round(b);}}
 async function main(){
-  const keys=process.argv.slice(2);if(!keys.length){console.error('usage: node tools/grade-level4-atlas.cjs <row-key ...|all>');process.exit(2);}
+  const args=process.argv.slice(2),replace=args.includes('--replace'),force=args.includes('--force'),keys=args.filter(a=>!a.startsWith('--'));
+  if(!keys.length){console.error('usage: node tools/grade-level4-atlas.cjs <row-key ...|all>\n       node tools/grade-level4-atlas.cjs --replace <row-key ...>   (after pasting freshly generated, ungraded art into those rows)');process.exit(2);}
   const record=fs.existsSync(RECORD)?JSON.parse(fs.readFileSync(RECORD,'utf8')):{foundation:null,rows:{}};
+  if(replace){
+    // A regenerated row arrives raw: forget its old grade, then give it the same local contrast the rest of the atlas got.
+    if(keys.includes('all'))throw new Error('--replace takes explicit row keys, not all');
+    if(!record.localContrast)throw new Error('--replace expects an atlas built with tools/level4-local-contrast.cjs');
+    for(const k of keys){if(!META.entries.some(e=>e.key===k))throw new Error('no such row: '+k);delete record.rows[k];}
+  }
   // 'all' grades every row that is not graded yet; naming an already graded row is an error.
   const rows=META.entries.filter(e=>keys.includes('all')?!record.rows[e.key]:keys.includes(e.key));
   if(!rows.length)throw new Error(keys.includes('all')?'every row is already graded':'no such rows: '+keys.join(','));
@@ -50,6 +59,14 @@ async function main(){
   const target={...foundation,bright:HEAD_BRIGHT};record.target={saturation:target.saturation,value:target.value,bright:HEAD_BRIGHT,brightRange:HEAD_BRIGHT_RANGE};
   const img=await loadImage(ATLAS),c=createCanvas(img.width,img.height),g=c.getContext('2d');g.drawImage(img,0,0);
   const id=g.getImageData(0,0,c.width,c.height);
+  if(replace)for(const e of rows){
+    const rect=[0,e.row*256,4096,256],m=paletteMetrics(id.data,c.width,rect);
+    // Guard against grading twice: a row already inside the head palette was most likely not replaced.
+    const graded=Math.abs(m.saturation-target.saturation)<=.03&&Math.abs(m.value-target.value)<=.03&&m.bright>=HEAD_BRIGHT_RANGE[0]&&m.bright<=HEAD_BRIGHT_RANGE[1];
+    if(graded&&!force)throw new Error(`${e.key} already sits in the head palette (${fmt(m)}); paste the new raw art first, or pass --force`);
+    const start=e.row*256*c.width*4,end=(e.row+1)*256*c.width*4,rowData=id.data.slice(start,end);
+    lazyContrast()(rowData,c.width,256,record.localContrast.amount,record.localContrast.radius);id.data.set(rowData,start);
+  }
   for(const e of rows){
     if(record.rows[e.key])throw new Error(e.key+' is already graded; restore the atlas from git before grading it again');
     const rect=[0,e.row*256,4096,256],before=paletteMetrics(id.data,c.width,rect),p=fit(id.data,c.width,rect,target);
