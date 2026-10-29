@@ -1,19 +1,66 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),path=require('path');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-function boot(){const calls=[],images=[],handlers={};class Image{constructor(){this.complete=true;this.naturalWidth=768;this.naturalHeight=256;images.push(this);}}const ctx=new Proxy({}, {get(o,k){if(k==='drawImage')return (...args)=>calls.push([k,...args]);if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});if(k==='measureText')return t=>({width:String(t).length*5});return o[k]??(o[k]=(...args)=>calls.push([k,...args]));}});const canvas={getContext:()=>ctx,style:{},addEventListener(type,fn){handlers[type]=fn;},getBoundingClientRect:()=>({left:0,top:0})};const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:'?infantry=1'},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});vm.runInContext(source,c);return {run:x=>vm.runInContext(x,c),calls,images,handlers};}
+function boot(code=source){
+ const calls=[],draws=[],images=[],handlers={},stack=[];let matrix=[1,0,0,1,0,0];
+ const multiply=(a,b,c,d,e,f)=>{const [u,v,w,x,y,z]=matrix;matrix=[u*a+w*b,v*a+x*b,u*c+w*d,v*c+x*d,u*e+w*f+y,v*e+x*f+z];};
+ class Image{constructor(){this.complete=true;this.naturalWidth=768;this.naturalHeight=256;images.push(this);}}
+ const ctx=new Proxy({}, {get(o,k){
+  if(k==='drawImage')return (...args)=>{calls.push([k,...args]);draws.push({args,matrix:matrix.slice()});};
+  if(k==='save')return ()=>{calls.push([k]);stack.push(matrix.slice());};
+  if(k==='restore')return ()=>{calls.push([k]);matrix=stack.pop();};
+  if(k==='translate')return (x,y)=>{calls.push([k,x,y]);multiply(1,0,0,1,x,y);};
+  if(k==='transform')return (...m)=>{calls.push([k,...m]);multiply(...m);};
+  if(k==='scale')return (x,y)=>{calls.push([k,x,y]);multiply(x,0,0,y,0,0);};
+  if(k==='rotate')return a=>{calls.push([k,a]);multiply(Math.cos(a),Math.sin(a),-Math.sin(a),Math.cos(a),0,0);};
+  if(k==='setTransform')return (...m)=>{calls.push([k,...m]);matrix=m.slice();};
+  if(k==='resetTransform')return ()=>{calls.push([k]);matrix=[1,0,0,1,0,0];};
+  if(k==='createLinearGradient'||k==='createRadialGradient')return ()=>({addColorStop(){}});
+  if(k==='measureText')return t=>({width:String(t).length*5});
+  return o[k]??(o[k]=(...args)=>calls.push([k,...args]));
+ }});
+ const canvas={getContext:()=>ctx,style:{},addEventListener(type,fn){handlers[type]=fn;},getBoundingClientRect:()=>({left:0,top:0})};
+ const c=vm.createContext({Image,document:{getElementById:()=>canvas,createElement:()=>canvas},window:{devicePixelRatio:1},location:{pathname:'/prototype/index.html',search:'?infantry=1'},URLSearchParams,innerWidth:960,innerHeight:540,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
+ vm.runInContext(code,c);return {run:x=>vm.runInContext(x,c),calls,draws,images,handlers};
+}
+function saleScene(type,code=source){
+ const r=boot(code);r.run(`reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);return r;
+}
+function checkSaleMotion(r,type){
+ const phases=[],upperYs=[];
+ for(const remaining of [1.8,1.2,.6,.05]){
+  r.calls.length=0;r.draws.length=0;r.run(`S.towers[0].sellT=${remaining};drawTowerBody(S.towers[0]);`);
+  // Movement may live in the canvas transform, not the image's local destination.
+  phases.push(JSON.stringify(r.draws.map(({args,matrix})=>({asset:args[0].src,rect:args.slice(1),matrix}))));
+  if(type==='voltaic'){
+   const upper=r.draws.find(d=>d.args[0].src.endsWith('hunger-voltaic-neutral-v1.png'));
+   assert.ok(upper,'sale continues to draw the neutral upper through the socket clip');
+   const [x,y]=upper.args.slice(-4),m=upper.matrix;upperYs.push(m[1]*x+m[3]*y+m[5]);
+   const base=r.draws.find(d=>d.args[0].src.endsWith('hunger-low-buildings-v3.png'));
+   const pos=JSON.parse(r.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
+   assert.deepEqual(base.matrix,[1,0,0,1,pos.x,pos.y],'sale moves the upper, leaving its foundation planted');
+  }
+ }
+ assert.equal(new Set(phases).size,4,type+' visibly retracts during the existing sale countdown');
+ if(type==='voltaic')assert.ok(upperYs.every((y,i)=>!i||y>upperYs[i-1]),'neutral upper descends through all four sale samples');
+}
+
 const cue=boot();cue.run("reset();S.credits=1000;build(SLOTS[0],'generator');const e=makeEnemy('leech',5);e.gen=S.towers[0];");
 for(const state of ['lane','seek','return']){cue.calls.length=0;cue.run(`e.state='${state}';drawLeechCue(e);`);assert.equal(cue.calls.length,0,'a moving Leech must not draw a tendril');}
 cue.calls.length=0;cue.run("e.state='attached';drawLeechCue(e)");assert.ok(cue.calls.some(c=>c[0]==='lineTo'),'a real feeding connection remains visible');
 console.log('PASS Leech cues only while feeding');
 for(const type of ['turret','cannon','voltaic','generator','barracks','flamer']){
- const r=boot();r.run(`reset();S.phase='build';S.credits=10000;build(SLOTS[0],'${type}');observeConstruction();presentationTime=2;observeConstruction();S.towers[0].angle=.7;sell(S.towers[0]);observeConstruction();`);
+ const r=saleScene(type);
  const saved=r.run('replaySignature()');r.run('drawTowerBody(S.towers[0]);');assert.equal(r.run('replaySignature()'),saved,'sale rendering cannot refund or remove a tower');
- const phases=[];for(const remaining of [1.8,1.2,.6,.05]){r.calls.length=0;r.run(`S.towers[0].sellT=${remaining};drawTowerBody(S.towers[0]);`);phases.push(JSON.stringify(r.calls.filter(c=>c[0]==='drawImage').map(c=>c.slice(2))));}
- assert.equal(new Set(phases).size,4,type+' visibly retracts during the existing sale countdown');
+ checkSaleMotion(r,type);
  r.run('S.towers[0].sellT=SELL_TIME;const beforeCredits=S.credits;update(SELL_TIME-SIM_STEP);');assert.equal(r.run('S.towers.length'),1,'refund remains delayed until the removal tick');assert.equal(r.run('S.credits===beforeCredits'),true);
  r.run('update(SIM_STEP*2)');assert.equal(r.run('S.towers.length'),0);assert.equal(r.run('S.credits>beforeCredits'),true);
 }
-console.log('PASS all six sale animations and unchanged refund/removal timing');
+// The same motion requirement must reject a frozen neutral upper, rather than
+// accepting unrelated fixed foundation draws or changing only the progress value.
+const frozen=source.replace('ctx.clip();ctx.translate(0,drop);\n  let drawn=false;', 'ctx.clip();ctx.translate(0,0);\n  let drawn=false;');
+assert.notEqual(frozen,source,'the frozen variant must target the neutral upper translation');
+assert.throws(()=>checkSaleMotion(saleScene('voltaic',frozen),'voltaic'),/visibly retracts|descends/);
+console.log('PASS all six sale animations, actual neutral-upper descent, planted base, frozen-upper rejection and unchanged refund/removal timing');
 for(const type of ['turret','cannon','voltaic'])for(const level of [1,3]){
  const ranges=boot();
  ranges.run(`reset();S.phase='build';const t={...SLOTS[0],type:'${type}',T:TOWER['${type}'],level:${level}};S.selected={kind:'tower',tower:t};`);

@@ -1,3 +1,25 @@
+# Sale animation test follow-up — 2026-10-29
+
+- User reran `node tests/level4-seating.cjs`: PASS for all 250 heading/recoil
+  samples, including exact old empty-socket, raised-upper and detached-head
+  negative variants. This confirms the native contact regression, not art approval.
+- User reran `npm test`: FAILED later at `tests/salvage-and-ranges.cjs`, Voltaic
+  sale pose count 1 rather than 4. Full suite is not green.
+- Cause: the sale test serialized only local drawImage arguments. The neutral
+  upper retracts through `ctx.translate(0,drop)`; its local image rectangle stays
+  constant. The mock now tracks canvas save/restore and affine transformations,
+  and sale snapshots include each image's actual drawing matrix.
+- Preserved four distinct sale samples for all six building types and existing
+  refund/removal timing assertions. Added explicit neutral-upper downward motion,
+  stationary-foundation assertions and a frozen-upper negative using the same
+  motion check. No runtime/assets changed; no test/capture run by agent.
+- User next: `node tests/salvage-and-ranges.cjs`, then `npm test`. Existing game
+  captures do not need regenerating for this test-only correction. Full visual
+  review/browser check and independent review of PR #69 remain pending.
+
+---
+Previous checkpoint:
+
 # Socket coverage test follow-up — 2026-10-29
 
 - User reran `node tests/infantry-art.cjs`: PASS. `npm test` FAILED later at
