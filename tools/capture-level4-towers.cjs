@@ -35,7 +35,16 @@ async function capture(spec,zone,label,sourceHtml,out){
  sheet(turn,prefix+'-turn');
  // A real level-3 -> level-4 action, observed by consecutive draws, exposes the upgrade handoff.
  setup(w,spec,false);shot(w);save(w.canvas,prefix+'-level3-whole');save(gray(w.canvas),prefix+'-level3-whole-gray');const level3=crop(w);w.run(`upgrade(S.towers[0],${JSON.stringify(spec.branch)});`);const upgrade=[level3];
- for(const dt of [0,.04,.08,.12,.2,.28,.36,.44,.48,.56]){w.run(`presentationTime=${3+dt};`);shot(w);upgrade.push(crop(w));}sheet(upgrade,prefix+'-upgrade');
+ // Advance real simulation ticks: the branch handoff follows warm, not presentationTime alone.
+ const upgradeTicks=Math.ceil(w.run("typeof BRANCH_SWAP_SECONDS==='number'?BRANCH_SWAP_SECONDS:0")/w.run('SIM_STEP'))+30;
+ const upgradeFrames=path.join(out,label+'-'+zone+'-upgrade-cycle');fs.mkdirSync(upgradeFrames,{recursive:true});
+ for(let i=0;i<=upgradeTicks;i++){
+  if(i)w.run('update(SIM_STEP);presentationTime+=SIM_STEP;');
+  shot(w);const cell=crop(w);save(cell,path.join(upgradeFrames,String(i).padStart(3,'0')));
+  if(i%3===0||i===upgradeTicks)upgrade.push(cell);
+ }
+ assert.ok(w.run('S.towers[0].level===4&&S.towers[0].warm<=0'),'upgrade capture must reach the fully deployed specialization');
+ sheet(upgrade,prefix+'-upgrade');
  // Fire automatically in the real simulation. Stationary durable creatures make a repeatable full cycle.
  setup(w,spec);w.run("S.phase='wave';S.wave=5;S.streams=[];S.spawnQueue=[];S.enemies=['forager','carapacid','leech'].map((type,i)=>{const e=makeEnemy(type,1);e.d=nearestPathD(S.towers[0].x+85,S.towers[0].y)+i*24;Object.assign(e,posAt(e.d));e.hp=e.maxHp=100000;e.speed=e.effSpeed=0;return e;});S.towers[0].cd=0;");
  const attack=[],signatures=[],frames=path.join(out,label+'-'+zone+'-cycle');fs.mkdirSync(frames,{recursive:true});

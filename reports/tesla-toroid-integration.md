@@ -27,3 +27,12 @@ open prototype/index.html
 Capture output under `reports/generated/tesla-toroid/`: `before-{mire,ember}-whole.png`, `after-{mire,ember}-whole.png`, corresponding `whole-gray`, `turn`, `upgrade`, `attack`, `sale` sheets (including zooms), `{before,after}-{mire,ember}-cycle/000.png` through `150.png`, plus `approved-and-game.png` and `results.json`. Before renderer is pinned at `1499ae5`; no tests require reachable git history. Comparison reuses identical live combat scenes and fingerprints.
 
 Inspect both whole frames and close-ups, complete firing/upgrade/sale cycles, and deliberate rejection cases: floating collar, toroid glow dominating enemies, stud/beam detachment, incorrect map camera. No tests, game captures or browser checks were run by the agent. A second visual review remains required before merge.
+
+## Review of user-produced captures, 2026-10-30
+
+Opened `approved-and-game.png`, `before-mire-whole.png`, `after-mire-whole.png`, `after-ember-attack-whole-gray.png`, `after-mire-attack.png`, `after-mire-upgrade.png`, `after-mire-sale.png` under `reports/generated/tesla-toroid/`.
+
+- Approved silhouette/materials preserved at comparable scale. In these frames the collar overlaps the shared socket; no floating gap or camera tilt observed. Mire attack contact sheet shows discharge connected to the toroid and no whole-body sliding in its sampled frames. Sale strip retracts into the foundation. Whole grayscale Ember scene retains visible tower/enemy silhouettes, although terrain detail remains busy; no claim that every background contrast requirement is proven by this scene.
+- `results.json` was written after capture's before/after fingerprint and 151-live-tick assertions passed in both zones: rules `388d2ac9`, source `48035e01`. This confirms that controlled comparison, not full-suite or browser success.
+- The generated upgrade strip does NOT cover the upgrade: every cell shows the old head because the capture advanced only presentation time while branch change follows simulation warm. Corrected the capture to advance real simulation ticks through the 0.9-second swap and another 30 ticks, save every upgrade frame and require warm to expire. No game/art change in this follow-up. User rerun required: `node tools/capture-organic-world.cjs --tesla-toroid`.
+- Full-cycle individual frames and all second-zone close-ups have not yet been inspected. Test-suite and file-browser console outcomes have not been supplied explicitly; confirmation requested. No overall visual completion or independent second review claimed.
