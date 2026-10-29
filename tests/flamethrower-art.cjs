@@ -2,6 +2,7 @@
 // Renderer contracts only; visual approval still needs actual-game captures and the disk-browser check.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
+const HEAD_SCALE=Number(fs.readFileSync(require('node:path').join(__dirname,'../prototype/index.html'),'utf8').match(/const HEAD_SCALE=([0-9.]+)/)[1]);
 function boot(code=source,loaded=true){
   const draws=[],images=[],stack=[];let matrix=[1,0,0,1,0,0];
   const multiply=(a,b,c,d,e,f)=>{const [u,v,w,x,y,z]=matrix;matrix=[u*a+w*b,v*a+x*b,u*c+w*d,v*c+x*d,u*e+w*f+y,v*e+x*f+z];};
@@ -34,7 +35,7 @@ function checkMuzzle(r){
     const a=i*Math.PI*2/64;r.reset();r.run(`drawFlamethrower({angle:${a}})`);
     const heads=r.draws.filter(d=>d.args[1]===264),tanks=r.draws.filter(d=>d.args[1]===569);
     assert.equal(heads.length,2,'projected head and shallow sides');assert.equal(tanks.length,2,'two upright fuel tanks');
-    for(const d of tanks){assert.deepEqual(d.matrix,[1,0,0,1,0,0],'tank verticals never rotate or flatten');close(d.args[7],11);close(d.args[8],22);}
+    for(const d of tanks){assert.deepEqual(d.matrix,[1,0,0,1,0,0],'tank verticals never rotate or flatten');close(d.args[7],11*HEAD_SCALE);close(d.args[8],22*HEAD_SCALE);}
     const [u,v,w,x,y,z]=heads[1].matrix;
     // The head's right edge on its centreline is the nozzle exit; test the drawn geometry, not just a helper.
     const drawn={x:u*29+y,y:v*29+z},tip=JSON.parse(r.run(`JSON.stringify(weaponMuzzle({type:'flamer',x:0,y:0,angle:${a}}))`));
@@ -75,7 +76,7 @@ function mutateOnce(before,after){
 assert.throws(()=>checkFoundation(boot(mutateOnce('  drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)', '  ctx.rotate(t.angle);drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)'))),/foundation must stay fixed/);
 assert.throws(()=>checkMuzzle(boot(mutateOnce('muzzleX:29','muzzleX:22'))));
 assert.throws(()=>checkFoundation(fallback),/textured foundation must be drawn/);
-assert.throws(()=>checkEmergence(boot(mutateOnce('const y=p.y+44*(1-tankLift);','const y=p.y+22*(1-tankLift);'))),/not pop in half exposed/);
+assert.throws(()=>checkEmergence(boot(mutateOnce('const y=p.y+44*HEAD_SCALE*(1-tankLift);','const y=p.y+22*(1-tankLift);'))),/not pop in half exposed/);
 // The support uses the same lift distance; mutate the head translation, not its shaft.
-assert.throws(()=>checkEmergence(boot(mutateOnce('ctx.translate(0,FLAMER_ART.mountY+42*(1-lift)+z);','ctx.translate(0,FLAMER_ART.mountY+22*(1-lift)+z);'))),/not pop in half exposed/);
+assert.throws(()=>checkEmergence(boot(mutateOnce('ctx.translate(0,FLAMER_ART.mountY+42*HEAD_SCALE*(1-lift)+z);','ctx.translate(0,FLAMER_ART.mountY+22*(1-lift)+z);'))),/not pop in half exposed/);
 console.log('PASS Flamethrower atlas, planted base, upright tanks, continuous yaw, nozzle attachment, render parity, file-origin fallback and known-bad variants');

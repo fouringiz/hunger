@@ -1750,9 +1750,19 @@ function weaponProjection(angle) {
 }
 // The foundation never turns. The flat head is projected like the other guns; upright cylindrical tanks
 // move around its bearing but keep their own vertical axis and fixed lighting. No runtime pixel reads.
+// Presentation-only: every weapon head (levels 1-4) is drawn this much larger around its own mount point.
+const HEAD_SCALE=1.15;
+// A soft contact shadow under a head gives it weight on the foundation (light from the upper left).
+function drawHeadShadow(mountY,radius=17){
+  const r=radius*HEAD_SCALE,cx=2,cy=mountY+4;
+  ctx.save();ctx.translate&&ctx.translate(cx,cy);ctx.scale&&ctx.scale(1,.5);
+  const g=ctx.createRadialGradient&&ctx.createRadialGradient(0,0,r*.2,0,0,r);if(!g||!g.addColorStop){ctx.restore();return;}
+  g.addColorStop(0,'rgba(8,10,8,.42)');g.addColorStop(1,'rgba(8,10,8,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();ctx.restore();
+}
 const FLAMER_ART={rects:[[8,39,240,178],[264,66,240,123],[569,8,142,240]],mountY:-12,muzzleX:29};
 function flamerPoint(angle,x,y=0) {
-  const m=weaponProjection(angle);return {x:m.a*x+m.c*y,y:FLAMER_ART.mountY+m.b*x+m.d*y};
+  const m=weaponProjection(angle);return {x:(m.a*x+m.c*y)*HEAD_SCALE,y:FLAMER_ART.mountY+(m.b*x+m.d*y)*HEAD_SCALE};
 }
 // Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
 const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":49.76209150326797,"tips":[[237.83713,122.98371],[223.6873,151.20521],[212.35179,172.93811],[196.09121,187.16612],[135.73941,191.15309],[76.09121,184.74267],[56.54723,176.14332],[38.87948,163.63518],[31.76547,128.61238],[50.91857,113.52443],[73.58958,87.0228],[76.79479,80.69055],[126.35831,68.33876],[179.43974,78.34528],[199.53094,92.57329],[217.5114,105.86319]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":57.66213592233009,"tips":[[231.44828,147.51724],[237.24138,181.24138],[223.17241,206],[198.8,225.17241],[125.86207,207.58621],[80.75862,206.34483],[37.24138,195.7931],[17.58621,185.58621],[34.27586,147.65517],[41.51724,119.93103],[55.58621,103.44828],[80.75862,86.13793],[128.62069,82.75862],[175.93103,83.44828],[205.44828,88.2069],[213.51724,126.27586]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":43.07692307692307,"tips":[[167.49367,120.73924],[155.55781,104.23966],[154.24135,102.30886],[142.48101,110.29536],[131.15949,106.87257],[138.79494,99.76371],[107.63882,98.97384],[100.1789,101.69451],[91.31477,134.8692],[77.09705,73.4346],[84.90802,73.4346],[110.35949,56.84726],[128.43882,68.51983],[170.21435,67.64219],[166.08945,76.85738],[164.15865,96.95527]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":45.53846153846154,"tips":[[206.34098,46.09836],[200.88525,59.7377],[195.25902,74.99672],[180.51148,65.61967],[131.92131,94.68852],[87.93443,84.54426],[66.11148,75.93443],[60.99672,66.47213],[53.49508,60.67541],[61.93443,52.91803],[95.26557,30.7541],[108.81967,22.14426],[129.36393,23.08197],[157.32459,29.98689],[174.54426,39.19344],[198.83934,44.56393]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":38.15384615384615,"tips":[[229.81513,109.88235],[215.39496,127.27395],[214.52101,136.10084],[191.88571,145.71429],[131.05882,142.30588],[66.38655,143.00504],[64.98824,142.30588],[63.24034,137.06218],[15.17311,111.54286],[50.65546,91.61681],[50.21849,69.2437],[123.71765,52.90084],[123.97983,43.37479],[185.33109,64.52437],[211.11261,68.89412],[230.16471,82.87731]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":45.95982532751092,"tips":[[242.54181,135.79933],[238.12709,169.43144],[208.42809,184.52174],[194.62207,196.80268],[127.67893,187.89298],[56.16054,185.40468],[38.74247,180.6689],[25.97993,167.10368],[18.35452,136.52174],[34.80936,89.16388],[73.8194,73.99331],[107.77258,54.56856],[120.77592,32.09365],[184.34783,51.35786],[228.01338,77.92642],[236.1204,62.51505]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]}];
@@ -1796,17 +1806,17 @@ function drawTowerSupport(t,top){
 // Voltaic levels 1-3 use the Tesla head from the level-4 atlas (decided 2026-10-29); the Tesla branch gets a new head later.
 const VOLTAIC_NEUTRAL={"key":"tesla","rect":[0,512,256,256],"size":52.5714,"bearing":[128,218.706],"muzzle":[127.488,29.645]};
 function neutralVoltaicMuzzle(){
-  const a=VOLTAIC_NEUTRAL,k=a.size/256;
+  const a=VOLTAIC_NEUTRAL,k=a.size*HEAD_SCALE/256;
   return {x:(a.muzzle[0]-a.bearing[0])*k,y:LEVEL4_SOCKETS.voltaic.y-1+(a.muzzle[1]-a.bearing[1])*k};
 }
 function drawNeutralVoltaic(t,progress=1){
-  drawTowerFoundation(t);drawLevel4Coupling(t);
-  const a=VOLTAIC_NEUTRAL,k=a.size/256,drop=(a.size+24)*(1-deploymentStep(progress,.2,.94));
+  drawTowerFoundation(t);drawLevel4Coupling(t);if(progress>=1)drawHeadShadow(LEVEL4_SOCKETS.voltaic.y-1);
+  const a=VOLTAIC_NEUTRAL,size=a.size*HEAD_SCALE,k=size/256,drop=(size+24)*(1-deploymentStep(progress,.2,.94));
   const x=-a.bearing[0]*k,y=LEVEL4_SOCKETS.voltaic.y-1-a.bearing[1]*k;
   ctx.save();ctx.beginPath();ctx.rect(-40,-80,80,80+LEVEL4_SOCKETS.voltaic.y+4);ctx.clip();ctx.translate(0,drop);
   let drawn=false;
   if(level4Ready()){
-    try{ctx.drawImage(level4Art,...a.rect,x,y,a.size,a.size);drawn=true;}catch(_){}
+    try{ctx.drawImage(level4Art,...a.rect,x,y,size,size);drawn=true;}catch(_){}
   }
   if(!drawn){
     // Same compact, upright neutral silhouette even while images are missing.
@@ -1879,7 +1889,7 @@ function level4Pose(t,angle=t.angle,recoil=true){
   const rawDx=spec.key==='cluster'?0:-Math.cos(angle)*kick,rawDy=spec.key==='cluster'?kick:-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
   const seatTravel=Math.hypot(rawDx,rawDy),seatScale=seatTravel>.9?.9/seatTravel:1;
   const dx=rawDx*seatScale,dy=rawDy*seatScale;
-  const seat=spec.seats[frame],size=spec.size,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
+  const seat=spec.seats[frame],size=spec.size*HEAD_SCALE,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
   const tip=[0,1].map(i=>views.reduce((sum,v)=>sum+spec.tips[v.frame][i]*v.weight,0));
   const mountY=socket.y,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
   return {spec,frame,views,age,kick,dx,dy,seat,bodyY,size,frontFacing:spec.tips.length===1||Math.sin(yaw)>-.15,
@@ -1936,7 +1946,7 @@ function drawLevel4Tower(t,progress=1){
   if(feedback&&e&&feedback.at>=e.at)upgrade=1;
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
-  drawLevel4Coupling(t);
+  drawLevel4Coupling(t);if(open>=1)drawHeadShadow(LEVEL4_SOCKETS[t.type].y);
   ctx.save();
   const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
   if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
@@ -1953,7 +1963,7 @@ function weaponMuzzle(t,angle=t.angle) {
   const specialized=level4Muzzle(t,angle);if(specialized)return specialized;
   if(t.type==='voltaic'){const p=neutralVoltaicMuzzle();return {x:t.x+p.x,y:t.y+p.y};}
   if(t.type==='flamer'){const p=flamerPoint(angle,FLAMER_ART.muzzleX);return {x:t.x+p.x,y:t.y+p.y};}
-  const m=weaponProjection(angle),length=t.type==='cannon'?34.86:28.56;
+  const m=weaponProjection(angle),length=(t.type==='cannon'?34.86:28.56)*HEAD_SCALE;
   return {x:t.x+m.a*length,y:t.y-14+m.b*length};
 }
 // Presentation observes new tower identities; build/reset and replay fingerprints stay untouched.
@@ -2121,23 +2131,25 @@ function drawFlamethrower(t,p=1) {
   const part=(n,x,y,w,h)=>{if(!ready)return false;try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[n],x,y,w,h);return true;}catch(_){return false;}};
   drawTowerFoundation(t);
   const lift=deploymentStep(p,.3,.78),tankLift=deploymentStep(p,.14,.5),spread=deploymentStep(p,.32,.6),barrel=deploymentStep(p,.65,.94);
-  drawTowerSupport(t,FLAMER_ART.mountY+42*(1-lift));
+  drawTowerSupport(t,FLAMER_ART.mountY+42*HEAD_SCALE*(1-lift));
+  if(lift>=1)drawHeadShadow(FLAMER_ART.mountY);
   const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y*(.3+.7*spread)));
   // Parts rise from behind the socket's near edge at their final scale, then telescope into position.
   ctx.save();if(p<1){ctx.beginPath();ctx.rect(-48,-80,96,88);ctx.clip();}
   const tank=p=>{
     if(tankLift<=0)return;
     // Tank base sits four pixels below the head plane; its tall sides never inherit the yaw matrix.
-    const y=p.y+44*(1-tankLift);
-    if(!part(2,p.x-5.5,y-18,11,22)){
-      ctx.fillStyle='#a95823';roundRect(p.x-5.5,y-18,11,22,4);ctx.fill();
-      ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5,y-12,11,2);ctx.fillRect(p.x-5.5,y-3,11,2);
+    const y=p.y+44*HEAD_SCALE*(1-tankLift);
+    const k=HEAD_SCALE;
+    if(!part(2,p.x-5.5*k,y-18*k,11*k,22*k)){
+      ctx.fillStyle='#a95823';roundRect(p.x-5.5*k,y-18*k,11*k,22*k,4);ctx.fill();
+      ctx.fillStyle='#343a34';ctx.fillRect(p.x-5.5*k,y-12*k,11*k,2);ctx.fillRect(p.x-5.5*k,y-3*k,11*k,2);
     }
   };
   tanks.filter(p=>p.y<=FLAMER_ART.mountY).sort((a,b)=>a.y-b.y).forEach(tank);
   const m=weaponProjection(t.angle);
   if(lift>0)for(const z of [3,0]){
-    ctx.save();ctx.translate(0,FLAMER_ART.mountY+42*(1-lift)+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+    ctx.save();ctx.translate(0,FLAMER_ART.mountY+42*HEAD_SCALE*(1-lift)+z);ctx.transform(m.a,m.b,m.c,m.d,0,0);ctx.transform(HEAD_SCALE,0,0,HEAD_SCALE,0,0);
     if(z)ctx.filter='brightness(0.38)';
     let drawn=false;
     if(barrel>=1)drawn=part(1,-13,-13,42,28);
@@ -2407,11 +2419,11 @@ function drawFlameSmoke(){
 }
 function drawPlantedWeapon(t,kick) {
   const cannon=t.type==='cannon';
-  drawTowerFoundation(t);drawTowerSupport(t,-14);
+  drawTowerFoundation(t);drawTowerSupport(t,-14);drawHeadShadow(-14);
   const m=weaponProjection(t.angle),r=STRUCTURE_RECTS[cannon?9:5],pivot=cannon?[101,93]:[103,91],size=.14;
   // The foundation stays fixed. Only the textured upper assembly rotates, with a shallow extruded side.
   for(const z of [3,0]){
-    ctx.save();ctx.translate(-Math.cos(t.angle)*kick,-14+z-Math.sin(t.angle)*kick);ctx.transform(m.a,m.b,m.c,m.d,0,0);
+    ctx.save();ctx.translate(-Math.cos(t.angle)*kick,-14+z-Math.sin(t.angle)*kick);ctx.transform(m.a,m.b,m.c,m.d,0,0);ctx.transform(HEAD_SCALE,0,0,HEAD_SCALE,0,0);
     if(z)ctx.filter='brightness(0.38)';
     if(structureArt&&structureArt.complete&&structureArt.naturalWidth){ctx.drawImage(structureArt,...r,-pivot[0]*size,-pivot[1]*size,r[2]*size,r[3]*size);}
     else{ctx.fillStyle=z?'#182024':'#69765e';roundRect(-9,-8,18,16,3);ctx.fill();ctx.fillStyle='#a2a68c';ctx.fillRect(0,-3,28,6);}
