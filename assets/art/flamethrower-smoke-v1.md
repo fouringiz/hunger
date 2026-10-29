@@ -1,0 +1,12 @@
+# Fuel smoke — six-stage source sheet (2026-10-29)
+
+User brief: six frames in one horizontal row depicting one smoke puff's life. A small dense black knot with reflected orange light beneath it grows into heavy oily lobes, expands/lightens to dark gray and breaks apart into a few translucent scraps. Fixed elevated 3/4 view about 30 degrees, centred radial growth, no travel, no fire beyond the first frame's reflected light. This is a birth/growth/dissipation clip, not a looping steady-state animation.
+
+- Final source asset: `assets/hunger-flamethrower-smoke-v1.png`, 1536×256 RGBA, six 256×256 cells. Every frame is centred on `(128,128)`; one shared scale preserves actual growth between stages.
+- Frame rectangles: `(0,0,256,256)`, `(256,0,256,256)`, `(512,0,256,256)`, `(768,0,256,256)`, `(1024,0,256,256)`, `(1280,0,256,256)`.
+- Built-in ImageGen generated the phases; one targeted correction replaced the initially too-dense final cloud with disconnected gray wisps. Prompt set: `assets/art/flamethrower-smoke-v1.prompt.txt`.
+- Selected master: `reports/generated/flamethrower/smoke-six-source-v1.png` (ignored). Three unique photo references are archived under `reports/generated/flamethrower/references/smoke-{1,2,3}.png` (the fourth attached photograph duplicated the first).
+- Repack: `node tools/bake-flamethrower-smoke.cjs`. The generated source has unequal spacing: cuts are placed in empty columns, then bounds are centred into equal cells. One common scale across all six frames retains the intended growth. Soft source alpha is preserved; the 90th-percentile core alpha is capped at 255/255/255/220/150/64 for stages 1–6 so dissipation does not export as opaque gray shapes. All measurements, cuts, alpha multipliers and source hash are in `assets/hunger-flamethrower-smoke-v1.frames.json`.
+- Neutral-background preview: `reports/generated/flamethrower/smoke-six-preview-v1.png` (ignored); gray is for inspection only, not present in the exported asset.
+- Agent opened that preview and inspected the six stages: small orange-lit black knot, two growing dense black stages, expanded gray smoke, torn thinning lobes, four faint disconnected remnants. This confirms the source's visible content only.
+- User approval, temporal lifecycle smoothness and in-game camera/scale/readability remain pending. No gameplay wiring, simulation changes, tests, game captures or browser checks were performed for this source request. The already approved four-frame full fire sheet remains the selected fire artwork.

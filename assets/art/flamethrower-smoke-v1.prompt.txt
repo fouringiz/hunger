@@ -1,0 +1,24 @@
++Generator: built-in ImageGen
+Reference photographs: reports/generated/flamethrower/references/smoke-{1,2,3}.png (ignored)
+Initial generation:
+Create a GAME VFX SPRITE SHEET for the dark industrial sci-fi tower defense game THE HUNGER: ONE BLACK FUEL-SMOKE PUFF through its lifecycle. Use the supplied photographs ONLY for the shape, oily billowing structure and material texture of smoke. Do not depict their scene, flame jets, people, weapons or backgrounds.
+
+EXACTLY SIX frames in ONE HORIZONTAL ROW, six equal-sized cells, no grid lines. These are chronological stages of THE SAME smoke puff, not six different designs and not a steady-state loop:
+FRAME 1: a SMALL DENSE nearly BLACK rounded knot of smoke, with a restrained soft ORANGE LIGHT underneath it. This is reflected illumination on smoke, NOT visible fire or embers.
+FRAME 2: the same knot begins to GROW and swell into heavy oily round lobes; very dark charcoal/black, no orange light.
+FRAME 3: larger, denser rolling lobes, heavy layered oily fuel smoke, dark charcoal/black, no orange light.
+FRAME 4: spreads farther in ALL DIRECTIONS, changes toward DARK GRAY, edges become ragged, with soft translucent wisps.
+FRAME 5: larger and lighter dark-gray mass, breaking open into irregular soft-edged transparent gaps and torn lobes, visibly less dense.
+FRAME 6: ALMOST DISSIPATED: only a few sparse semi-transparent gray scraps and wisps remain, with large transparent openings. Not a dense intact cloud.
+
+Keep the smoke's anchor at the EXACT CENTER of each equal cell. Growth is centered and radial, outward in all directions. NO travel, no wind direction, no upward translation, no trail, no nozzle. The center stays fixed even while the shapes expand and break up. Frame 1 is visibly small, frames 2–5 progressively larger, frame 6 has a loose broad extent but very few remaining wisps.
+Fixed elevated three-quarter camera, approximately 30 degrees above the ground; one unchanged view across all six frames. Painterly pre-rendered RTS art, LARGE CLEAR READABLE rounded lobes, restrained detail without tiny photographic noise. Dark and oily with subtle cool gray volume shading; no bright silver rim, no white fog. Very soft genuine partially transparent edges, fading naturally into alpha.
+CRITICAL LAYOUT: each puff fits INSIDE its own cell with generous truly transparent padding; even the largest frame must leave at least 12 percent blank transparent margin on every side. No neighboring frames or wisps touch. Preserve the intended growth across frames; do NOT normalize all six puffs to the same visual size.
+Real transparent alpha background, not black/white matte and not painted checkerboard. NO flames (only the subtle reflected orange underside light in frame 1), no sparks, no ground, no sky, no person, no scenery, no floor shadows. No text, numerals, labels, borders, frames, watermarks or logos. The only visible elements are the six chronological smoke stages.
+
+Targeted correction of the dissipating stages:
+Edit this six-frame single-row black fuel-smoke lifecycle sprite sheet. Preserve frames 1 through 4: small nearly black orange-lit knot, growing dark oily knot, larger black billows, then expanding dark-gray billows. Preserve painterly RTS texture and fixed camera. No added elements.
+CORRECT FRAMES 5 AND 6 ONLY:
+FRAME 5 must look noticeably thinner, darker gray and genuinely semi-transparent: torn outer edges, large irregular transparent openings, loose separated lobes with soft fading wisps. Its opacity is much lower than frame 4. Not a flat pale opaque disc.
+FRAME 6 is almost GONE. Replace the intact cloud with just THREE TO SIX small thin disconnected soft gray wisps distributed around the same central anchor, with at least EIGHTY PERCENT empty transparent space inside the prior cloud's overall extent. Use low opacity, around 15–25 percent. Absolutely no connected dense mass, ring, bubble or Swiss-cheese shape with holes. A few faint fading shreds are all that remains.
+Keep EXACTLY SIX equally spaced equal-sized cells in ONE HORIZONTAL ROW. Center each stage within its own cell. Preserve real growth in size between 1–5; do not scale the early stages up to the same size as the later stages. Generous true-alpha empty margins so no adjacent stages touch and none is cut off. Real alpha transparency, soft partly transparent edges; no painted checkerboard or background. No fire except the existing soft reflected orange underneath frame 1, no text, numerals, borders or frames.

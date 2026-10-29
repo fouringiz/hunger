@@ -1,0 +1,112 @@
+{
+  "columns": 6,
+  "frames": 6,
+  "cell": [
+    256,
+    256
+  ],
+  "anchor": [
+    128,
+    128
+  ],
+  "lifecycle": "birth-growth-dissipation; not a looping clip",
+  "scale": 0.5079365079365079,
+  "source": "reports/generated/flamethrower/smoke-six-source-v1.png",
+  "sourceSha256": "2e786058803bda9ed9f7abdfecc9f3fec40f1f595eec6f3e14888f78f6ce4472",
+  "cuts": [
+    0,
+    250,
+    565,
+    965,
+    1390,
+    1824,
+    2172
+  ],
+  "sources": [
+    {
+      "rect": [
+        49,
+        315,
+        177,
+        150
+      ],
+      "centre": [
+        137.5,
+        390
+      ],
+      "coreAlpha": 253,
+      "opacity": 1
+    },
+    {
+      "rect": [
+        275,
+        261,
+        275,
+        253
+      ],
+      "centre": [
+        412.5,
+        387.5
+      ],
+      "coreAlpha": 253,
+      "opacity": 1
+    },
+    {
+      "rect": [
+        579,
+        200,
+        373,
+        361
+      ],
+      "centre": [
+        765.5,
+        380.5
+      ],
+      "coreAlpha": 253,
+      "opacity": 1
+    },
+    {
+      "rect": [
+        967,
+        167,
+        415,
+        428
+      ],
+      "centre": [
+        1174.5,
+        381
+      ],
+      "coreAlpha": 253,
+      "opacity": 0.8695652173913043
+    },
+    {
+      "rect": [
+        1403,
+        160,
+        392,
+        441
+      ],
+      "centre": [
+        1599,
+        380.5
+      ],
+      "coreAlpha": 235,
+      "opacity": 0.6382978723404256
+    },
+    {
+      "rect": [
+        1832,
+        212,
+        303,
+        343
+      ],
+      "centre": [
+        1983.5,
+        383.5
+      ],
+      "coreAlpha": 160,
+      "opacity": 0.4
+    }
+  ],
+  "status": "source sheet; runtime integration and motion review pending"
+}

@@ -14,6 +14,7 @@ async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHt
   files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
   files.level4YawArt='hunger-level4-yaw-v1.png';
   files.level4Art=source.includes('assets/hunger-level4-towers-v2.png')?'hunger-level4-towers-v2.png':'hunger-level4-towers-v1.png';
+  files.fuelFireArt='hunger-flame-billows-v1.png';
   for(const [name,file]of Object.entries(files)){
     if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;
     const local=path.join(root,'assets',file);
