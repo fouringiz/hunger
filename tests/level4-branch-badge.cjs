@@ -2,10 +2,10 @@
 // Badge visibility is a presentation contract; actual-game frames are reviewed separately.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const ROOT=path.join(__dirname,'..'),html=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8'),source=html.match(/<script>([\s\S]*?)<\/script>/)[1];
-const entries=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8')).entries;
+const entries=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8')).entries;
 function boot(code=source){
  const arcs=[],texts=[],draws=[];
- class Image{constructor(){this.complete=true;this.naturalWidth=this.naturalHeight=2048;}}
+ class Image{constructor(){this.complete=true;this.naturalWidth=this.naturalHeight=2048;}set src(v){this._src=v;this.naturalWidth=v.endsWith('hunger-level4-towers-v2.png')?4096:2048;}get src(){return this._src;}}
  const ctx=new Proxy({}, {get(o,k){
   if(k==='arc')return (...a)=>arcs.push(a);
   if(k==='fillText')return (...a)=>texts.push(a);
@@ -21,7 +21,7 @@ function boot(code=source){
 }
 function check(code=source){
  for(const e of entries)for(const state of ['ready','paused','selling'])for(const status of ['loaded','loading','failed','unrelated-missing']){
-  const r=boot(code),image=e.frames.length===1?'level4Art':'level4YawArt',other=e.frames.length===1?'level4YawArt':'level4Art';
+  const r=boot(code),image='level4Art',other='flamerArt';
   r.run(`reset();S.credits=10000;build(SLOTS[2],${JSON.stringify(e.type)});upgrade(S.towers[0]);upgrade(S.towers[0]);upgrade(S.towers[0],${JSON.stringify(e.branch)});S.towers[0].warm=0;observeConstruction();presentationTime=3;observeConstruction();S.towers[0].paused=${state==='paused'};S.towers[0].selling=${state==='selling'};S.towers[0].sellT=SELL_TIME*.5;`);
   if(status==='loading')r.run(`${image}.complete=false;`);
   if(status==='failed')r.run(`${image}.naturalWidth=0;`);
@@ -34,7 +34,7 @@ function check(code=source){
   assert.equal(circle.length,loaded?0:1,label+': only fallback draws the round branch badge');
   assert.equal(letter.length,loaded?0:1,label+': only fallback draws the branch initial');
   if(loaded){
-   const file=e.frames.length===1?'hunger-level4-towers-v1.png':'hunger-level4-yaw-v1.png';
+   const file='hunger-level4-towers-v2.png';
    assert.ok(r.draws.some(([im])=>im.src.endsWith(file)),label+': specialization art must actually be drawn');
   }else{
    const initial=r.run('BRANCHES[S.towers[0].type][S.towers[0].branch].name[0]');

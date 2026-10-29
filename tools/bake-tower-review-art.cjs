@@ -4,16 +4,11 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const ROOT=path.join(__dirname,'..'),DIR=path.join(ROOT,'reports/generated/level4-review/sources');
 async function main(){
- const neutral=process.argv.includes('--neutral'),name=neutral?'voltaic-neutral':'level4-yaw',file=path.join(DIR,name+'.png');
- const im=await loadImage(file),canvas=createCanvas(neutral?256:768,neutral?256:512),g=canvas.getContext('2d');
- const specs=neutral?[{key:'voltaic-neutral',box:[350,120,620,954],width:32*620/954,pivot:[660,950],tip:[660,215]}]:[
-  {key:'machine-gun',box:[30,133,445,304],width:38,pivot:[205,281],tip:[466,282]},
-  {key:'rifle',box:[519,179,603,225],width:51,pivot:[690,282],tip:[1113,279]},
-  {key:'prism',box:[1158,140,340,298],width:32,pivot:[1290,285],tip:[1440,286]},
-  {key:'howitzer',box:[24,585,487,308],width:38,pivot:[209,740],tip:[489,740]},
-  {key:'plasma',box:[552,577,461,296],width:38,pivot:[720,736],tip:[969,738]},
-  {key:'cryojet',box:[1064,589,450,287],width:38,pivot:[1239,736],tip:[1488,736]}
- ];
+ // The former overhead level-four atlas is retired. Only the neutral coil remains.
+ if(!process.argv.includes('--neutral'))throw Error('Use --neutral, or bake-level4-poses.cjs for directional level-four art');
+ const neutral=true,name='voltaic-neutral',file=path.join(DIR,name+'.png');
+ const im=await loadImage(file),canvas=createCanvas(256,256),g=canvas.getContext('2d');
+ const specs=[{key:'voltaic-neutral',box:[350,120,620,954],width:32*620/954,pivot:[660,950],tip:[660,215]}];
  const entries=specs.map((s,i)=>{
   const [x,y,w,h]=s.box,scale=Math.min(224/w,224/h,120/(s.pivot[0]-x),120/(x+w-s.pivot[0]),...(neutral?[]:[112/(s.pivot[1]-y),112/(y+h-s.pivot[1])])),dx=128-(s.pivot[0]-x)*scale,dy=neutral?8:128-(s.pivot[1]-y)*scale;
   const rect=[i%3*256,Math.floor(i/3)*256,256,256];

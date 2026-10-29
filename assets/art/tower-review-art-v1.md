@@ -1,3 +1,5 @@
+> Historical review notes. The overhead level-four atlas is retired; see [level-four v2](level4-towers-v2.md). Neutral Voltaic art remains in use.
+
 # Review follow-up assets
 
 Generated with built-in ImageGen, 2026-10-29. Reference: the unchanged approved

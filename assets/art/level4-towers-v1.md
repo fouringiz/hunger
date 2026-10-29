@@ -1,3 +1,5 @@
+> Historical v1 integration notes. Current runtime uses `hunger-level4-towers-v2.png` and sixteen authored views; see [v2](level4-towers-v2.md). The overhead atlas/path described below has been retired.
+
 # Level 4 towers — sprite integration v1
 
 User-selected designs, approved 2026-10-29: Machine Gun C, Rifle C, Tesla C,

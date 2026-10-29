@@ -1241,9 +1241,7 @@ if (structureArt) structureArt.src = (location.pathname.includes('/reports/gener
 const flamerArt = typeof Image === 'undefined' ? null : new Image();
 if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
-if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v1.png';
-const level4YawArt = typeof Image === 'undefined' ? null : new Image();
-if (level4YawArt) level4YawArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-yaw-v1.png';
+if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
 if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
@@ -1755,8 +1753,7 @@ function flamerPoint(angle,x,y=0) {
   const m=weaponProjection(angle);return {x:m.a*x+m.c*y,y:FLAMER_ART.mountY+m.b*x+m.d*y};
 }
 // Level-4 art is presentation only. The frame table is embedded for disk-browser loading.
-const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":41.7003,"tips":[[230.887,132.571],[207.93,168.581],[126.052,191.26],[48.229,178.246],[24.298,122.932],[76.015,74.097],[132.224,59.702],[199.702,75.543]],"seats":[[128,215.155],[128,216.646],[128,215.652],[128,217.143],[128,216.149],[128,215.652],[128,216.149],[128,216.149]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":62.4044,"tips":[[244.335,192.36],[211.076,221.804],[128.727,229.695],[44.356,219.876],[35.331,194.764],[69.789,120.727],[127.455,114.342],[191.273,118.764]],"seats":[[128,223.636],[128,228],[128,225.091],[128,229.455],[128,223.636],[128,222.909],[128,224],[128,225.091]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":40,"tips":[[159.887,94.147],[160.37,95.245],[128.275,97.189],[91.435,100.351],[79,101.504],[85.517,53.278],[127.725,45.482],[178.098,54.871]],"seats":[[128,208.157],[128,208.157],[128,208.157],[128,207.608],[128,207.608],[128,206.51],[128,207.059],[128,206.51]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":42.2857,"tips":[[194.446,49.325],[204.612,106.354],[128.538,46.692],[65.118,49.325],[59.12,47.683],[90.717,26.015],[128,25.498],[178.96,28.25]],"seats":[[128,218.462],[128,217.923],[128,218.462],[128,219],[128,217.923],[128,220.615],[128,218.462],[128,221.154]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":40.7822,"tips":[[223.508,147.135],[206.573,156.865],[127.459,166.595],[47.816,157.108],[40.816,146],[79.616,59.568],[128,58.638],[200.638,61.514]],"seats":[[128,208.649],[128,220],[128,217.838],[128,219.459],[128,208.649],[128,204.865],[128,206.486],[128,204.865]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":41.3738,"tips":[[212.935,145.924],[199.198,161.639],[126.209,189.488],[64.012,163.612],[36.094,161.858],[86.275,57.643],[132.543,53.666],[184.296,55.697]],"seats":[[128,216.481],[128,220.223],[128,219.688],[128,220.223],[128,210.601],[128,211.136],[128,212.205],[128,212.205]]}];
-const LEVEL4_YAW=[{"key":"machine-gun","rect":[0,0,256,256],"size":49.18651685393259,"bearing":[128,128],"muzzle":[244,128.44444444444446]},{"key":"rifle","rect":[256,0,256,256],"size":77.94626865671641,"bearing":[128,128],"muzzle":[245.5,127.16666666666666]},{"key":"prism","rect":[512,0,256,256],"size":41.76313725490196,"bearing":[128,128],"muzzle":[214.53846153846155,128.5769230769231]},{"key":"howitzer","rect":[0,256,256,256],"size":50.271321013004794,"bearing":[128,128],"muzzle":[239.25827814569533,128]},{"key":"plasma","rect":[256,256,256,256],"size":51.5239334779465,"bearing":[128,128],"muzzle":[229.97952218430032,128.81911262798633]},{"key":"cryojet","rect":[512,256,256,256],"size":49.540740740740745,"bearing":[128,128],"muzzle":[236.65454545454543,128]}];
+const LEVEL4_ART = [{"key":"machine-gun","type":"turret","branch":"A","row":0,"size":49.76209150326797,"tips":[[237.83713,122.98371],[223.6873,151.20521],[212.35179,172.93811],[196.09121,187.16612],[135.73941,191.15309],[76.09121,184.74267],[56.54723,176.14332],[38.87948,163.63518],[31.76547,128.61238],[50.91857,113.52443],[73.58958,87.0228],[76.79479,80.69055],[126.35831,68.33876],[179.43974,78.34528],[199.53094,92.57329],[217.5114,105.86319]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"rifle","type":"turret","branch":"B","row":1,"size":57.66213592233009,"tips":[[231.44828,147.51724],[237.24138,181.24138],[223.17241,206],[198.8,225.17241],[125.86207,207.58621],[80.75862,206.34483],[37.24138,195.7931],[17.58621,185.58621],[34.27586,147.65517],[41.51724,119.93103],[55.58621,103.44828],[80.75862,86.13793],[128.62069,82.75862],[175.93103,83.44828],[205.44828,88.2069],[213.51724,126.27586]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"tesla","type":"voltaic","branch":"A","row":2,"size":52.5714,"tips":[[127.488,29.645]],"seats":[[128,218.706]]},{"key":"prism","type":"voltaic","branch":"B","row":3,"size":43.07692307692307,"tips":[[167.49367,120.73924],[155.55781,104.23966],[154.24135,102.30886],[142.48101,110.29536],[131.15949,106.87257],[138.79494,99.76371],[107.63882,98.97384],[100.1789,101.69451],[91.31477,134.8692],[77.09705,73.4346],[84.90802,73.4346],[110.35949,56.84726],[128.43882,68.51983],[170.21435,67.64219],[166.08945,76.85738],[164.15865,96.95527]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"howitzer","type":"cannon","branch":"A","row":4,"size":45.53846153846154,"tips":[[206.34098,46.09836],[200.88525,59.7377],[195.25902,74.99672],[180.51148,65.61967],[131.92131,94.68852],[87.93443,84.54426],[66.11148,75.93443],[60.99672,66.47213],[53.49508,60.67541],[61.93443,52.91803],[95.26557,30.7541],[108.81967,22.14426],[129.36393,23.08197],[157.32459,29.98689],[174.54426,39.19344],[198.83934,44.56393]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cluster","type":"cannon","branch":"B","row":5,"size":43.9313,"tips":[[132.16,84.691]],"seats":[[128,223.426]]},{"key":"plasma","type":"flamer","branch":"A","row":6,"size":38.15384615384615,"tips":[[229.81513,109.88235],[215.39496,127.27395],[214.52101,136.10084],[191.88571,145.71429],[131.05882,142.30588],[66.38655,143.00504],[64.98824,142.30588],[63.24034,137.06218],[15.17311,111.54286],[50.65546,91.61681],[50.21849,69.2437],[123.71765,52.90084],[123.97983,43.37479],[185.33109,64.52437],[211.11261,68.89412],[230.16471,82.87731]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]},{"key":"cryojet","type":"flamer","branch":"B","row":7,"size":45.95982532751092,"tips":[[242.54181,135.79933],[238.12709,169.43144],[208.42809,184.52174],[194.62207,196.80268],[127.67893,187.89298],[56.16054,185.40468],[38.74247,180.6689],[25.97993,167.10368],[18.35452,136.52174],[34.80936,89.16388],[73.8194,73.99331],[107.77258,54.56856],[120.77592,32.09365],[184.34783,51.35786],[228.01338,77.92642],[236.1204,62.51505]],"seats":[[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220],[128,220]]}];
 const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240];
 // A filled, stationary bearing closes the empty foundation socket. Its near lip hides the inserted peg.
 // Socket centres are measured on the foundation art drawn at 44 x 34, independently of upper-frame anchors.
@@ -1819,21 +1816,57 @@ function drawNeutralVoltaic(t,progress=1){
   ctx.restore();drawLevel4Coupling(t,true);
 }
 
-let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap();
+let level4Scene=null,level4Upgrades=new WeakMap(),level4Shells=new WeakMap(),level4ViewStates=new WeakMap();
 function level4Spec(t){return t.level===4&&t.branch?LEVEL4_ART.find(s=>s.type===t.type&&s.branch===t.branch):null;}
-function level4Ready(spec=null){
-  if(spec&&spec.tips.length>1)return !!(level4YawArt&&level4YawArt.complete&&level4YawArt.naturalWidth>=768&&level4YawArt.naturalHeight>=512);
-  return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===2048&&level4Art.naturalHeight===2048);}
+function level4Ready(){
+  return !!(level4Art&&level4Art.complete&&level4Art.naturalWidth===4096&&level4Art.naturalHeight===2048);
+}
+// Authored world-yaw views retain the map camera. Interpolate only the transition
+// and its attachment point; never project or flatten the upper image.
+function level4Views(angle,count){
+  if(count===1)return {frame:0,yaw:0};
+  const yaw=Math.atan2(Math.sin(angle)/.56,Math.cos(angle)),turn=Math.PI*2;
+  return {frame:Math.round(((yaw%turn+turn)%turn)*count/turn)%count,yaw};
+}
+function level4Transition(t,frame){
+  observeLevel4(t);
+  let event=level4ViewStates.get(t);
+  const sample=e=>{
+    const k=deploymentStep(presentationTime-e.at,0,.06),weights=new Map();
+    for(const v of e.from)weights.set(v.frame,(weights.get(v.frame)||0)+v.weight*(1-k));
+    weights.set(e.target,(weights.get(e.target)||0)+k);
+    return [...weights].filter(([,weight])=>weight>1e-10).map(([frame,weight])=>({frame,weight}));
+  };
+  if(!event){event={from:[{frame,weight:1}],target:frame,at:presentationTime};level4ViewStates.set(t,event);}
+  else if(event.target!==frame){event={from:sample(event),target:frame,at:presentationTime};level4ViewStates.set(t,event);}
+  return sample(event);
+}
+let level4BlendCanvas=null;
+function level4Image(p){
+  if(p.views.length===1)return {image:level4Art,rect:[p.views[0].frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL]};
+  if(!level4BlendCanvas){level4BlendCanvas=document.createElement('canvas');level4BlendCanvas.width=level4BlendCanvas.height=LEVEL4_CELL;}
+  const g=level4BlendCanvas.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,LEVEL4_CELL,LEVEL4_CELL);
+  // Add premultiplied layers on a transparent buffer: common opaque pixels remain
+  // opaque instead of losing contrast to two source-over half-opacity draws.
+  g.globalCompositeOperation='lighter';
+  for(const {frame,weight}of p.views){
+    g.globalAlpha=weight;g.drawImage(level4Art,frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL,0,0,LEVEL4_CELL,LEVEL4_CELL);
+  }
+  g.globalAlpha=1;g.globalCompositeOperation='source-over';
+  return {image:level4BlendCanvas,rect:[0,0,LEVEL4_CELL,LEVEL4_CELL]};
+}
 function observeLevel4(t){
-  if(level4Scene!==S){level4Scene=S;level4Upgrades=new WeakMap();level4Shells=new WeakMap();}
+  if(level4Scene!==S){level4Scene=S;level4Upgrades=new WeakMap();level4Shells=new WeakMap();level4ViewStates=new WeakMap();}
   let e=level4Upgrades.get(t);
   if(!e){e={branch:t.branch,at:-Infinity};level4Upgrades.set(t,e);}
-  else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;}
+  else if(e.branch!==t.branch){e.branch=t.branch;e.at=presentationTime;level4ViewStates.delete(t);}
 }
 function level4Pose(t,angle=t.angle,recoil=true){
   const spec=level4Spec(t);if(!spec||!level4Ready(spec))return null;
-  // Upright omnidirectional Tesla/Cluster stay fixed. Every aimed head uses a continuous yaw.
-  const projected=spec.tips.length>1,frame=0;
+  // Tesla/Cluster keep one fixed view; the six aimed heads use sixteen authored poses.
+  const {frame,yaw}=level4Views(angle,spec.tips.length);
+  const foreign=Math.abs(Math.atan2(Math.sin(angle-t.angle),Math.cos(angle-t.angle)))>1e-8;
+  const views=foreign?[{frame,weight:1}]:level4Transition(t,frame);
   const feedback=weaponFeedback.get(t),age=feedback?presentationTime-feedback.at:Infinity;
   const life=t.type==='cannon'?(t.branch==='A'?.42:.24):(t.branch==='B'?.28:.13);
   const strength=t.type==='cannon'?(t.branch==='A'?5.5:2.5):(t.branch==='B'?3.5:1.2);
@@ -1843,31 +1876,21 @@ function level4Pose(t,angle=t.angle,recoil=true){
   const rawDx=spec.key==='cluster'?0:-Math.cos(angle)*kick,rawDy=spec.key==='cluster'?kick:-Math.sin(angle)*kick*.56+(t.type==='cannon'?kick*.16:0);
   const seatTravel=Math.hypot(rawDx,rawDy),seatScale=seatTravel>.9?.9/seatTravel:1;
   const dx=rawDx*seatScale,dy=rawDy*seatScale;
-  const art=projected?LEVEL4_YAW.find(a=>a.key===spec.key):null;
-  const tip=art?art.muzzle:spec.tips[frame],seat=art?art.bearing:spec.seats[frame];
-  const size=art?art.size:spec.size,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
-  // Seat the broad bearing on the socket, not the bottom of the narrow insertion peg.
+  const seat=spec.seats[frame],size=spec.size,scale=size/LEVEL4_CELL,socket=LEVEL4_SOCKETS[t.type];
+  const tip=[0,1].map(i=>views.reduce((sum,v)=>sum+spec.tips[v.frame][i]*v.weight,0));
   const mountY=socket.y,bodyY=mountY+(LEVEL4_ANCHOR[1]-seat[1])*scale;
-  if(projected){
-    const matrix=weaponProjection(angle),originX=socket.x+dx,originY=mountY+dy;
-    const u=(tip[0]-seat[0])*scale,v=(tip[1]-seat[1])*scale;
-    return {spec,art,projected,matrix,frame,age,kick,dx,dy,seat,bodyY,size,originX,originY,
-      x:-seat[0]*scale,y:-seat[1]*scale,
-      muzzle:{x:originX+matrix.a*u+matrix.c*v,y:originY+matrix.b*u+matrix.d*v}};
-  }
-  return {spec,projected,frame,age,kick,dx,dy,seat,bodyY,size,
+  return {spec,frame,views,age,kick,dx,dy,seat,bodyY,size,frontFacing:spec.tips.length===1||Math.sin(yaw)>-.15,
     x:socket.x-seat[0]*scale+dx,y:mountY-seat[1]*scale+dy,
     muzzle:{x:socket.x+(tip[0]-seat[0])*scale+dx,y:mountY+(tip[1]-seat[1])*scale+dy}};
-
 }
+
 function level4Muzzle(t,angle=t.angle,recoil=true){
   const p=level4Pose(t,angle,recoil);return p?{x:t.x+p.muzzle.x,y:t.y+p.muzzle.y}:null;
 }
 function shellLaunchPoint(sh){
   if(!level4Spec(sh.tower))return weaponMuzzle(sh.tower);
   let p=level4Shells.get(sh);
-  if(!p){const x=sh.cluster?sh.cluster.cx:sh.tx,y=sh.cluster?sh.cluster.cy:sh.ty;
-    const angle=Math.atan2(y-sh.sy,x-sh.sx);p=level4Muzzle(sh.tower,angle,false)||weaponMuzzle(sh.tower,angle);level4Shells.set(sh,p);}
+  if(!p){p=level4Muzzle(sh.tower,sh.tower.angle,false)||weaponMuzzle(sh.tower);level4Shells.set(sh,p);}
   return p;
 }
 function drawLevel4Mechanism(t,p){
@@ -1876,7 +1899,7 @@ function drawLevel4Mechanism(t,p){
   const recent=p.age>=0&&p.age<.28;
   const x=p.muzzle.x,y=p.muzzle.y;
   ctx.save();
-  if(p.spec.key==='machine-gun'&&recent&&p.frame<=4){
+  if(p.spec.key==='machine-gun'&&recent&&p.frontFacing){
     // The barrel face turns; the receiver and ammunition box stay planted on their bearing.
     const phase=presentationTime*65,fade=1-deploymentStep(p.age,.13,.28);
     ctx.globalAlpha=.65*fade;ctx.fillStyle='#e3d3b2';
@@ -1894,7 +1917,7 @@ function drawLevel4Mechanism(t,p){
     // Indexing marks rotate on the visible side magazine following a single capsule launch.
     const phase=deploymentStep(p.age,.06,.42)*Math.PI*2/5;ctx.strokeStyle='#9c8a63';ctx.globalAlpha=.5;ctx.lineWidth=.7;
     for(let i=0;i<3;i++){const a=phase+i*2.1;ctx.beginPath();ctx.moveTo(15+p.dx,p.bodyY-15+p.dy);ctx.lineTo(15+p.dx+Math.cos(a)*2,p.bodyY-15+p.dy+Math.sin(a)*4);ctx.stroke();}
-  }else if(hot&&p.frame<=4){
+  }else if(hot&&p.frontFacing){
     const cryo=p.spec.key==='cryojet';ctx.strokeStyle=cryo?'#c4eff4':'#ffc16b';ctx.lineWidth=cryo?.8:1.2;
     ctx.globalAlpha=cryo?.3:.45+.13*Math.sin(S.time*28);ctx.beginPath();ctx.ellipse(x,y,cryo?2:1.6,2.3,0,0,Math.PI*2);ctx.stroke();
   }
@@ -1911,32 +1934,14 @@ function drawLevel4Tower(t,progress=1){
   if(t.type==='flamer'&&e&&t.jetAt!==undefined&&S.time-t.jetAt<.23)upgrade=1;
   const open=Math.min(progress,upgrade),drop=(p.size+24)*(1-open);
   drawLevel4Coupling(t);
-  if(p.projected){
-    // The shaft stays upright; only the flat upper is projected. A ready muzzle may
-    // extend in front of the foundation, so never clip it at the socket's near edge.
-    ctx.save();
-    // Keep early emergence inside the socket; uncover the near half only as the
-    // carrier seats. This avoids front-panel emergence and a last-frame clip pop.
-    const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
-    if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
-    ctx.translate(0,drop);
-    ctx.fillStyle='#334039';ctx.fillRect(p.originX-4,p.originY-2,8,4);
-    ctx.fillStyle='#9a9d83';ctx.fillRect(p.originX-3,p.originY-2,1.5,4);
-    // The fixed lip covers the foot of the shaft, below the rotating upper.
-    ctx.save();ctx.translate(0,-drop);drawLevel4Coupling(t,true);ctx.restore();
-    for(const z of [3,1.5,0]){
-      ctx.save();ctx.translate(p.originX,p.originY+z);
-      const m=p.matrix;ctx.transform(m.a,m.b,m.c,m.d,0,0);
-      if(z)ctx.filter='brightness(0.38)';
-      try{ctx.drawImage(level4YawArt,...p.art.rect,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();ctx.restore();return false;}
-      ctx.restore();
-    }
-    if(open>=1)drawLevel4Mechanism(t,p);
-    ctx.restore();return true;
-  }
-  ctx.save();ctx.beginPath();ctx.rect(-64,-110,128,110+LEVEL4_SOCKETS[t.type].y+4);ctx.clip();
+  ctx.save();
+  const near=LEVEL4_SOCKETS[t.type].y+4,front=near+(20-near)*deploymentStep(open,.85,1);
+  if(open<1){ctx.beginPath();ctx.rect(-64,-110,128,110+front);ctx.clip();}
   ctx.translate(0,drop);
-  try{ctx.drawImage(level4Art,p.frame*LEVEL4_CELL,p.spec.row*LEVEL4_CELL,LEVEL4_CELL,LEVEL4_CELL,p.x,p.y,p.size,p.size);}catch(_){ctx.restore();return false;}
+  try{
+    const art=level4Image(p);
+    ctx.drawImage(art.image,...art.rect,p.x,p.y,p.size,p.size);
+  }catch(_){ctx.restore();return false;}
   if(open>=1)drawLevel4Mechanism(t,p);
   ctx.restore();drawLevel4Coupling(t,true);return true;
 }
@@ -3202,7 +3207,7 @@ function draw() {
   for (const t of S.towers) if (t.type === 'turret') {
     const feedback=weaponFeedback.get(t), age=feedback ? presentationTime-feedback.at : Infinity;
     if (age >= 0 && age < 0.065) {
-      const {x,y}=weaponMuzzle(t,feedback.angle);
+      const {x,y}=weaponMuzzle(t,level4Spec(t)&&level4Ready()?t.angle:feedback.angle);
       ctx.globalAlpha=1-age/0.065;ctx.fillStyle='#fff0ad';ctx.beginPath();ctx.arc(x,y,2.5+3*(1-age/0.065),0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
     }
   }
@@ -3215,7 +3220,7 @@ function draw() {
       ctx.fillStyle='#e8bb62'; ctx.beginPath(); ctx.ellipse(b.x + Math.cos(b.angle+1.9)*d, b.y + Math.sin(b.angle+1.9)*d + age*age*24, 2, 1, b.angle, 0, Math.PI*2); ctx.fill();
     } else if (b.kind === 'cannonMuzzle') {
       const firingTower=S.towers.find(t=>t.type==='cannon'&&t.x===b.x&&t.y===b.y);
-      const {x,y}=weaponMuzzle(firingTower||{type:'cannon',x:b.x,y:b.y},b.angle);
+      const {x,y}=weaponMuzzle(firingTower||{type:'cannon',x:b.x,y:b.y},firingTower&&level4Spec(firingTower)&&level4Ready()?firingTower.angle:b.angle);
       ctx.fillStyle='#ffd27f';ctx.beginPath();ctx.arc(x,y,5*k+1,0,Math.PI*2);ctx.fill();
     } else if (b.kind === 'impactDust') {
       ctx.strokeStyle='#d7c3a0';ctx.lineWidth=2;
