@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // User-run through capture-organic-world.cjs --flamethrower. Uses that tool's actual game renderer.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
@@ -45,7 +46,7 @@ async function main(){
   if(REF_FIRE)return approvedJetMain();
   if(process.argv.includes('--flamethrower-fire'))return fireMain();
   const arg=process.argv.indexOf('--before'),rev=arg<0?BASE:process.argv[arg+1];
-  const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+  const before=readRevision(rev,'prototype/index.html');
   for(const zone of ['mire','ember']){
     const old=await capture(zone,'before',before),current=await capture(zone,'after',null);
     assert.deepEqual(current,old,'presentation integration must preserve both simulation fingerprints');
@@ -60,7 +61,7 @@ async function main(){
   console.log('Wrote '+OUT+'/{before,after}-{mire,ember}-{whole,whole-gray,turn-game,turn-zoom,sweep-*-game,sweep-*-zoom,states-game,states-zoom}.png and reference-and-game.png; simulation fingerprints unchanged.');
 }
 async function deploymentMain(){
-  const before=execFileSync('git',['show','9ea29bb:prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+  const before=readRevision('9ea29bb','prototype/index.html');
   for(const zone of ['mire','ember'])for(const label of ['before','after']){
     const w=await loadWorld({zone,sourceHtml:label==='before'?before:null});
     w.run("reset();S.phase='build';S.credits=1000;build(SLOTS[2],'flamer');S.selected=null;S.towers[0].angle=0;observeConstruction();");
@@ -80,7 +81,7 @@ async function fireMain(){
   const arg=process.argv.indexOf('--before');
   const rev=arg<0?(WIDTH_FIRE?'c56b950':REF_FIRE?'2308926':'198ef68'):process.argv[arg+1];
   assert.ok(rev,'--before requires a Git revision');
-  const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),fingerprints={};
+  const before=readRevision(rev,'prototype/index.html'),fingerprints={};
   for(const zone of ['mire','ember'])for(const label of ['before','after']){
     const w=await loadWorld({zone,sourceHtml:label==='before'?before:null});
     fingerprints[label]={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
@@ -112,7 +113,7 @@ async function fireMain(){
 async function approvedJetMain(){
   const arg=process.argv.indexOf('--before'),rev=arg<0?(LAYER_FIRE?'6c66c10168309f6d51a805a94416fd41afcfb927':CONTACT_FIRE?'5d8eb5fca77dd2fca4d0e24ccc39d3bdb39b0d72':'ed1b683775c1d1f2d5d6dc943c49a93c66b70de5'):process.argv[arg+1];
   assert.ok(rev,'--before requires a revision');
-  const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+  const before=readRevision(rev,'prototype/index.html');
   const report={before:rev,smoke:'iteration 2 not started',zones:{}};
   function grid(cells,cols=4){const w=cells[0].width,h=cells[0].height,c=createCanvas(w*cols,h*Math.ceil(cells.length/cols)),g=c.getContext('2d');cells.forEach((v,i)=>g.drawImage(v,i%cols*w,Math.floor(i/cols)*h));return c;}
   function copy(c){const d=createCanvas(c.width,c.height);d.getContext('2d').drawImage(c,0,0);return d;}

@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas}=require('@napi-rs/canvas');
 const {loadWorld}=require('./capture-organic-world.cjs');
@@ -6,7 +7,7 @@ const ROOT=path.join(__dirname,'..');
 async function capture(){
  const zone=process.argv.includes('--ember')?'ember':'mire',dir=path.join(ROOT,'reports/carapacid-shelter'),frames=path.join(ROOT,'reports/generated/carapacid-shelter-'+zone);fs.mkdirSync(dir,{recursive:true});fs.mkdirSync(frames,{recursive:true});
  const before=process.argv.includes('--before');
- const sourceHtml=before?require('node:child_process').execFileSync('git',['show','0a6d30a:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}):null;
+ const sourceHtml=before?readRevision('0a6d30a','prototype/index.html'):null;
  const {canvas,run}=await loadWorld({zone,sourceHtml});
  run(`reset();S.credits=10000;build(SLOTS[1],'turret');S.towers[0].cd=999;S.selected=null;observeConstruction();presentationTime=2;observeConstruction();S.phase='wave';S.wave=1;S.spawnQueue=[];
  const c=makeEnemy('carapacid',1);c.d=285;Object.assign(c,posAt(c.d));c.hp=c.maxHp=100000;

@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // Run by the user. Frames of the Leech's surfacing from the actual inline game renderer (loadWorld), not a browser session.
 // node tools/capture-leech-surfacing.cjs [--before REV]   (default REV: HEAD; "before" exists only for the pad scene)
 // Writes reports/generated/leech-surfacing/<label>-<scene>-{game,zoom}.png: per scene one colour row and one greyscale row,
@@ -76,7 +77,7 @@ async function after(world){
 async function main(){
  const rev=process.argv.includes('--before')?process.argv[process.argv.indexOf('--before')+1]:'HEAD';
  fs.mkdirSync(OUT,{recursive:true});
- const before=execFileSync('git',['show',rev+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+ const before=readRevision(rev,'prototype/index.html');
  sheet(padScene(await loadWorld({zone:'mire',sourceHtml:before})),path.join(OUT,'before-pad'));
  const rows=await after(await loadWorld({zone:'mire'}));
  for(const [scene,cells]of Object.entries(rows))sheet(cells,path.join(OUT,'after-'+scene));

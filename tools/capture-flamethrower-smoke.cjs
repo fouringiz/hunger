@@ -1,4 +1,5 @@
 'use strict';
+const {readRevision}=require('./history.cjs');
 // User-run actual renderer capture; no ignored reference inputs.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
@@ -14,7 +15,7 @@ async function scene(zone,sourceHtml,branch,angle){
 }
 function draw(w,time,firing=true){const sig=w.run('replaySignature()');w.run(`presentationTime=${time};S.towers[0].jetAt=${firing?'0':'undefined'};draw();`);assert.equal(w.run('replaySignature()'),sig,'render remains simulation read-only');return copy(w.canvas);}
 async function main(){
-  fs.mkdirSync(OUT,{recursive:true});const before=execFileSync('git',['show','194103f:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),verification={baseline:'194103f',zones:{}};
+  fs.mkdirSync(OUT,{recursive:true});const before=readRevision('194103f','prototype/index.html'),verification={baseline:'194103f',zones:{}};
   for(const zone of ['mire','ember']){
     for(const branch of ['', 'A','B'])for(let n=0;n<8;n++){
       const frames=[];
