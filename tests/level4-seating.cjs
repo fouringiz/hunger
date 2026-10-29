@@ -5,7 +5,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const ROOT=path.join(__dirname,'..'),table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8'));
 // Independently measured foundation sockets, in world pixels of the existing 44 x 34 foundation.
-const sockets={turret:[0,-5.5],voltaic:[0,-5.5],cannon:[0,-3.2],flamer:[0,-6]};
+const sockets={turret:[0,-5.5],voltaic:[0,-5.5],cannon:[0,-5.5],flamer:[0,-5.5]};
 async function check(sourceHtml=null){
  const w=await loadWorld({sourceHtml});
  w.run(`const seatingDrawImage=ctx.drawImage.bind(ctx),seatingCoupling=typeof drawLevel4Coupling==='function'?drawLevel4Coupling:null;
@@ -20,8 +20,7 @@ async function check(sourceHtml=null){
   w.run(`seatingLayer=${JSON.stringify(kind)};ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.globalAlpha=1;ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.setTransform(2,0,0,2,128,160);
    if(seatingCoupling)drawLevel4Coupling=['upper','head','support'].includes(seatingLayer)?()=>{}:seatingCoupling;
    if(seatingLayer==='base'){
-    if(S.towers[0].type==='flamer')ctx.drawImage(flamerArt,...FLAMER_ART.rects[0],-22,-17,44,34);
-    else lowBuildingSprite(S.towers[0].type==='cannon'?1:0,-22,-17,44,34);
+    lowBuildingSprite(0,-22,-17,44,34);
    }else if(seatingLayer==='bearing'){seatingCoupling(S.towers[0]);seatingCoupling(S.towers[0],true);}
    else drawLevel4Tower(S.towers[0]);`);
   return w.canvas.getContext('2d').getImageData(0,0,256,256).data;

@@ -30,8 +30,8 @@ is preserved at `references/towers/level4-selected-approved-v1.png`.
 
 ## Implemented presentation
 
-Level 4 selects a dedicated upper assembly by specialization. The 44 × 34
-foundation remains stationary. Six aimed heads use an overhead source with the
+Level 4 selects a dedicated upper assembly by specialization. All four weapon families now share the exact Turret foundation and central bearing
+at every level. The 44 × 34 foundation remains stationary. Six aimed heads use an overhead source with the
 same continuous ground-plane projection as levels 1–3, with a shallow layered
 side and an upright support shaft. Head and muzzle share one transform. Upright
 Tesla/Cluster retain their fixed-camera source. Voltaic levels 1–3 now use the new

@@ -1,3 +1,29 @@
+# Shared weapon foundation — implementation prepared, verification pending
+
+- User approved one identical Turret foundation for all four weapon families and
+  levels. Same low-buildings cell 0, 44×34 placement and central bearing at (0,-5.5).
+- Rendering now routes basic Turret/Cannon, Voltaic, Flamethrower and all eight
+  level-four heads through the shared foundation. Cannon/Flamethrower level-four
+  bearing centres follow the common socket; upper and muzzle move together.
+- Construction/retraction keeps the complete base fixed; only upper parts move.
+  Basic weapon supports fill the shared socket. No source asset pixels/layout,
+  combat, balance, PATH/GATE_D or platform positions changed; no restamp needed.
+- Prepared `tests/common-tower-foundation.cjs`: all types, levels/branches,
+  aim/build/pause/sale states and fallbacks; rejects exact old split-base source
+  `528cb0b` and a deliberately shifted base. Existing contact/flamer/coherent-art
+  tests adapted to the approved shared-base and neutral-upper requirements.
+- Prepared `--tower-base <branch>` capture against `528cb0b`, isolating this visual
+  issue. It includes levels 1–3, construction, level-4 turn/upgrade, full attack,
+  pause/retraction, whole/close/grayscale for Mire/Ember and exact combat parity.
+- No tests, captures or disk-browser checks run by agent. No current before/after
+  frames exist; visual acceptance and contrast/perspective/contact are pending.
+- Criteria and exact commands: `reports/common-tower-foundation.md`. Next: user
+  runs checks and supplies frames; inspect them before claiming success. PR #69
+  stays open for independent visual review; no merge performed.
+
+---
+Previous checkpoint:
+
 # PR #69 review follow-up — implementation prepared, verification pending
 
 - Separate base-change iteration saved in `acb6218`: one neutral upper for

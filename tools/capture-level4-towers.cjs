@@ -3,7 +3,7 @@
 // node tools/capture-organic-world.cjs --level4 machine-gun
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),BASE=YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8'));
+const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),COMMON=process.argv.includes('--tower-base'),BASE=COMMON?'528cb0b':YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),'utf8'));
 const REFERENCES=[[30,94,354,337],[424,98,346,336],[804,75,329,360],[1174,90,346,344],[28,491,359,391],[427,553,342,331],[794,510,365,378],[1170,505,352,383]];
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
 function save(c,file){fs.writeFileSync(file+'.png',c.toBuffer('image/png'));}
@@ -11,11 +11,22 @@ function shot(w){const sig=w.run('replaySignature()');w.run('draw()');assert.equ
 function crop(w){const p=JSON.parse(w.run('JSON.stringify({x:SLOTS[2].x,y:SLOTS[2].y})')),c=createCanvas(224,224);c.getContext('2d').drawImage(w.canvas,(p.x-56)*2,(p.y-86)*2,224,224,0,0,224,224);return c;}
 function sheet(cells,file){const columns=Math.min(8,cells.length),rows=Math.ceil(cells.length/columns),c=createCanvas(columns*224,rows*448),g=c.getContext('2d');cells.forEach((cell,i)=>{const x=i%columns*224,y=Math.floor(i/columns)*448;g.drawImage(cell,x,y);g.drawImage(gray(cell),x,y+224);});save(c,file);const z=createCanvas(c.width*2,c.height*2);z.getContext('2d').drawImage(c,0,0,z.width,z.height);save(z,file+'-zoom');}
 function setup(w,spec,level4=true){
- w.run(`reset();S.credits=10000;S.phase='build';S.buildTimer=999;build(SLOTS[2],${JSON.stringify(spec.type)});upgrade(S.towers[0]);upgrade(S.towers[0]);${level4?`upgrade(S.towers[0],${JSON.stringify(spec.branch)});`:''}build(SLOTS[15],'generator');S.selected=null;S.towers.forEach(t=>t.warm=0);observeConstruction();presentationTime=3;observeConstruction();`);
+ const target=level4===true?4:level4===false?3:level4;
+ w.run(`reset();S.credits=10000;S.phase='build';S.buildTimer=999;build(SLOTS[2],${JSON.stringify(spec.type)});for(let l=1;l<${target};l++)upgrade(S.towers[0],l===3?${JSON.stringify(spec.branch)}:undefined);build(SLOTS[15],'generator');S.selected=null;S.towers.forEach(t=>t.warm=0);observeConstruction();presentationTime=3;observeConstruction();`);
 }
+
 async function capture(spec,zone,label,sourceHtml,out){
  const w=await loadWorld({zone,sourceHtml}),prefix=path.join(out,label+'-'+zone);
  const fingerprint={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
+ if(COMMON){
+  const levels=[];
+  for(const level of [1,2,3]){setup(w,spec,level);shot(w);levels.push(crop(w));save(w.canvas,prefix+'-level'+level+'-whole');save(gray(w.canvas),prefix+'-level'+level+'-whole-gray');}
+  sheet(levels,prefix+'-levels1to3');
+  setup(w,spec,1);w.run('presentationTime=0;constructionArt=new WeakMap();observeConstruction();');
+  const build=[],frames=path.join(out,label+'-'+zone+'-build-cycle');fs.mkdirSync(frames,{recursive:true});
+  for(let i=0;i<=54;i++){w.run(`presentationTime=${i/30};`);shot(w);const cell=crop(w);save(cell,path.join(frames,String(i).padStart(3,'0')));if(i%3===0)build.push(cell);}
+  sheet(build,prefix+'-build');
+ }
  setup(w,spec);const turn=[],turnFrames=path.join(out,label+'-'+zone+'-turn-cycle');if(YAW)fs.mkdirSync(turnFrames,{recursive:true});
  for(let i=0;i<=(YAW?360:32);i++){const a=i*Math.PI*2/(YAW?360:32);w.run(`S.towers[0].angle=${a};`);shot(w);const cell=crop(w);if(!YAW||i%10===0)turn.push(cell);if(YAW)save(cell,path.join(turnFrames,String(i).padStart(3,'0')));if(i===0){save(w.canvas,prefix+'-whole');save(gray(w.canvas),prefix+'-whole-gray');}}
  sheet(turn,prefix+'-turn');
@@ -35,14 +46,15 @@ async function capture(spec,zone,label,sourceHtml,out){
  assert.ok(w.run('weaponFeedback.has(S.towers[0])||S.towers[0].jetAt!==undefined'),'capture must exercise at least one real attack for '+spec.key);
  sheet(attack,prefix+'-attack');
  w.run('S.towers[0].paused=true;');shot(w);save(w.canvas,prefix+'-paused');
+ if(COMMON){const paused=[],start=w.run('presentationTime');for(let i=0;i<=18;i++){w.run(`presentationTime=${start+i/30};`);shot(w);paused.push(crop(w));}sheet(paused,prefix+'-pause-cycle');}
  w.run('S.towers[0].paused=false;sell(S.towers[0]);observeConstruction();');const sale=[];
  for(const k of [1,.8,.6,.4,.2,0]){w.run(`S.towers[0].sellT=SELL_TIME*${k};`);shot(w);sale.push(crop(w));}sheet(sale,prefix+'-sale');
  return {fingerprint,signatures};
 }
 async function main(){
- const arg=process.argv.indexOf(YAW?'--level4-yaw':NEUTRAL?'--voltaic-base':SEATING?'--level4-seat':'--level4'),key=process.argv[arg+1]||(NEUTRAL?'tesla':'machine-gun'),spec=TABLE.entries.find(e=>e.key===key);
+ const arg=process.argv.indexOf(COMMON?'--tower-base':YAW?'--level4-yaw':NEUTRAL?'--voltaic-base':SEATING?'--level4-seat':'--level4'),key=process.argv[arg+1]||(NEUTRAL?'tesla':'machine-gun'),spec=TABLE.entries.find(e=>e.key===key);
  if(!spec)throw Error('Choose one branch: '+TABLE.entries.map(e=>e.key).join(', '));
- const out=path.join(ROOT,YAW?'reports/generated/level4-yaw':NEUTRAL?'reports/generated/voltaic-base':SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
+ const out=path.join(ROOT,COMMON?'reports/generated/common-tower-base':YAW?'reports/generated/level4-yaw':NEUTRAL?'reports/generated/voltaic-base':SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
  const before=execFileSync('git',['show',BASE+':prototype/index.html'],{cwd:ROOT,encoding:'utf8'}),candidate=NEUTRAL?execFileSync('git',['show','acb6218:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}):null,results={};
  for(const zone of ['mire','ember']){
   const a=await capture(spec,zone,'before',before,out),b=await capture(spec,zone,'after',candidate,out);

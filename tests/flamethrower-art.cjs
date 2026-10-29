@@ -66,7 +66,7 @@ r.run("S.towers[0].branch='B';");const cryoSignature=r.run('replaySignature()');
 r.run("drawFlamethrower(S.towers[0]);");assert.equal(r.run('replaySignature()'),cryoSignature,'Cryojet drawing leaves combat state unchanged');
 const fallback=boot(source,false);assert.doesNotThrow(()=>fallback.run("drawFlamethrower({angle:1.1,branch:'B',paused:true});"),'failed/loading art has a pixel-free fallback');
 // Known bad variants must fail the same contracts: rotating the whole foundation, old nozzle length, missing art.
-assert.throws(()=>checkFoundation(boot(source.replace('if(!part(0,-22,-17,44,34)){','ctx.rotate(t.angle);if(!part(0,-22,-17,44,34)){'))),/foundation must stay fixed/);
+assert.throws(()=>checkFoundation(boot(source.replace('  drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)', '  ctx.rotate(t.angle);drawTowerFoundation(t);\n  const lift=deploymentStep(p,.3,.78)'))),/foundation must stay fixed/);
 assert.throws(()=>checkMuzzle(boot(source.replace('muzzleX:29','muzzleX:22'))));
 assert.throws(()=>checkFoundation(fallback),/textured foundation must be drawn/);
 assert.throws(()=>checkEmergence(boot(source.replace('44*(1-tankLift)','22*(1-tankLift)'))),/not pop in half exposed/);

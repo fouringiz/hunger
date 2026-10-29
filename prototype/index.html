@@ -1760,9 +1760,10 @@ const LEVEL4_YAW=[{"key":"machine-gun","rect":[0,0,256,256],"size":49.1865168539
 const LEVEL4_CELL=256,LEVEL4_ANCHOR=[128,240];
 // A filled, stationary bearing closes the empty foundation socket. Its near lip hides the inserted peg.
 // Socket centres are measured on the foundation art drawn at 44 x 34, independently of upper-frame anchors.
-const LEVEL4_SOCKETS={turret:{x:0,y:-5.5},voltaic:{x:0,y:-5.5},cannon:{x:0,y:-3.2},flamer:{x:0,y:-6}};
+const TOWER_SOCKET={x:0,y:-5.5};
+const LEVEL4_SOCKETS={turret:TOWER_SOCKET,voltaic:TOWER_SOCKET,cannon:TOWER_SOCKET,flamer:TOWER_SOCKET};
 function drawLevel4Coupling(t,front=false){
-  const {x,y}=LEVEL4_SOCKETS[t.type];
+  const {x,y}=TOWER_SOCKET;
   ctx.save();ctx.translate(x,y);
   if(!front){
     ctx.fillStyle='#303b34';ctx.beginPath();ctx.ellipse(0,2,7.2,2.7,0,0,Math.PI*2);ctx.fill();
@@ -1779,14 +1780,19 @@ function drawLevel4Coupling(t,front=false){
   ctx.restore();
 }
 
-// The exact square foundation is shared by Voltaic levels 1–3, Tesla and Prism.
+// One immutable foundation for all four weapon families, every level and animation state.
 function drawTowerFoundation(t){
-  if(t.type==='flamer'&&flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768){
-    try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[0],-22,-17,44,34);return;}catch(_){}
-  }
-  if(!lowBuildingSprite(t.type==='cannon'?1:0,-22,-17,44,34)){
+  if(!lowBuildingSprite(0,-22,-17,44,34)){
     ctx.fillStyle='#34443c';roundRect(-22,-17,44,34,4);ctx.fill();ctx.strokeStyle='#82947b';ctx.stroke();
   }
+}
+function drawTowerSupport(t,top){
+  drawLevel4Coupling(t);
+  if(top<TOWER_SOCKET.y){
+    ctx.fillStyle='#334039';ctx.fillRect(-4,top,8,TOWER_SOCKET.y+1.5-top);
+    ctx.fillStyle='#9a9d83';ctx.fillRect(-3,top,1.5,TOWER_SOCKET.y+1.5-top);
+  }
+  drawLevel4Coupling(t,true);
 }
 const VOLTAIC_NEUTRAL={"key":"voltaic-neutral","rect":[0,0,256,256],"size":36.57142857142857,"bearing":[128,202.8846960167715],"muzzle":[128,30.30607966457023],"sourceBox":[350,120,620,954],"sourcePivot":[660,950]};
 function neutralVoltaicMuzzle(){
@@ -1982,19 +1988,11 @@ function deploymentStep(p,start,end) {
 }
 function drawWeaponDeployment(t,p) {
   if(p>=1)return false;
-  const spread=deploymentStep(p,0,.28),lift=deploymentStep(p,.25,.65),barrels=deploymentStep(p,.64,.94);
-  // Four foundation sections travel out from the same fixed central socket, at constant scale.
-  const cannon=t.type==='cannon',r=LOW_BUILDING_RECTS[cannon?1:0];
-  const hasBase=lowBuildingArt&&lowBuildingArt.complete&&lowBuildingArt.naturalWidth;
-  for(let row=0;row<2;row++)for(let col=0;col<2;col++){
-    const x=-22+col*22+(col?-1:1)*9*(1-spread),y=-17+row*17+(row?-1:1)*7*(1-spread);
-    if(hasBase){ctx.drawImage(lowBuildingArt,r[0]+col*r[2]/2,r[1]+row*r[3]/2,r[2]/2,r[3]/2,x,y,22,17);}
-    else{ctx.fillStyle='#5d6952';ctx.strokeStyle='#939d80';ctx.lineWidth=1;roundRect(x,y,22,17,2);ctx.fill();ctx.stroke();}
-  }
+  const lift=deploymentStep(p,.25,.65),barrels=deploymentStep(p,.64,.94),cannon=t.type==='cannon';
+  // The common foundation stays planted while the upper emerges through its bearing.
+  drawTowerFoundation(t);drawTowerSupport(t,12-26*lift);
   // The shaft rises out of the socket; the housing is occluded by the near edge while emerging.
   if(lift>0){
-    ctx.fillStyle='#24322f';ctx.fillRect(-5,-4-10*lift,10,10*lift);
-    ctx.fillStyle='#9da58f';ctx.fillRect(-3,-4-10*lift,2,10*lift);
     const angle=t.selling||t.paused||constructionProgress(t)>=1?t.angle:-Math.PI/2,m=weaponProjection(angle),r=STRUCTURE_RECTS[cannon?9:5],split=cannon?205:200,size=.14;
     const px=cannon?101:103,py=cannon?93:91;
     ctx.save();ctx.beginPath();ctx.rect(-45,-75,90,71+19*deploymentStep(p,.45,.65));ctx.clip();
@@ -2106,10 +2104,9 @@ function soldierPresentationPoint(s,t) {
 function drawFlamethrower(t,p=1) {
   const ready=flamerArt&&flamerArt.complete&&flamerArt.naturalWidth>=768&&flamerArt.naturalHeight>=256;
   const part=(n,x,y,w,h)=>{if(!ready)return false;try{ctx.drawImage(flamerArt,...FLAMER_ART.rects[n],x,y,w,h);return true;}catch(_){return false;}};
-  if(!part(0,-22,-17,44,34)){
-    ctx.fillStyle='#2b2a22';roundRect(-22,-17,44,34,5);ctx.fill();ctx.strokeStyle='#827855';ctx.lineWidth=1.5;ctx.stroke();
-  }
+  drawTowerFoundation(t);
   const lift=deploymentStep(p,.3,.78),tankLift=deploymentStep(p,.14,.5),spread=deploymentStep(p,.32,.6),barrel=deploymentStep(p,.65,.94);
+  drawTowerSupport(t,FLAMER_ART.mountY+42*(1-lift));
   const tanks=[-13,13].map(y=>flamerPoint(t.angle,-8,y*(.3+.7*spread)));
   // Parts rise from behind the socket's near edge at their final scale, then telescope into position.
   ctx.save();if(p<1){ctx.beginPath();ctx.rect(-48,-80,96,88);ctx.clip();}
@@ -2194,8 +2191,8 @@ function drawFlameJet(t) {
   ctx.restore();return true;
 }
 function drawPlantedWeapon(t,kick) {
-  const cannon=t.type==='cannon',cell=cannon?1:0;
-  if(!lowBuildingSprite(cell,-22,-17,44,34) && !structureSprite(cell,-22,-22,44,40))return false;
+  const cannon=t.type==='cannon';
+  drawTowerFoundation(t);drawTowerSupport(t,-14);
   const m=weaponProjection(t.angle),r=STRUCTURE_RECTS[cannon?9:5],pivot=cannon?[101,93]:[103,91],size=.14;
   // The foundation stays fixed. Only the textured upper assembly rotates, with a shallow extruded side.
   for(const z of [3,0]){

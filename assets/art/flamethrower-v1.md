@@ -7,7 +7,7 @@ The approval covers the concept, not the assembled gameplay appearance.
 - Built-in ImageGen separated the same design into foundation, overhead head/nozzle and one upright tank; prompt in `flamethrower-v1.prompt.txt`.
 - Generated source: `reports/generated/flamethrower/flamethrower-parts-v1.png` (2172×724, ignored). Source hash and measured rectangles are in `../hunger-flamethrower-v1.frames.json`.
 - Offline pack: `node tools/bake-flamethrower.cjs [source.png]` → `assets/hunger-flamethrower-v1.png` (768×256 RGBA) and the frame table. Only the final atlas is committed; studies stay outside Git.
-- Foundation: 44×34 game units, same planted footprint as the other guns. Head: 42×28 in the projected ground plane, pivot (13,13), mounting height 12. Two tanks: 11×22, mounted at head-plane offsets (-8,±13); each stays upright, sorted behind/in front of the head by its projected depth.
+- Foundation: the shared Turret cell from `hunger-low-buildings-v3.png`, 44×34 game units, with the common filled bearing. The old foundation tile in the Flamethrower atlas is retained for historical captures but no longer drawn. Head: 42×28 in the projected ground plane, pivot (13,13), mounting height 12. Two tanks: 11×22, mounted at head-plane offsets (-8,±13); each stays upright, sorted behind/in front of the head by its projected depth.
 - Exact continuous yaw uses existing `weaponProjection`, not discrete directional frames. Muzzle is 29 units along the projected head centreline. Pilot is orange for base/Plasma, cyan for Cryojet, dimmed when paused/selling.
 - Loading/failed images retain a vector fallback. New rendering never reads canvas pixels.
 - Scope: presentation only. Combat, balance, sweep, warmup, route, Gate distance and platform positions were not edited.
