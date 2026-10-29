@@ -1,3 +1,47 @@
+# Iteration 3 — work in progress, art gate not passed
+
+User said “дальше?” after iteration-2 results; proceeding with iteration 3.
+Iteration 2 is pushed as 15ad9ed in PR #69. No merge.
+
+Observable acceptance: sixteen true volumetric directional views, correct 22.5-degree
+ordering, approved camera/scale/light, upright Howitzer and Prism petals; shared
+foundation; own bearing/muzzle per pose; no detached or jumping effects; seam-free
+wrap; <=2px bearing test for all16; actual-game whole/close/cycle/grayscale captures.
+
+- Read imagegen and sprite-pipeline skills. Generated six 4x4 candidate sheets
+  through built-in image_gen with the approved reference. All remain drafts:
+  repeated/incorrect directions, especially Howitzer/Prism. NOT integrated.
+- Two further Howitzer trials (proxy guide, eight seeded poses plus gaps) still
+  duplicated orientations. Rejected; files under reports/generated/level4-poses/.
+- A precise proxy edit was rejected by the image tool safety system (violence).
+  Retried with explicit fictional-game context; guided edit then produced sixteen
+  useful Howitzer directions. A material correction restored its olive tube.
+- Guided edit candidates now exist for all six heads. Machine Gun/Rifle are
+  suitable for anchor review. Rear corrections remain under review for
+  Cryojet/Plasma/Prism; focused Cryojet cell15 repair is still running.
+- Source sheets and anchor overlays: reports/generated/level4-poses/.
+  Per-pose bearing/muzzle measurements drafted in sources/manifest.json;
+  Rifle cell3 bearing was corrected manually because its muzzle extends below
+  the foot. All nozzle points still require overlay and game review.
+- Runtime/capture connection scripts are PREPARED under ignored output but NOT
+  applied: connect.py and update-capture.py. Planned sixteen-view blend has one
+  shared interpolated muzzle and no image-plane projection. No runtime change yet.
+- All prompts recorded in assets/art/level4-towers-v1.prompt.txt, including failed
+  trials. Reference: assets/art/references/towers/level4-selected-approved-v1.png.
+- New tools/bake-level4-poses.cjs is an UNVERIFIED offline packer draft. Requires
+  source manifest with sixteen manually authored bearing/muzzle points per moving
+  family; uses one scale per family; copies Tesla/Cluster unchanged into new v2.
+  It has not been run. No v2 atlas exists yet; no renderer/test changes yet.
+- Renderer remains exactly 15ad9ed. Prior green suite/captures belong to iteration2,
+  not new art. No new visual verification or test claims.
+
+Next: obtain/inspect a correctly ordered sixteen-view source, then normalize and
+measure anchors, replace projected path with16 poses, update genuine changed test
+contracts with explanation, run npm and captures and STOP for user's verdict.
+Keep drafts ignored. No combat/targeting/balance/PATH/GATE_D/platform changes.
+
+---
+
 # Iteration 2 — awaiting user verdict
 
 Checkout `/private/tmp/hunger-level4-sprites`, branch `codex/level4-sprites`, PR #69.
