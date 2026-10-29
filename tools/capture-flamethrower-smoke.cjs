@@ -30,7 +30,7 @@ async function main(){
     const w=await scene(zone,null,'',Math.PI/2),cycle=[];
     for(let i=0;i<=32;i++){const c=draw(w,3.1+i*.05,i<5);save(c,`${zone}-life-${String(i).padStart(2,'0')}-whole`);save(copy(c,true),`${zone}-life-${String(i).padStart(2,'0')}-gray`);cycle.push(close(c));}
     sheet(cycle,zone+'-life-cycle');
-    for(const flag of ['paused','selling']){const v=await scene(zone,null,'',Math.PI/2);for(let i=0;i<8;i++)draw(v,3.1+i*.1);v.run(`S.towers[0].${flag}=true;`);save(draw(v,4),`${zone}-${flag}-whole`);assert.equal(v.run('flameSmokePuffs.length'),0);}
+    for(const flag of ['paused','selling']){const v=await scene(zone,null,'',Math.PI/2);for(let i=0;i<8;i++)draw(v,3.1+i*.1);v.run(`S.towers[0].${flag}=true;`);save(draw(v,4),`${zone}-${flag}-whole`);assert.equal(v.run('flameSmokePuffs.filter(p=>p.at>3.85).length'),0,'no new smoke after '+flag);save(draw(v,5.2),`${zone}-${flag}-expired-whole`);assert.equal(v.run('flameSmokePuffs.length'),0,'puffs already in the air expire after '+flag);}
   }
   fs.writeFileSync(path.join(OUT,'verification.json'),JSON.stringify(verification,null,2));console.log('Wrote actual before/after whole/close/grayscale, 8 headings × level3/Plasma/Cryojet, life cycle and paused/sale captures to '+OUT+'; fingerprints unchanged.');
 }
