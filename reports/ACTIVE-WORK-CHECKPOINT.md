@@ -11,3 +11,9 @@
 - User ran the new focused check and `npm test`: both FAILED at the heading-0 overlap precondition, before core/bar assertions. Inspection of the source atlas found only 17 fully opaque pixels across 1024×1024; its dense body alpha is mostly 253. The test erroneously required exact alpha 255 after downsampling.
 - Test-only correction samples the dense core (alpha ≥250), keeps ≥12 actually fire-overlapped samples in every heading, and permits only the mathematically bounded residual from real alpha: at most `255-alpha` per RGB channel. The existing <3 excess-error threshold, exact bar protection and known-bad blanket rejection remain. No runtime/art changes; corrected tests NOT run by agent.
 - Next: user reruns `node tests/flamethrower-readability.cjs`, `npm test`, and disk-browser firing/console check. Await visual verdict/independent review. Smoke iteration2 remains on hold. No claim of browser verification or overall visual completion.
+
+## Smoke iteration 2 — starting checkpoint
+
+User confirmed all tests passed on `194103f`; static review found no runtime changes in that commit. User now authorizes smoke iteration with intermediate saves (8% usage remaining). Checks and captures remain user-run.
+
+Observable smoke criteria: approved six-cell sheet with cell5 never used; one puff grows/fades through1→2→3→4→6; all headings rise vertically up screen; slight drift; lifetime about1.2s; composited opacity ≤0.55; at most6 per tower plus global cap; enemies/bars remain readable in colour/grayscale. No paused/sale/folded/Cryojet smoke, simulation state or RNG edits. Save implementation and focused checks separately; visual acceptance requires actual game captures/full cycle and disk-browser console.
