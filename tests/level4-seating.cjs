@@ -1,12 +1,13 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 // User-run native pixel regression for the reported open socket / floating upper assembly.
 // It uses the actual renderer and atlas; no claim of artistic acceptance follows from passing.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const ROOT=path.join(__dirname,'..'),table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
 // Independently measured foundation sockets, in world pixels of the existing 44 x 34 foundation.
-const oldTable=JSON.parse(execFileSync('git',['show','15ad9ed:assets/hunger-level4-towers-v1.frames.json'],{cwd:ROOT,encoding:'utf8'}));
-const yawTable=JSON.parse(execFileSync('git',['show','15ad9ed:assets/hunger-level4-yaw-v1.frames.json'],{cwd:ROOT,encoding:'utf8'}));
+const oldTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-towers-v1.frames.json'));
+const yawTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-yaw-v1.frames.json'));
 const sockets={turret:[0,-5.5],voltaic:[0,-5.5],cannon:[0,-5.5],flamer:[0,-5.5]};
 async function check(sourceHtml=null,{anchors=true}={}){
  const activeTable=sourceHtml&&!sourceHtml.includes('hunger-level4-towers-v2.png')?oldTable:table;
@@ -79,7 +80,7 @@ async function check(sourceHtml=null,{anchors=true}={}){
 async function main(){
  const {count,maxAnchorDistance}=await check();
  // Exact uploaded renderer shown in the user's screenshots must fail the same socket-coverage check.
- const bad=execFileSync('git',['show','e4d136f:prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+ const bad=historical('e4d136f','prototype/index.html');
  await assert.rejects(()=>check(bad,{anchors:false}),/foundation socket remains open/);
  // A closed socket alone is insufficient: deliberately raising the upper must also fail.
  const current=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8');
@@ -87,7 +88,7 @@ async function main(){
  await assert.rejects(()=>check(floating),/head bearing anchor.*socket centre|upper bearing floats above/);
  const detached=current.replace('...art.rect,p.x,p.y,p.size,p.size','...art.rect,p.x,p.y-20,p.size,p.size');assert.notEqual(detached,current);
  await assert.rejects(()=>check(detached),/head bearing anchor.*socket centre|projected head floats above/);
- const before=execFileSync('git',['show','df6f8f5:prototype/index.html'],{cwd:ROOT,encoding:'utf8'});
+ const before=historical('df6f8f5','prototype/index.html');
  await assert.rejects(()=>check(before),/head bearing anchor.*socket centre/,'exact previous renderer must fail the new anchor constraint');
  const shifted=current.replace('...art.rect,p.x,p.y,p.size,p.size','...art.rect,p.x,p.y-6,p.size,p.size');assert.notEqual(shifted,current);
  await assert.rejects(()=>check(shifted),/head bearing anchor.*socket centre/,'a head shifted 6 world units toward the back must fail');

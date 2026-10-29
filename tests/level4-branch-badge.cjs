@@ -1,4 +1,5 @@
 'use strict';
+const {historical}=require('./lib/history.cjs');
 // Badge visibility is a presentation contract; actual-game frames are reviewed separately.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const ROOT=path.join(__dirname,'..'),html=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8'),source=html.match(/<script>([\s\S]*?)<\/script>/)[1];
@@ -43,6 +44,6 @@ function check(code=source){
  }
 }
 check();
-const old=execFileSync('git',['show','c00cc8e:prototype/index.html'],{cwd:ROOT,encoding:'utf8'}).match(/<script>([\s\S]*?)<\/script>/)[1];
+const old=historical('c00cc8e','prototype/index.html').match(/<script>([\s\S]*?)<\/script>/)[1];
 assert.throws(()=>check(old),/only fallback draws/,'the exact pre-iteration renderer must fail the loaded-art assertion');
 console.log('PASS level-4 badge: all 8 branches, ready/pause/sale, loaded/loading/failed/independent atlases, render parity; exact old renderer rejected');
