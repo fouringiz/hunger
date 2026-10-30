@@ -4,7 +4,8 @@ const {readRevision}=require('./history.cjs');
 // node tools/capture-organic-world.cjs --level4 machine-gun
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),COMMON=process.argv.includes('--tower-base'),BADGE=process.argv.includes('--badge-review'),ANCHOR=process.argv.includes('--anchor-review'),POSE=process.argv.includes('--pose-review'),BASE=POSE?'15ad9ed':ANCHOR?'df6f8f5':BADGE?'c00cc8e':COMMON?'528cb0b':YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+const HOWITZER_DESIGN=process.argv.includes('--howitzer-design-review');
+const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),COMMON=process.argv.includes('--tower-base'),BADGE=process.argv.includes('--badge-review'),ANCHOR=process.argv.includes('--anchor-review'),POSE=HOWITZER_DESIGN||process.argv.includes('--pose-review'),BASE=HOWITZER_DESIGN?'0c78db1':POSE?'15ad9ed':ANCHOR?'df6f8f5':BADGE?'c00cc8e':COMMON?'528cb0b':YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
 const REFERENCES=[[30,94,354,337],[424,98,346,336],[804,75,329,360],[1174,90,346,344],[28,491,359,391],[427,553,342,331],[794,510,365,378],[1170,505,352,383]];
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
 function save(c,file){fs.writeFileSync(file+'.png',c.toBuffer('image/png'));}
@@ -17,7 +18,16 @@ function setup(w,spec,level4=true){
 }
 
 async function capture(spec,zone,label,sourceHtml,out){
- const w=await loadWorld({zone,sourceHtml,assetGitRef:BASE}),prefix=path.join(out,label+'-'+zone);
+ // Reconstruct the true pre-fix atlas with its pinned Howitzer row. Other
+ // seven rows are unchanged; do not pair old metadata with the candidate head.
+ const assetOverrides={};
+ if(HOWITZER_DESIGN&&label==='before'){
+  const current=await loadImage(path.join(ROOT,'assets/hunger-level4-towers-v2.png'));
+  const oldRow=await loadImage(path.join(ROOT,'tests/fixtures/howitzer-design/before-0c78db1-row.png'));
+  const atlas=createCanvas(current.width,current.height),g=atlas.getContext('2d');
+  g.drawImage(current,0,0);g.clearRect(0,1024,4096,256);g.drawImage(oldRow,0,1024);assetOverrides.level4Art=atlas.toBuffer('image/png');
+ }
+ const w=await loadWorld({zone,sourceHtml,assetGitRef:BASE,assetOverrides}),prefix=path.join(out,label+'-'+zone);
  assert.ok(w.images.worldGroundArt&&w.images.worldGroundArt.width>0,'actual zone ground material must load');
  const fingerprint={rules:w.run('replayRulesFingerprint()'),source:w.run('replaySourceFingerprint()')};
  if(COMMON){
@@ -66,7 +76,8 @@ async function capture(spec,zone,label,sourceHtml,out){
 async function main(){
  const arg=process.argv.indexOf(COMMON?'--tower-base':YAW?'--level4-yaw':NEUTRAL?'--voltaic-base':SEATING?'--level4-seat':'--level4'),key=process.argv[arg+1]||(NEUTRAL?'tesla':'machine-gun'),spec=TABLE.entries.find(e=>e.key===key);
  if(!spec)throw Error('Choose one branch: '+TABLE.entries.map(e=>e.key).join(', '));
- const out=path.join(ROOT,POSE?'reports/generated/level4-poses/game':ANCHOR?'reports/generated/level4-seat-anchor':BADGE?'reports/generated/level4-badge':COMMON?'reports/generated/common-tower-base':YAW?'reports/generated/level4-yaw':NEUTRAL?'reports/generated/voltaic-base':SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
+ if(HOWITZER_DESIGN&&key!=='howitzer')throw Error('--howitzer-design-review is limited to howitzer');
+ const out=path.join(ROOT,HOWITZER_DESIGN?'reports/generated/howitzer-design-review':POSE?'reports/generated/level4-poses/game':ANCHOR?'reports/generated/level4-seat-anchor':BADGE?'reports/generated/level4-badge':COMMON?'reports/generated/common-tower-base':YAW?'reports/generated/level4-yaw':NEUTRAL?'reports/generated/voltaic-base':SEATING?'reports/generated/level4-seating':'reports/generated/level4',key);fs.mkdirSync(out,{recursive:true});
  const before=readRevision(BASE,'prototype/index.html'),candidate=NEUTRAL?readRevision('acb6218','prototype/index.html'):null,results={};
  for(const zone of ['mire','ember']){
   const a=await capture(spec,zone,'before',before,out),b=await capture(spec,zone,'after',candidate,out);
@@ -88,6 +99,15 @@ async function main(){
    const x=224+frame%8*224,y=Math.floor(frame/8)*264;bg.fillStyle='#eee8d9';bg.fillText(frame*22.5+' degrees',x+8,y+22);bg.drawImage(crop(w),x,y+40);
   }
   save(board,path.join(out,'approved-and-16-poses'));
+  if(HOWITZER_DESIGN){
+   // This approved source has no foundation: match its visible head height to
+   // the unchanged Howitzer height and current shared HEAD_SCALE.
+   const approved=await loadImage(path.join(ROOT,'assets/art/references/towers/howitzer-selected-approved-v1.png'));
+   const sw=approved.width/4,sh=approved.height/4,refScale=37*w.run('HEAD_SCALE')*2/(sh*.84);
+   bg.fillStyle='#eee8d9';bg.fillText('User-approved head',8,286);
+   bg.drawImage(approved,0,0,sw,sh,112-sw*.5*refScale,425-sh*.94*refScale,sw*refScale,sh*refScale);
+   save(board,path.join(out,'user-approved-and-16-poses'));
+  }
  }
  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({branch:key,baseline:BASE,candidate:NEUTRAL?'acb6218':'working-tree',results,limits:'Controlled native capture, not file-origin browser validation or artistic approval. Reference crop is scaled by foundation width; review perspective, silhouette, occlusion, full cycles and grayscale manually.'},null,2)+'\n');
  console.log('Wrote '+out+'/{before,after}-{mire,ember}-{whole,whole-gray,turn,upgrade,attack,sale}*.png, full cycles and reference-and-game.png. Inspect before/after and whole/close views before marking visual work verified.');

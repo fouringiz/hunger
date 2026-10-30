@@ -95,21 +95,21 @@
     "howitzer": {
       "row": 4,
       "params": {
-        "saturation": 0.5787,
-        "gamma": 1.14,
-        "scale": 0.96
+        "saturation": 0.6605,
+        "gamma": 1.02,
+        "scale": 0.9
       },
       "before": {
-        "saturation": 0.5619348941458118,
-        "value": 0.38374866110255074,
-        "bright": 0.11373917811686052,
-        "pixels": 284493
+        "saturation": 0.529085300337826,
+        "value": 0.38137372113907314,
+        "bright": 0.1289968512057894,
+        "pixels": 347117
       },
       "after": {
-        "saturation": 0.34624516267515165,
-        "value": 0.34047250068422374,
-        "bright": 0.09171754665316897,
-        "pixels": 284493
+        "saturation": 0.33963850309248206,
+        "value": 0.339269999203869,
+        "bright": 0.0895404143271577,
+        "pixels": 347117
       }
     },
     "cluster": {
