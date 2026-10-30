@@ -25,7 +25,7 @@ const types=['turret','cannon','voltaic','flamer'];
 function setup(r,type,level,branch){r.run(`reset();S.credits=10000;build(SLOTS[2],${JSON.stringify(type)});for(let l=1;l<${level};l++)upgrade(S.towers[0],l===3?${JSON.stringify(branch)}:undefined);S.towers[0].warm=0;`);}
 function expectBase(r,world=false){
  const first=r.draws[0];assert.ok(first,'a textured common foundation must be visible');
- assert.ok(first.args[0].src.endsWith('hunger-low-buildings-v3.png'),'every weapon must use the shared foundation atlas');
+ assert.ok(first.args[0].src.endsWith('low-buildings-v3.png'),'every weapon must use the shared foundation atlas');
  assert.deepEqual(first.args.slice(1),[59,137,429,321,-22,-17,44,34],'every weapon must use the exact Turret base crop, size and placement');
  const pos=world?JSON.parse(r.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})')):{x:0,y:0};
  assert.deepEqual(first.matrix,[1,0,0,1,pos.x,pos.y],'the complete base stays planted throughout the animation');

@@ -20,7 +20,7 @@ a{margin-left:auto}output{font-variant-numeric:tabular-nums;color:#a7a38e;font-s
 <canvas id="study" width="506" height="378" aria-label="Forager dragging its abdomen through living organic mud"></canvas>
 <nav><button id="toggle" type="button">Pause</button>
 <label>Speed <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label>
-<output id="status">Loading…</output><a href="../../assets/art/previews/forager-sludge-cycle-v3.mp4">Open video</a></nav>
+<output id="status">Loading…</output><a href="../../reports/forager-sludge-cycle-v3/forager-sludge-cycle-v3.mp4">Open video</a></nav>
 <p class="note">Earlier painted eight-pose reference. The prototype now uses the source-based Forager crawl.</p>
 <p class="note"><a href="forager-puppet-study.html">View the current in-game crawl</a></p>
 </main><script>
@@ -30,7 +30,7 @@ const status=document.getElementById('status'),toggle=document.getElementById('t
 const image=new Image();let ready=false,playing=true,phase=0,last=performance.now();
 image.onload=()=>{ready=true;canvas.width=image.naturalWidth/2;canvas.height=image.naturalHeight/4;};
 image.onerror=()=>{status.textContent='Preview unavailable.';};
-image.src='../../assets/art/previews/forager-sludge-keyframes-v3.webp';
+image.src='../../reports/forager-sludge-cycle-v3/forager-sludge-keyframes-v3.webp';
 toggle.addEventListener('click',()=>{playing=!playing;toggle.textContent=playing?'Pause':'Play';});
 function frame(now){
   const dt=Math.max(0,Math.min(.25,(now-last)/1000));last=now;

@@ -1,6 +1,6 @@
 'use strict';
 // Offline atlas bake for the Leech surfacing (emergence) and its wound decal. Never writes the game or simulation.
-// Sources stay separate one-row sheets on a flat light-grey matte (assets/art/studies/):
+// Sources stay separate one-row sheets on a flat light-grey matte (assets/art/work/enemies/leech/):
 //   leech-emergence-sheet-v1.png     8 frames: 1-2 bulge under the skin, 3-4 pierce and star tear, 5-6 rising,
 //                                    7 toppling right, 8 lying right of the open wound;
 //   leech-wound-closing-sheet-v1.png 4 frames: open wound, drawing in, knotted seam, pale scar.
@@ -8,7 +8,7 @@
 // not split into equal cells: frames are cut at the sheet's empty columns, and the one join (frame 7's head touches
 // frame 8's wound) is cut at the emptiest column of a declared window. Every frame is anchored at its wound centre,
 // measured once on the source sheet (below), so the wound never slides between frames; one scale per row.
-// Atlas: hunger-leech-surfacing-v1.webp, 256 px cells, 9 columns x 2 rows:
+// Atlas: leech-surfacing-v1.webp, 256 px cells, 9 columns x 2 rows:
 //   row 0: emergence frames 1-8, then column 8 = frame 8's wound alone (the worm masked out), the start of the decal;
 //   row 1: wound frames 1-4.
 // The frame table (.frames.json beside the atlas) gives each row's anchor and source-to-cell scale and the frame-8 worm
@@ -19,18 +19,18 @@ const {execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {removeMatte,encoderPython}=require('./bake-polyp-family.cjs');
 const ROOT=path.join(__dirname,'..'),CELL=256,MARGIN=4,SPECK=60,SHADOW_CHROMA=24;
-const ATLAS='assets/hunger-leech-surfacing-v1.webp';
+const ATLAS='assets/runtime/enemies/leech-surfacing-v1.webp';
 
 // Wound centres in source pixels. Emergence 1-6: midpoint of the skirt's opaque extent on the rows 40-80 px above its
 // solid bottom (the skirt is symmetric there); 7: the worm's base column over the torn skirt; 8: the open pit. All on one
 // ground line (y 478): the sheet keeps one camera. Wound sheet: the pit (1-2), the seam knot (3), the scar's pale centre (4).
 function config(){
  return {
-  emergence:{file:'assets/art/studies/leech-emergence-sheet-v1.png',frames:8,joins:[[1700,1950]],
+  emergence:{file:'assets/art/work/enemies/leech/leech-emergence-sheet-v1.png',frames:8,joins:[[1700,1950]],
    centres:[137,391,648,895,1145,1378,1610,1897],y:478,
    // Frame 8's wound alone: an ellipse around the pit with a feathered edge, clear of the lying worm's body.
    woundMask:{cx:1897,cy:490,rx:78,ry:58,feather:12}},
-  wound:{file:'assets/art/studies/leech-wound-closing-sheet-v1.png',frames:4,joins:[],centres:[228,803,1340,1878],y:367}
+  wound:{file:'assets/art/work/enemies/leech/leech-wound-closing-sheet-v1.png',frames:4,joins:[],centres:[228,803,1340,1878],y:367}
  };
 }
 

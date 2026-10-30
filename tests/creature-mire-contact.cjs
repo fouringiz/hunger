@@ -9,8 +9,8 @@ const {createCanvas}=require('@napi-rs/canvas'),{loadWorld}=require('../tools/ca
  const groundDistance=(p,k)=>Math.abs(p[k]-176)+Math.abs(p[k+1]-96)+Math.abs(p[k+2]-32);
  let rejectedOldLip=0;
  const poseFailures=[];
- for(const [type,file,art]of [['carapacid','hunger-carapacid-shelter-v1',images.carapacidShelterArt],['leech','hunger-leech-mire-v1',images.leechMireArt]]){
-  const table=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets',file+'.ground-contacts.json')));
+ for(const [type,file,art]of [['carapacid','carapacid-shelter-v1',images.carapacidShelterArt],['leech','leech-mire-v1',images.leechMireArt]]){
+  const table=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/runtime/enemies',file+'.ground-contacts.json')));
   assert.deepEqual(JSON.parse(run(`JSON.stringify(CREATURE_MIRE_CONTACTS.${type})`)),table,'offline/runtime contacts agree');
   const atlas=createCanvas(art.width,art.height),a=atlas.getContext('2d');a.drawImage(art,0,0);
   for(let row=0;row<table.directions;row++)for(let frame=0;frame<4;frame++){

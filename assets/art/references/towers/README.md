@@ -34,7 +34,7 @@ Only the final approved reference is archived here; exploratory sheets are exclu
 Approval covers the pictured appearance, not runtime animation or in-game validation.
 This is an opaque concept sheet with labels, not a ready-to-load transparent atlas.
 The reference-only archival commit `b2ec96c` changed no game code. Runtime
-implementation and its verification status are tracked in `../../level4-towers-v1.md`.
+implementation and its verification status are tracked in `../../work/towers/level4-towers-v1.md`.
 The animation ideas discussed before this selection remain proposals.
 
 Next: prepare separate components and directional/animation sprites from these

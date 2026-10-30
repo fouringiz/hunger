@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto');
 const {loadImage,createCanvas}=require('@napi-rs/canvas'),{bake,defaultConfig}=require('../tools/bake-creature-crawl.cjs'),{loadWorld}=require('../tools/capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),atlas=path.join(ROOT,'assets/hunger-leech-mire-v1.webp');
+const ROOT=path.join(__dirname,'..'),atlas=path.join(ROOT,'assets/runtime/enemies/leech-mire-v1.webp');
 function checkCell(p){
  let area=0,fringe=0,edge=0;
  for(let y=0;y<256;y++)for(let x=0;x<256;x++){

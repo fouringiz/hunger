@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-jet-v1.frames.json'),'utf8'));
+const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/runtime/towers/flamethrower-jet-v1.frames.json'),'utf8'));
 const FLAME_REACH=meta.sources.reduce((a,f)=>a+(f.bounds[2]-f.emission[0])*meta.scale,0)/meta.sources.length;
 assert.ok(Math.abs(FLAME_REACH-382)<1,'FLAME_JET.reach matches the frames JSON bounds');
 function boot(code=source,art=true){

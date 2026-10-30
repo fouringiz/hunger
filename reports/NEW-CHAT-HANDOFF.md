@@ -25,9 +25,9 @@
 
 Все пути ниже относительно изолированной копии PR:
 
-- Утверждённое направление локации: `assets/art/studies/organic-world-direction-v3.png`. Это главный референс для сравнения тропы, платформ и ворот.
+- Утверждённое направление локации: `assets/art/work/style/organic-world-direction-v3.png`. Это главный референс для сравнения тропы, платформ и ворот.
 - Монументальные Врата: `assets/art/references/world/gate/ancient-gate-user-v1.png`.
-- Последний игровой кадр ассистента: `assets/art/previews/organic-world-mire-gameplay-v2.webp`. Это нативный захват реального Canvas-отрисовщика, НЕ браузерный скриншот и НЕ принятый пользователем результат.
+- Последний игровой кадр ассистента: `reports/organic-world/organic-world-mire-gameplay-v2.webp`. Это нативный захват реального Canvas-отрисовщика, НЕ браузерный скриншот и НЕ принятый пользователем результат.
 - Код: `prototype/index.html`; инструмент захвата: `tools/capture-organic-world.cjs`.
 
 ## Последнее изменение и спорный совет дизайнера

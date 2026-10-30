@@ -4,7 +4,7 @@ Approved jet baseline: `194103f`; user confirmed all tests passed. Smoke authori
 
 ## Implementation and observable acceptance criteria
 
-- Approved `assets/hunger-flamethrower-smoke-v1.png` uses metadata's six256×256 cells and128,128 anchor. Lifecycle1→2→3→4→6; frame5 is excluded,4→6 crossfades. Natural sheet growth is retained at a uniform64px cell footprint. No rotation with the jet.
+- Approved `assets/runtime/towers/flamethrower-smoke-v1.png` uses metadata's six256×256 cells and128,128 anchor. Lifecycle1→2→3→4→6; frame5 is excluded,4→6 crossfades. Natural sheet growth is retained at a uniform64px cell footprint. No rotation with the jet.
 - Presentation-only pool outside S, reset on scene identity; emissions occur only while firing. Spawn coordinates follow the jet, then each puff rises up screen22px/s with a slight deterministic horizontal drift, independently of heading. Lifetime1.2s, fade-in/out, at most6 per tower and96 globally. No historical catch-up burst or simulation RNG.
 - Smoke composites above enemies/jet. A single reusable canvas is composited at0.45 so aggregate overlapping opacity cannot exceed0.45 (below the0.55 requirement). Health bars are excluded. This cap is an implementation bound, not proof that enemies remain visually readable.
 - Paused, selling, under-construction, removed and Cryojet towers cannot retain or emit smoke. Missing art suppresses smoke safely. No runtime pixel reads; source PNG/layout unchanged.

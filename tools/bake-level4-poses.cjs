@@ -18,7 +18,7 @@ function largest(p,w,h){
  return{pixels:best,l,r,t,b};
 }
 async function bake(dir){
- const old=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'))),manifest=JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'))),oldImage=await loadImage(path.join(ROOT,'assets/hunger-level4-towers-v1.png'));
+ const old=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/art/work/towers/level4-towers-v1.frames.json'))),manifest=JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'))),oldImage=await loadImage(path.join(ROOT,'assets/art/work/towers/level4-towers-v1.png'));
  const atlas=createCanvas(4096,2048),g=atlas.getContext('2d'),entries=[];
  for(const e of old.entries){
   if(e.frames.length===1){const f=e.frames[0],rect=[0,e.row*CELL,CELL,CELL];g.drawImage(oldImage,...f.rect,...rect);entries.push({...e,frames:[{...f,rect}],provenance:'Unchanged fixed Tesla/Cluster pixels from v1'});continue;}
@@ -43,8 +43,8 @@ async function bake(dir){
   entries.push({...e,renderSize,frames,source:path.relative(ROOT,file),sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')});
  }
  const table={cell:CELL,width:4096,height:2048,headings:Array.from({length:16},(_,i)=>i*22.5),entries};
- fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.png'),atlas.toBuffer('image/png'));
- fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),JSON.stringify(table,null,2)+'\n');
+ fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png'),atlas.toBuffer('image/png'));
+ fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),JSON.stringify(table,null,2)+'\n');
  const runtime=entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle),seats:e.frames.map(f=>f.bearing)}));
  fs.writeFileSync(path.join(dir,'runtime-table.json'),JSON.stringify(runtime));
  console.log('Packed 98 poses into v2 4096x2048; generated art still requires actual-game review.');

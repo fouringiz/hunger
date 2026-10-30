@@ -4,7 +4,7 @@ const {historical}=require('./lib/history.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const ROOT=path.join(__dirname,'..'),html=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8');
-const entries=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8')).entries.filter(e=>e.frames.length>1);
+const entries=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8')).entries.filter(e=>e.frames.length>1);
 async function check(sourceHtml=html){
  const w=await loadWorld({sourceHtml});
  w.run(`const clipDraw=ctx.drawImage.bind(ctx);ctx.drawImage=(im,...args)=>{if(im===level4Art||(typeof level4BlendCanvas!=='undefined'&&im===level4BlendCanvas)||(typeof level4YawArt!=='undefined'&&im===level4YawArt))clipDraw(im,...args);};

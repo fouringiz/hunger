@@ -6,9 +6,9 @@ const {createCanvas,loadImage}=require(process.env.FORAGER_CANVAS_MODULE||'@napi
 const {ROWS,loadCycles,contacts:clawTips}=require('./forager-vertical-cycles.cjs');
 const ROOT=path.join(__dirname,'..'),CELL=192,FRAMES=9,BASE=130,DEPTH=.42;
 async function bake(){
- const cycles=await loadCycles(ROOT),output=path.join(ROOT,'assets/hunger-forager-mire-v2.webp');
+ const cycles=await loadCycles(ROOT),output=path.join(ROOT,'assets/runtime/enemies/forager-mire-v2.webp');
  const atlas=createCanvas(CELL*FRAMES,CELL*16),a=atlas.getContext('2d');a.drawImage(await loadImage(output),0,0);
- const contactsPath=path.join(ROOT,'assets/art/studies/forager-low-crawl-v2.contacts.json');
+ const contactsPath=path.join(ROOT,'assets/art/work/enemies/forager/forager-low-crawl-v2.contacts.json');
  const contacts=JSON.parse(fs.readFileSync(contactsPath,'utf8'));
  const htmlPath=path.join(ROOT,'prototype/index.html'),html=fs.readFileSync(htmlPath,'utf8'),pattern=/const FORAGER_MIRE_CONTACTS=[^\n]+;/;
  if(!pattern.test(html))throw new Error('Forager runtime contact declaration is missing');

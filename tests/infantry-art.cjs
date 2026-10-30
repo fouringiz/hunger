@@ -20,7 +20,7 @@ function scene(withImage) {
 }
 // Select the actual runtime asset; unrelated sprite additions may change creation order.
 const loaded=scene(true),art=loaded.run('infantryArt');
-assert.ok(art.src.endsWith('/assets/hunger-infantry-trial-v1.png'));
+assert.ok(art.src.endsWith('/assets/runtime/infantry-trial-v1.png'));
 art.complete=true;art.naturalWidth=1254;art.naturalHeight=1254;
 const serialize="JSON.stringify(S,(key,value)=>['slot','target','blockedBy'].includes(key)?undefined:value)";
 const snapshot=loaded.run(serialize);loaded.run('draw()');

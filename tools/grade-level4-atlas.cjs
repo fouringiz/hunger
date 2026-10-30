@@ -7,9 +7,9 @@ const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {paletteMetrics}=require('./palette-metrics.cjs');
 const lazyContrast=()=>require('./level4-local-contrast.cjs').localContrast;
-const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/hunger-level4-towers-v2.png');
-const META=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
-const RECORD=path.join(ROOT,'assets/art/level4-palette-grade.json');
+const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png');
+const META=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8'));
+const RECORD=path.join(ROOT,'assets/art/work/towers/level4-palette-grade.json');
 const FOUNDATION_RECT=[59,137,429,321],HEAD_BRIGHT=.09,HEAD_BRIGHT_RANGE=[.05,.15];
 function rgb2hsv(r,g,b){const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
   if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h/=6;if(h<0)h+=1;}
@@ -52,7 +52,7 @@ async function main(){
   // 'all' grades every row that is not graded yet; naming an already graded row is an error.
   const rows=META.entries.filter(e=>keys.includes('all')?!record.rows[e.key]:keys.includes(e.key));
   if(!rows.length)throw new Error(keys.includes('all')?'every row is already graded':'no such rows: '+keys.join(','));
-  const fimg=await loadImage(path.join(ROOT,'assets/hunger-low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
+  const fimg=await loadImage(path.join(ROOT,'assets/runtime/low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
   const foundation=paletteMetrics(fg.getImageData(0,0,fc.width,fc.height).data,fc.width,FOUNDATION_RECT);record.foundation={rect:FOUNDATION_RECT,...foundation};
   // Heads match the foundation's saturation and mean value, but keep more highlights than the flat-lit foundation:
   // with only its ~5% bright pixels a head loses its volume (decided 2026-10-30).

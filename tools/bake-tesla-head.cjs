@@ -15,7 +15,7 @@ const ROOT=path.join(__dirname,'..');
  const spec={key:'tesla',type:'voltaic',branch:'A',row:0,size:48,tips:[point(.67,.27)],seats:[[128,235]],
    source:file,sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,file))).digest('hex'),sourceBox:[l,t,w,h],rect:[0,0,256,256],
    rings:[point(.5,.51),point(.5,.62)],rim:[point(.3,.19),point(.7,.24)]};
- fs.writeFileSync(path.join(ROOT,'assets/hunger-tesla-toroid-v1.png'),out.toBuffer('image/png'));
- fs.writeFileSync(path.join(ROOT,'assets/hunger-tesla-toroid-v1.frames.json'),JSON.stringify(spec,null,2)+'\n');
+ fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/tesla-toroid-v1.png'),out.toBuffer('image/png'));
+ fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/tesla-toroid-v1.frames.json'),JSON.stringify(spec,null,2)+'\n');
  console.log(JSON.stringify(spec));
 })().catch(e=>{console.error(e);process.exitCode=1;});

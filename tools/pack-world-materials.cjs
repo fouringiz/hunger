@@ -18,13 +18,13 @@ async function pack(input,name,size){
     image.data[top]=before[top]*(1-w)+m*w;image.data[bottom]=before[bottom]*(1-w)+m*w;
   }
   c.putImageData(image,0,0);
-  const out=path.join(__dirname,'../assets',name),data=canvas.encodeSync('webp',88);fs.writeFileSync(out,data);
+  const out=path.join(__dirname,'../assets/runtime/world',name),data=canvas.encodeSync('webp',88);fs.writeFileSync(out,data);
   console.log(name+': '+size+'×'+size+', '+data.length+' bytes');
 }
 async function main(){
   const args=process.argv.slice(2);if(args.length!==3)throw new Error('Supply mire, ember and stone source paths.');
-  await pack(args[0],'hunger-world-mire-v1.webp',512);
-  await pack(args[1],'hunger-world-ember-v1.webp',512);
-  await pack(args[2],'hunger-ancient-stone-v1.webp',256);
+  await pack(args[0],'world-mire-v1.webp',512);
+  await pack(args[1],'world-ember-v1.webp',512);
+  await pack(args[2],'ancient-stone-v1.webp',256);
 }
 if(require.main===module)main().catch(e=>{console.error(e.message);process.exitCode=1;});

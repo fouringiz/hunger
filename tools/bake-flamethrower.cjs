@@ -21,9 +21,9 @@ async function main(){
     const w=r-l+1,h=b-t+1,s=240/Math.max(w,h),dw=Math.round(w*s),dh=Math.round(h*s),dx=n*CELL+Math.floor((CELL-dw)/2),dy=Math.floor((CELL-dh)/2);
     out.drawImage(src,l,t,w,h,dx,dy,dw,dh);rects.push([dx,dy,dw,dh]);sources.push([l,t,w,h]);
   }
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-v1.png'),atlas.toBuffer('image/png'));
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-v1.png'),atlas.toBuffer('image/png'));
   const table={source:path.relative(ROOT,file),sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),cell:CELL,parts:['foundation','head','tank'],rects,sources};
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-v1.frames.json'),JSON.stringify(table,null,2)+'\n');
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-v1.frames.json'),JSON.stringify(table,null,2)+'\n');
   console.log(JSON.stringify(table));
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

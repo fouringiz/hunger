@@ -4,14 +4,14 @@ const {historical}=require('./lib/history.cjs');
 // It uses the actual renderer and atlas; no claim of artistic acceptance follows from passing.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+const ROOT=path.join(__dirname,'..'),table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8'));
 const HEAD_SEAT_DROP=Number(fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8').match(/const HEAD_SEAT_DROP=([0-9.]+)/)[1]);
 // Independently measured foundation sockets, in world pixels of the existing 44 x 34 foundation.
 const oldTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-towers-v1.frames.json'));
 const yawTable=JSON.parse(historical('15ad9ed','assets/hunger-level4-yaw-v1.frames.json'));
 const sockets={turret:[0,-5.5],voltaic:[0,-5.5],cannon:[0,-5.5],flamer:[0,-5.5]};
 async function check(sourceHtml=null,{anchors=true}={}){
- const activeTable=sourceHtml&&!sourceHtml.includes('hunger-level4-towers-v2.png')?oldTable:table;
+ const activeTable=sourceHtml&&!sourceHtml.includes('level4-towers-v2.png')?oldTable:table;
  const w=await loadWorld({sourceHtml});
  w.run(`const seatingDrawImage=ctx.drawImage.bind(ctx),seatingCoupling=typeof drawLevel4Coupling==='function'?drawLevel4Coupling:null;
  let seatingLayer='full',seatingDraws=[];ctx.drawImage=(image,...args)=>{

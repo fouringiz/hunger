@@ -25,8 +25,8 @@ async function main(){
   const scale=Math.min(460/span,115/up,115/down),out=createCanvas(CW*4,CH),ctx=out.getContext('2d');
   specs.forEach((s,n)=>{const [x,y,w,h]=s.source;ctx.save();ctx.beginPath();ctx.rect(n*CW,0,CW,CH);ctx.clip();
     ctx.drawImage(src,x,y,w,h,n*CW+(x-s.emission[0])*scale,ANCHOR-s.emission[1]*scale,w*scale,h*scale);ctx.restore();});
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-jet-v1.png'),out.toBuffer('image/png'));
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-jet-v1.frames.json'),JSON.stringify({columns:4,frames:4,cell:[CW,CH],anchor:[0,ANCHOR],scale,source:path.relative(ROOT,file),sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),sources:specs,status:'source sheet; not integrated or loop-approved'},null,2)+'\n');
-  console.log('Packed assets/hunger-flamethrower-jet-v1.png: 2048x256 RGBA, four 512x256 cells, common scale '+scale.toFixed(5)+', shared emission anchor (0,128).');
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-jet-v1.png'),out.toBuffer('image/png'));
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-jet-v1.frames.json'),JSON.stringify({columns:4,frames:4,cell:[CW,CH],anchor:[0,ANCHOR],scale,source:path.relative(ROOT,file),sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),sources:specs,status:'source sheet; not integrated or loop-approved'},null,2)+'\n');
+  console.log('Packed assets/runtime/towers/flamethrower-jet-v1.png: 2048x256 RGBA, four 512x256 cells, common scale '+scale.toFixed(5)+', shared emission anchor (0,128).');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

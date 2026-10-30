@@ -32,10 +32,10 @@ function checkSaleMotion(r,type){
   // Movement may live in the canvas transform, not the image's local destination.
   phases.push(JSON.stringify(r.draws.map(({args,matrix})=>({asset:args[0].src,rect:args.slice(1),matrix}))));
   if(type==='voltaic'){
-   const upper=r.draws.find(d=>d.args[0].src.endsWith('hunger-level4-towers-v2.png')&&d.args[2]===512);
+   const upper=r.draws.find(d=>d.args[0].src.endsWith('level4-towers-v2.png')&&d.args[2]===512);
    assert.ok(upper,'sale continues to draw the Tesla head through the socket clip');
    const [x,y]=upper.args.slice(-4),m=upper.matrix;upperYs.push(m[1]*x+m[3]*y+m[5]);
-   const base=r.draws.find(d=>d.args[0].src.endsWith('hunger-low-buildings-v3.png'));
+   const base=r.draws.find(d=>d.args[0].src.endsWith('low-buildings-v3.png'));
    const pos=JSON.parse(r.run('JSON.stringify({x:S.towers[0].x,y:S.towers[0].y})'));
    assert.deepEqual(base.matrix,[1,0,0,1,pos.x,pos.y],'sale moves the upper, leaving its foundation planted');
   }

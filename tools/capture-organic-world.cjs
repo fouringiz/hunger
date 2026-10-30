@@ -6,35 +6,45 @@ const {createCanvas,loadImage}=require(process.env.WORLD_CANVAS_MODULE||'@napi-r
 const {execFileSync}=require('node:child_process');
 const legacy=process.argv.includes('--legacy'),motion=process.argv.includes('--motion');
 const root=path.join(__dirname,'..'),zone=process.argv.includes('--ember')?'ember':'mire';
+// File name -> repo path for everything under assets/runtime, plus the retired level-four v1 atlas kept in assets/art/work.
+const RUNTIME_FILES=(()=>{const out={'level4-towers-v1.png':'assets/art/work/towers/level4-towers-v1.png'};
+  const walk=d=>{for(const e of fs.readdirSync(path.join(root,d),{withFileTypes:true}))e.isDirectory()?walk(d+'/'+e.name):out[e.name]=d+'/'+e.name;};
+  walk('assets/runtime');return out;})();
 async function loadWorld({zone='mire',legacy=false,viewport=[1920,1080],sourceHtml=null,assetOverrides={},assetGitRef=null}={}){
   let source=(sourceHtml||fs.readFileSync(path.join(root,'prototype/index.html'),'utf8')).match(/<script>([\s\S]*?)<\/script>/)[1];
-  const files={leechMireArt:'hunger-leech-mire-v1.webp',leechSurfacingArt:'hunger-leech-surfacing-v1.webp',carapacidShelterArt:'hunger-carapacid-shelter-v1.webp',polypArt:'hunger-polyp-v1.webp',polypoidArt:'hunger-polypoid-v1.webp',zygoteArt:'hunger-zygote-v1.webp',unitArt:'hunger-units-v1.png',voltaicArt:'hunger-voltaic-v1.png',infantryArt:'hunger-infantry-trial-v1.png',crawlerArt:'hunger-crawlers-v2.png',structureArt:'hunger-structures-v2.png',groundActorArt:'hunger-ground-actors-v3.png',lowBuildingArt:'hunger-low-buildings-v3.png',foragerMireArt:'hunger-forager-mire-v2.webp',mireGroundArt:'hunger-mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'hunger-ancient-stone-v1.webp'};
+  const files={leechMireArt:'leech-mire-v1.webp',leechSurfacingArt:'leech-surfacing-v1.webp',carapacidShelterArt:'carapacid-shelter-v1.webp',polypArt:'polyp-v1.webp',polypoidArt:'polypoid-v1.webp',zygoteArt:'zygote-v1.webp',unitArt:'units-v1.png',voltaicArt:'voltaic-v1.png',infantryArt:'infantry-trial-v1.png',crawlerArt:'crawlers-v2.png',structureArt:'structures-v2.png',groundActorArt:'ground-actors-v3.png',lowBuildingArt:'low-buildings-v3.png',foragerMireArt:'forager-mire-v2.webp',mireGroundArt:'mire-ground-v1.webp',worldGroundArt:'hunger-world-'+zone+'-v1.webp',ancientStoneArt:'ancient-stone-v1.webp'};
   const images={};
-  if(source.includes('const teslaToroidArt = '))files.teslaToroidArt='hunger-tesla-toroid-v1.png';
-  files.flamerArt='hunger-flamethrower-v1.png';
+  if(source.includes('const teslaToroidArt = '))files.teslaToroidArt='tesla-toroid-v1.png';
+  files.flamerArt='flamethrower-v1.png';
   // Historical renderers only: the neutral Voltaic head was removed in favour of the Tesla head.
   if(source.includes('const voltaicNeutralArt = '))files.voltaicNeutralArt='hunger-voltaic-neutral-v1.png';
   files.level4YawArt='hunger-level4-yaw-v1.png';
-  files.level4Art=source.includes('assets/hunger-level4-towers-v2.png')?'hunger-level4-towers-v2.png':'hunger-level4-towers-v1.png';
-  files.flameJetArt='hunger-flamethrower-jet-v1.png';
-  if(source.includes('const flameSmokeArt = '))files.flameSmokeArt='hunger-flamethrower-smoke-v1.png';
+  files.level4Art=/assets\/(runtime\/towers\/|hunger-)level4-towers-v2\.png/.test(source)?'level4-towers-v2.png':'level4-towers-v1.png';
+  files.flameJetArt='flamethrower-jet-v1.png';
+  if(source.includes('const flameSmokeArt = '))files.flameSmokeArt='flamethrower-smoke-v1.png';
   // Historical PR baseline only: recover the removed atlas from its own revision.
   if(source.includes('const fuelFireArt = '))files.fuelFireArt='hunger-flame-billows-v1.png';
   for(const [name,file]of Object.entries(files)){
     if(name==='level4YawArt'&&!source.includes('const '+name+' = '))continue;
-    const local=path.join(root,'assets',file);
-    const rev=assetGitRef||(name==='fuelFireArt'?'ed1b683':'15ad9ed'),pinned=path.join(root,'tests','fixtures','history',rev,'assets',file);
-    const input=assetOverrides[name]||(fs.existsSync(local)?local:fs.existsSync(pinned)?pinned:require('./history.cjs').readRevision(rev,'assets/'+file,null));
+    // Current art lives in assets/runtime (assets/art/work for the retired level-four v1); old revisions and pinned
+    // fixtures keep the pre-reorganisation name assets/hunger-<file>.
+    const local=RUNTIME_FILES[file]?path.join(root,RUNTIME_FILES[file]):path.join(root,'assets',file),legacy=file.startsWith('hunger-')?file:'hunger-'+file;
+    const rev=assetGitRef||(name==='fuelFireArt'?'ed1b683':'15ad9ed'),pinned=path.join(root,'tests','fixtures','history',rev,'assets',legacy);
+    const input=assetOverrides[name]||(fs.existsSync(local)?local:fs.existsSync(pinned)?pinned:require('./history.cjs').readRevision(rev,'assets/'+legacy,null));
     images[name]=await loadImage(input);
     source=source.replace(new RegExp('const '+name+' = [^;]+;'),'const '+name+' = images.'+name+';').replace(new RegExp('^if\\s*\\(\\s*'+name+'\\s*\\).*$','m'),'');
   }
-  for(const [name,file]of Object.entries({worldLaneArt:'hunger-organic-lane-v1.webp',gateDetailArt:legacy?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp',...(legacy?{gateRuinsArt:'hunger-ancient-gate-ruins-v1.webp'}:{}),platformDetailArt:'hunger-concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets',file));
-  const details="const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('hunger-ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');";
-  assert.ok(source.includes(details),'detail material declaration is still present');
-  source=source.replace(details,'const worldLaneArt=images.worldLaneArt,gateDetailArt=images.gateDetailArt,gateRuinsArt=images.gateRuinsArt||null,platformDetailArt=images.platformDetailArt;');
-  const materials="const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');";
-  assert.ok(source.includes(materials),'world material declaration is still present');
-  source=source.replace(materials,'const worldGroundArt=images.worldGroundArt,ancientStoneArt=images.ancientStoneArt;');
+  for(const [name,file]of Object.entries({worldLaneArt:'organic-lane-v1.webp',gateDetailArt:legacy?'ancient-gate-v4.webp':'ancient-gate-v6.webp',...(legacy?{gateRuinsArt:'ancient-gate-ruins-v1.webp'}:{}),platformDetailArt:'concrete-platform-v2.webp'}))images[name]=await loadImage(path.join(root,'assets/runtime/world',file));
+  const details="const worldLaneArt=worldMaterial('organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'ancient-gate-v4.webp':'ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('concrete-platform-v2.webp');";
+  // Historical renderers (pinned index.html revisions) still name the files assets/hunger-<file>.
+  const legacyNames=decl=>decl.replace(/'([a-z0-9-]+-v\d+\.webp)'/g,"'hunger-$1'");
+  const detailsAt=[details,legacyNames(details)].find(d=>source.includes(d));
+  assert.ok(detailsAt,'detail material declaration is still present');
+  source=source.replace(detailsAt,'const worldLaneArt=images.worldLaneArt,gateDetailArt=images.gateDetailArt,gateRuinsArt=images.gateRuinsArt||null,platformDetailArt=images.platformDetailArt;');
+  const materials="const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('ancient-stone-v1.webp');";
+  const materialsAt=[materials,legacyNames(materials)].find(d=>source.includes(d));
+  assert.ok(materialsAt,'world material declaration is still present');
+  source=source.replace(materialsAt,'const worldGroundArt=images.worldGroundArt,ancientStoneArt=images.ancientStoneArt;');
   const canvas=createCanvas(...viewport);canvas.style={};canvas.addEventListener=()=>{};
   const c=vm.createContext({images,document:{getElementById:()=>canvas,createElement:()=>createCanvas(1,1)},window:{devicePixelRatio:1},innerWidth:viewport[0],innerHeight:viewport[1],
     location:{pathname:'/prototype/index.html',search:'?zone='+zone+(legacy?'&balance=v04':'')},URLSearchParams,addEventListener(){},requestAnimationFrame(){},performance:{now:()=>0}});
@@ -62,7 +72,7 @@ async function main(){
       cg.clearRect(0,0,720,480);
       cg.drawImage(canvas,(actor.x-45)*canvas.width/960,(actor.y-35)*canvas.height/540,90*canvas.width/960,60*canvas.height/540,0,0,720,480);
       fs.writeFileSync(path.join(dir,'close',String(frame).padStart(3,'0')+'.png'),close.toBuffer('image/png'));
-      if(frame===30)fs.writeFileSync(path.join(root,'assets/art/previews/forager-living-mire-close-v2.webp'),close.encodeSync('webp',94));
+      if(frame===30)fs.writeFileSync(path.join(root,'reports/living-mire-runtime-v2/forager-living-mire-close-v2.webp'),close.encodeSync('webp',94));
     }
     if(process.argv.includes('--empty')){
       if(frame===0){initialSurface=Buffer.from(patch(400,90));initialPlatform=Buffer.from(patch(104,148));}
@@ -70,8 +80,8 @@ async function main(){
     }
     if(frame===12){
       fs.writeFileSync(path.join(dir,'scene.png'),canvas.toBuffer('image/png'));
-      if(!legacy&&process.argv.includes('--viewport')&&process.argv.includes('--empty'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-gameplay-v7.webp'),canvas.encodeSync('webp',90));
-      if(!legacy&&!process.argv.includes('--viewport'))fs.writeFileSync(path.join(root,'assets/art/previews/organic-world-'+zone+'-v7.webp'),canvas.encodeSync('webp',90));
+      if(!legacy&&process.argv.includes('--viewport')&&process.argv.includes('--empty'))fs.writeFileSync(path.join(root,'reports/organic-world/organic-world-'+zone+'-gameplay-v7.webp'),canvas.encodeSync('webp',90));
+      if(!legacy&&!process.argv.includes('--viewport'))fs.writeFileSync(path.join(root,'reports/organic-world/organic-world-'+zone+'-v7.webp'),canvas.encodeSync('webp',90));
     }
   }
   // Native alpha checks catch architectural obstruction of a full-height tower at every actual build pad.

@@ -4,7 +4,7 @@
 // untouched. Run it on the ungraded atlas, then tools/grade-level4-atlas.cjs. Usage: node tools/level4-local-contrast.cjs [amount] [radius]
 const fs=require('node:fs'),path=require('node:path');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
-const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/hunger-level4-towers-v2.png'),RECORD=path.join(ROOT,'assets/art/level4-palette-grade.json');
+const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png'),RECORD=path.join(ROOT,'assets/art/work/towers/level4-palette-grade.json');
 function boxBlur(src,w,h,r){const tmp=new Float32Array(w*h),out=new Float32Array(w*h);
   for(let y=0;y<h;y++){let s=0;for(let x=-r;x<=r;x++)s+=src[y*w+Math.min(w-1,Math.max(0,x))];
     for(let x=0;x<w;x++){tmp[y*w+x]=s/(2*r+1);s+=src[y*w+Math.min(w-1,x+r+1)]-src[y*w+Math.max(0,x-r)];}}

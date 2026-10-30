@@ -26,7 +26,7 @@ rejected by the user after iteration 3. No artistic acceptance is implied.
 The user reference is archived unchanged as
 `assets/art/references/towers/howitzer-selected-approved-v1.png`.
 Prompts and acceptance/rejection reasons are recorded in
-`assets/art/level4-towers-v1.prompt.txt`. Heavy raw sheets/guides remain ignored.
+`assets/art/work/towers/level4-towers-v1.prompt.txt`. Heavy raw sheets/guides remain ignored.
 
 New `tests/howitzer-design.cjs` checks that the bottom 4% of every actual atlas
 pose terminates in a narrow peg (<=22% of the upper assembly's overall width).

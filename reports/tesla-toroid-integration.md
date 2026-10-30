@@ -45,4 +45,4 @@ User supplied the successful capture output after the tooling correction. Opened
 
 2026-10-30: user explicitly confirmed the requested tests passed and browser console was clean after disk launch. This records user-run validation, not agent execution. Independent second visual review remains required before merge.
 
-2026-10-30 follow-up: the baked toroid is then put through the head palette pipeline with `node tools/grade-head-sprite.cjs tesla-toroid assets/hunger-tesla-toroid-v1.png` (shadow-only local contrast, grade to the foundation palette, 5-15% highlights); `tests/level4-palette.cjs` checks it. A re-bake must be followed by this step.
+2026-10-30 follow-up: the baked toroid is then put through the head palette pipeline with `node tools/grade-head-sprite.cjs tesla-toroid assets/runtime/towers/tesla-toroid-v1.png` (shadow-only local contrast, grade to the foundation palette, 5-15% highlights); `tests/level4-palette.cjs` checks it. A re-bake must be followed by this step.

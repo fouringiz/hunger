@@ -34,7 +34,7 @@ function runtime({image = true, pathname = '/prototype/'} = {}) {
 
 for (const [pathname, prefix] of [['/prototype/','../'],['/reports/generated/case/','../../']]) {
   const rt = runtime({pathname});
-  assert.ok(rt.calls.images.some(im=>im.src===`${prefix}assets/hunger-level4-towers-v2.png`), 'Tesla head atlas resolves in both page contexts');
+  assert.ok(rt.calls.images.some(im=>im.src===`${prefix}assets/runtime/towers/level4-towers-v2.png`), 'Tesla head atlas resolves in both page contexts');
   assert.ok(!rt.calls.images.some(im=>im.src.includes('hunger-voltaic-neutral')), 'the removed neutral head is never requested');
 }
 for (const image of [true,false]) {
@@ -44,8 +44,8 @@ for (const image of [true,false]) {
 }
 const loaded=runtime();
 loaded.run('lowBuildingArt.complete=true;lowBuildingArt.naturalWidth=1024;level4Art.complete=true;level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;');
-const atlas=loaded.calls.images.find(im=>im.src.endsWith('hunger-level4-towers-v2.png'));
-const low=loaded.calls.images.find(im=>im.src.endsWith('hunger-low-buildings-v3.png'));
+const atlas=loaded.calls.images.find(im=>im.src.endsWith('level4-towers-v2.png'));
+const low=loaded.calls.images.find(im=>im.src.endsWith('low-buildings-v3.png'));
 let foundation;
 for(const [level,branch] of [[1,null],[2,null],[3,null],[4,'A'],[4,'B']]){
   loaded.run(`S.towers[0].level=${level};S.towers[0].branch=${JSON.stringify(branch)};`);

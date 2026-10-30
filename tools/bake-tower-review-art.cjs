@@ -16,7 +16,7 @@ async function main(){
   const bearing=neutral?[128,dy+(s.pivot[1]-y)*scale]:[128,128];
   return {key:s.key,rect,size:s.width/(w*scale)*256,bearing,muzzle:[dx+(s.tip[0]-x)*scale,dy+(s.tip[1]-y)*scale],sourceBox:s.box,sourcePivot:s.pivot};
  });
- const target=path.join(ROOT,'assets/hunger-'+name+'-v1');
+ const target=path.join(ROOT,'assets/art/work/towers/'+name+'-v1');
  fs.writeFileSync(target+'.png',canvas.toBuffer('image/png'));
  fs.writeFileSync(target+'.frames.json',JSON.stringify({width:canvas.width,height:canvas.height,cell:256,sourceSHA256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),entries},null,2)+'\n');
  console.log('Packed '+target+'.png');

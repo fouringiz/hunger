@@ -19,16 +19,16 @@ for(const base of bases)assert.deepEqual(base,bases[0],'aim and recoil do not mo
 assert.equal(normal.rotations.length,0,'the foundation is never rotated in the canvas plane');
 for(const type of ['forager','carapacid','leech']){
  normal.draws.length=0;normal.run(`enemyArt(makeEnemy('${type}',1));`);
- const expected=normal.images.find(i=>i.src.endsWith(type==='carapacid'?'hunger-carapacid-shelter-v1.webp':type==='leech'?'hunger-leech-mire-v1.webp':'hunger-ground-actors-v3.png'));
+ const expected=normal.images.find(i=>i.src.endsWith(type==='carapacid'?'carapacid-shelter-v1.webp':type==='leech'?'leech-mire-v1.webp':'ground-actors-v3.png'));
  assert.ok(normal.draws.some(a=>a[0]===expected),type+' uses a grounded sprite in the normal campaign too');
 }
 normal.run("infantryArt.complete=false;groundActorArt.complete=false;");normal.draws.length=0;normal.run("enemyArt(makeEnemy('forager',1));");
-assert.ok(!normal.draws.some(d=>d[0]===normal.images.find(i=>i.src.endsWith('hunger-crawlers-v2.png'))),'an unloaded Forager never becomes a Leech');
+assert.ok(!normal.draws.some(d=>d[0]===normal.images.find(i=>i.src.endsWith('crawlers-v2.png'))),'an unloaded Forager never becomes a Leech');
 const trial=boot('?infantry=1');trial.run("reset();S.phase='build';S.buildTimer=999;S.credits=1000;build(SLOTS[3],'barracks');for(let i=0;i<300;i++)update(SIM_STEP);");
 const points=()=>JSON.parse(trial.run('JSON.stringify(S.towers[0].soldiers.map(s=>soldierGroundPoint(s,S.towers[0])))'));
 const first=points();assert.deepEqual(points(),first,'formation stays fixed across redraws');
 const [a,b,c]=first;assert.ok(Math.abs((b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x))>100,'soldiers are not drawn in a straight rank');
-trial.run('draw()');assert.ok(trial.draws.some(d=>d[0]===trial.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===515),'Barracks renders its dedicated sprite');
+trial.run('draw()');assert.ok(trial.draws.some(d=>d[0]===trial.images.find(i=>i.src.endsWith('low-buildings-v3.png'))&&d[1]===515),'Barracks renders its dedicated sprite');
 const state=trial.run("JSON.stringify(S,(k,v)=>['slot','target','blockedBy'].includes(k)?undefined:v)");
 trial.run('draw();draw()');assert.equal(trial.run("JSON.stringify(S,(k,v)=>['slot','target','blockedBy'].includes(k)?undefined:v)"),state,'drawing never changes simulation state');
 for(const art of trial.images){art.complete=false;art.naturalWidth=0;}assert.doesNotThrow(()=>trial.run('draw()'),'all new art retains a loading/failed fallback');
@@ -44,9 +44,9 @@ for(const type of ['forager','carapacid','leech']){
 }
 const tesla=boot();tesla.run("level4Art.naturalWidth=4096;level4Art.naturalHeight=2048;reset();S.credits=1000;build(SLOTS[0],'voltaic');drawTowerBody(S.towers[0]);");
 const firstLines=tesla.lines.slice();tesla.lines.length=0;tesla.run('S.towers[0].angle=Math.PI/2;drawTowerBody(S.towers[0]);');assert.deepEqual(tesla.lines,firstLines,'Tesla draws no changing directional pointer');
-const atlas=tesla.images.find(i=>i.src.endsWith('hunger-level4-towers-v2.png'));
+const atlas=tesla.images.find(i=>i.src.endsWith('level4-towers-v2.png'));
 const drawnHead=tesla.draws.find(d=>d[0]===atlas&&d[1]===0&&d[2]===512);
 assert.ok(drawnHead,'basic Voltaic uses the Tesla head (atlas cell 0,512), rather than the old complete column');
-assert.ok(tesla.draws.some(d=>d[0]===tesla.images.find(i=>i.src.endsWith('hunger-low-buildings-v3.png'))&&d[1]===59&&d[6]===-17&&d[8]===34),'basic Voltaic uses the same square foundation as the other weapons');
+assert.ok(tesla.draws.some(d=>d[0]===tesla.images.find(i=>i.src.endsWith('low-buildings-v3.png'))&&d[1]===59&&d[6]===-17&&d[8]===34),'basic Voltaic uses the same square foundation as the other weapons');
 const capStart=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],0))'),b2=tesla.run('JSON.stringify(weaponMuzzle(S.towers[0],Math.PI))');assert.equal(capStart,b2,'Tesla emits from its fixed cap independent of facing');
 console.log('PASS continuous projected yaw, exact barrel direction, fixed crawling contact and Tesla-headed omnidirectional Voltaic');

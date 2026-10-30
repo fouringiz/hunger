@@ -64,8 +64,8 @@ async function bake(dir=path.join(ROOT,'reports/generated/level4/sources')){
   entries.push({...spec,row,renderSize:+renderSize.toFixed(4),frames,source:path.relative(ROOT,file),sha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')});
  }
  const table={cell:CELL,headings:['E','SE','S','SW','W','NW','N','NE'],entries};
- fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.png'),atlas.toBuffer('image/png'));
- fs.writeFileSync(path.join(ROOT,'assets/hunger-level4-towers-v1.frames.json'),JSON.stringify(table,null,2)+'\n');
+ fs.writeFileSync(path.join(ROOT,'assets/art/work/towers/level4-towers-v1.png'),atlas.toBuffer('image/png'));
+ fs.writeFileSync(path.join(ROOT,'assets/art/work/towers/level4-towers-v1.frames.json'),JSON.stringify(table,null,2)+'\n');
  // Small inline table: file:// requires no fetch of JSON or pixels from cross-origin canvases.
  const runtime=entries.map(e=>({key:e.key,type:e.type,branch:e.branch,row:e.row,size:e.renderSize,tips:e.frames.map(f=>f.muzzle),seats:e.frames.map(f=>f.bearing)}));
  fs.writeFileSync(path.join(ROOT,'reports/generated/level4/runtime-table.json'),JSON.stringify(runtime));

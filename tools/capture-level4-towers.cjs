@@ -5,7 +5,7 @@ const {readRevision}=require('./history.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{execFileSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas'),{loadWorld}=require('./capture-organic-world.cjs');
 const HOWITZER_DESIGN=process.argv.includes('--howitzer-design-review');
-const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),COMMON=process.argv.includes('--tower-base'),BADGE=process.argv.includes('--badge-review'),ANCHOR=process.argv.includes('--anchor-review'),POSE=HOWITZER_DESIGN||process.argv.includes('--pose-review'),BASE=HOWITZER_DESIGN?'0c78db1':POSE?'15ad9ed':ANCHOR?'df6f8f5':BADGE?'c00cc8e':COMMON?'528cb0b':YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+const ROOT=path.join(__dirname,'..'),SEATING=process.argv.includes('--level4-seat'),NEUTRAL=process.argv.includes('--voltaic-base'),YAW=process.argv.includes('--level4-yaw'),COMMON=process.argv.includes('--tower-base'),BADGE=process.argv.includes('--badge-review'),ANCHOR=process.argv.includes('--anchor-review'),POSE=HOWITZER_DESIGN||process.argv.includes('--pose-review'),BASE=HOWITZER_DESIGN?'0c78db1':POSE?'15ad9ed':ANCHOR?'df6f8f5':BADGE?'c00cc8e':COMMON?'528cb0b':YAW?'acb6218':NEUTRAL?'a434efa':SEATING?'e4d136f':'2308926',TABLE=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8'));
 const REFERENCES=[[30,94,354,337],[424,98,346,336],[804,75,329,360],[1174,90,346,344],[28,491,359,391],[427,553,342,331],[794,510,365,378],[1170,505,352,383]];
 function gray(canvas){const c=createCanvas(canvas.width,canvas.height),g=c.getContext('2d');g.drawImage(canvas,0,0);const p=g.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const l=Math.round(.299*p.data[i]+.587*p.data[i+1]+.114*p.data[i+2]);p.data[i]=p.data[i+1]=p.data[i+2]=l;}g.putImageData(p,0,0);return c;}
 function save(c,file){fs.writeFileSync(file+'.png',c.toBuffer('image/png'));}
@@ -22,7 +22,7 @@ async function capture(spec,zone,label,sourceHtml,out){
  // seven rows are unchanged; do not pair old metadata with the candidate head.
  const assetOverrides={};
  if(HOWITZER_DESIGN&&label==='before'){
-  const current=await loadImage(path.join(ROOT,'assets/hunger-level4-towers-v2.png'));
+  const current=await loadImage(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png'));
   const oldRow=await loadImage(path.join(ROOT,'tests/fixtures/howitzer-design/before-0c78db1-row.png'));
   const atlas=createCanvas(current.width,current.height),g=atlas.getContext('2d');
   g.drawImage(current,0,0);g.clearRect(0,1024,4096,256);g.drawImage(oldRow,0,1024);assetOverrides.level4Art=atlas.toBuffer('image/png');
