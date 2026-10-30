@@ -1,6 +1,6 @@
 # Art references
 
-User-supplied references and rejected looks, grouped by the object they describe. Generated working sources live in `../studies/`; runtime files live in `assets/`.
+User-supplied references and rejected looks, grouped by the object they describe. Generated sources, studies and prompts live in `../work/` under the same layout; files the game loads live in `../../runtime/`. See `../../README.md` for the rules.
 
 ```
 style/            palette, mood and lighting that apply to everything
@@ -29,4 +29,4 @@ Each object folder may contain `notes.md`: what to take from each reference and 
 
 ## Weight
 
-The repository is public and Git keeps every version forever. References do not need lossless quality: save new ones as WebP or JPEG, at most 1600 px on the long side. Existing files are not recompressed, because rewriting them would add bytes to history, not remove them.
+The repository is public and Git keeps every version forever. References do not need lossless quality: save new ones as WebP or JPEG, at most 1600 px on the long side. The same rule covers studies and report captures; see `../../README.md`. Existing files are not recompressed, because rewriting them would add bytes to history, not remove them.
