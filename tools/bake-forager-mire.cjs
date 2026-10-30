@@ -43,13 +43,13 @@ async function bake(){
    for(let d=0;d<DIRECTIONS;d++)execFileSync(process.execPath,['--expose-gc',__filename,'--direction',String(d)],{stdio:'inherit',env:process.env});
    const packed=createCanvas(CELL*FRAMES,CELL*DIRECTIONS),p=packed.getContext('2d'),sheet=createCanvas(512,512),s=sheet.getContext('2d');s.fillStyle='#24291b';s.fillRect(0,0,512,512);
    for(let d=0;d<DIRECTIONS;d++){const row=await loadImage(path.join(rows,d+'.png'));p.drawImage(row,0,d*CELL);if(d%2===0){const j=d/2;s.drawImage(row,4*CELL,0,CELL,CELL,j%4*128,Math.floor(j/4)*256+38,128,128);s.fillStyle='#d5cfaf';s.font='12px sans-serif';s.fillText(d*22.5+'°',j%4*128+5,Math.floor(j/4)*256+184);}}
-   fs.writeFileSync(path.join(ROOT,'assets/hunger-forager-mire-v1.webp'),await packed.encode('webp',85));
+   fs.writeFileSync(path.join(ROOT,'assets/art/work/enemies/forager/forager-mire-v1.webp'),await packed.encode('webp',85));
    fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-atlas.png'),packed.toBuffer('image/png'));
    fs.writeFileSync(path.join(ROOT,'reports/generated/forager-runtime-directions.png'),sheet.toBuffer('image/png'));
    console.log(`Packed ${DIRECTIONS} directions × ${FRAMES} poses from original source pixels.`);return;
  }
  const source=await loadImage(path.join(ROOT,'assets/art/references/enemies/forager/forager-approved-v1.webp'));
- const matte=await loadImage(path.join(ROOT,'assets/art/sources/forager-matte-v1.png'));
+ const matte=await loadImage(path.join(ROOT,'assets/art/work/enemies/forager/forager-matte-v1.png'));
  const W=source.width,H=source.height;const src=createCanvas(W,H),sc=src.getContext('2d');sc.drawImage(source,0,0);
  const pixels=sc.getImageData(0,0,W,H),mc=createCanvas(W,H),mx=mc.getContext('2d');mx.drawImage(matte,0,0,W,H);const mask=mx.getImageData(0,0,W,H).data;
  const images=Array.from({length:4},()=>createCanvas(W,H)),data=images.map(im=>im.getContext('2d').createImageData(W,H));
@@ -76,7 +76,7 @@ async function bake(){
  const wd=tc.getImageData(0,0,128,128);for(let k=0;k<wd.data.length;k+=4){const r=wd.data[k],g=wd.data[k+1],b=wd.data[k+2],l=.25*r+.6*g+.15*b;wd.data[k]=18+l*.20+r*.02;wd.data[k+1]=20+l*.20+g*.02;wd.data[k+2]=12+l*.13+b*.02;}tc.putImageData(wd,0,0);
  // Mirrored quadrants have matching opposing edges; the low contrast avoids a tiled checker look.
  for(let y=0;y<2;y++)for(let x=0;x<2;x++){wc.save();wc.translate(x?256:0,y?256:0);wc.scale(x?-1:1,y?-1:1);wc.drawImage(tile,0,0);wc.restore();}
- if(onlyDirection===0)fs.writeFileSync(path.join(ROOT,'assets/hunger-mire-ground-v1.webp'),await wet.encode('webp',88));
+ if(onlyDirection===0)fs.writeFileSync(path.join(ROOT,'assets/runtime/world/mire-ground-v1.webp'),await wet.encode('webp',88));
  function project(x,y,angle,v,dx=0,lift=0){
    const u=x-ORIGIN[0],ca=Math.cos(angle),sa=Math.sin(angle);
    // Height is an upright billboard coordinate. Applying lateral depth to that

@@ -21,7 +21,7 @@ async function frames(w){
   assert.equal(seq[0].alpha,0);assert.equal(seq[120].alpha,0,'end of 1.2s life fades out');
 }
 (async()=>{
-  const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-smoke-v1.frames.json')));assert.deepEqual(meta.cell,[256,256]);assert.deepEqual(meta.anchor,[128,128]);assert.equal(meta.frames,6);
+  const meta=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/runtime/towers/flamethrower-smoke-v1.frames.json')));assert.deepEqual(meta.cell,[256,256]);assert.deepEqual(meta.anchor,[128,128]);assert.equal(meta.frames,6);
   const w=await boot();await rise(w);await frames(w);
   const sig=w.run('replaySignature()');w.run('updateFlameSmoke();drawFlameSmoke();');assert.equal(w.run('replaySignature()'),sig,'smoke never mutates simulation');
   const snapshot=w.run('JSON.stringify(flameSmokePuffs.map(({at,x,y,drift})=>({at,x,y,drift})))');

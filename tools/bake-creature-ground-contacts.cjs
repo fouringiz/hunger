@@ -22,9 +22,9 @@ function leechBodyCore(image,row,frame){
 async function bake(){
  const tables={};
  for(const kind of ['carapacid','leech']){
-  const name=kind==='carapacid'?'hunger-carapacid-shelter-v1':'hunger-leech-mire-v1',im=await loadImage(path.join(root,'assets',name+'.webp'));
+  const name=kind==='carapacid'?'carapacid-shelter-v1':'leech-mire-v1',im=await loadImage(path.join(root,'assets/runtime/enemies',name+'.webp'));
   const c=createCanvas(im.width,im.height),g=c.getContext('2d');g.drawImage(im,0,0);
-  const old=kind==='leech'?JSON.parse(fs.readFileSync(path.join(root,'assets',name+'.contacts.json'),'utf8')):null;
+  const old=kind==='leech'?JSON.parse(fs.readFileSync(path.join(root,'assets/runtime/enemies',name+'.contacts.json'),'utf8')):null;
   const rows=[];
   for(let r=0;r<im.height/256;r++){
    const frames=[];
@@ -42,7 +42,7 @@ async function bake(){
    rows.push(frames);
   }
   const table={cell:256,anchor:[128,208],frames:4,directions:rows.length,rows};tables[kind]=table;
-  fs.writeFileSync(path.join(root,'assets',name+'.ground-contacts.json'),JSON.stringify(table)+'\n');
+  fs.writeFileSync(path.join(root,'assets/runtime/enemies',name+'.ground-contacts.json'),JSON.stringify(table)+'\n');
  }
  const html=path.join(root,'prototype/index.html'),s=fs.readFileSync(html,'utf8');
  const declaration='const CREATURE_MIRE_CONTACTS='+JSON.stringify(tables)+';';

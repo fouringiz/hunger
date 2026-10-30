@@ -8,7 +8,7 @@ const {loadWorld}=require('../tools/capture-organic-world.cjs');
 const baseline=require('../reports/carapacid-shelter/simulation-baseline.json');
 (async()=>{
   for(const kind of ['polyp','polypoid','zygote']){
-    const table=require(`../assets/hunger-${kind}-v1.frames.json`),image=await loadImage(path.join(__dirname,'../assets',table.atlas));
+    const table=require(`../assets/runtime/enemies/${kind}-v1.frames.json`),image=await loadImage(path.join(__dirname,'../assets/runtime/enemies',table.atlas));
     assert.deepEqual([image.width,image.height],[table.cell*table.columns,table.cell*table.rows],kind+': atlas matches its frame table');
     if(kind!=='zygote')assert.deepEqual(table.clips.filter(c=>c.direction).map(c=>c.direction),['right','down','left','up'],kind+': four directions');
   }

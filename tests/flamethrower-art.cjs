@@ -56,9 +56,9 @@ function checkEmergence(r){
   }
 }
 checkEmergence(r);
-const atlas=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/hunger-flamethrower-v1.frames.json'),'utf8'));
+const atlas=JSON.parse(fs.readFileSync(path.join(__dirname,'../assets/runtime/towers/flamethrower-v1.frames.json'),'utf8'));
 assert.deepEqual(JSON.parse(r.run('JSON.stringify(FLAMER_ART.rects)')),atlas.rects,'runtime rectangles match baked parts');
-assert.ok(r.images.some(i=>i.src.endsWith('assets/hunger-flamethrower-v1.png')));
+assert.ok(r.images.some(i=>i.src.endsWith('assets/runtime/towers/flamethrower-v1.png')));
 r.run("reset();S.credits=1000;build(SLOTS[2],'flamer');");
 const signature=r.run('replaySignature()');
 r.run("drawFlamethrower(S.towers[0]);");

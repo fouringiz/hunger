@@ -7,12 +7,12 @@ const {createCanvas,loadImage}=require('@napi-rs/canvas');
 const {paletteMetrics}=require('./palette-metrics.cjs');
 const {localContrast}=require('./level4-local-contrast.cjs');
 const {fit,apply,FOUNDATION_RECT,HEAD_BRIGHT,HEAD_BRIGHT_RANGE}=require('./grade-level4-atlas.cjs');
-const ROOT=path.join(__dirname,'..'),RECORD=path.join(ROOT,'assets/art/level4-palette-grade.json');
+const ROOT=path.join(__dirname,'..'),RECORD=path.join(ROOT,'assets/art/work/towers/level4-palette-grade.json');
 (async()=>{
   const [key,file]=process.argv.slice(2);if(!key||!file){console.error('usage: node tools/grade-head-sprite.cjs <key> <assets/...png>');process.exit(2);}
   const record=JSON.parse(fs.readFileSync(RECORD,'utf8'));record.sprites=record.sprites||{};
   if(record.sprites[key])throw new Error(key+' is already graded; re-bake the sprite and remove its record entry first');
-  const fimg=await loadImage(path.join(ROOT,'assets/hunger-low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
+  const fimg=await loadImage(path.join(ROOT,'assets/runtime/low-buildings-v3.png')),fc=createCanvas(fimg.width,fimg.height),fg=fc.getContext('2d');fg.drawImage(fimg,0,0);
   const foundation=paletteMetrics(fg.getImageData(0,0,fc.width,fc.height).data,fc.width,FOUNDATION_RECT),target={...foundation,bright:HEAD_BRIGHT};
   const img=await loadImage(path.join(ROOT,file)),c=createCanvas(img.width,img.height),g=c.getContext('2d');g.drawImage(img,0,0);
   const id=g.getImageData(0,0,c.width,c.height),rect=[0,0,c.width,c.height],before=paletteMetrics(id.data,c.width,rect);

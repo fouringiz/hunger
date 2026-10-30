@@ -1,0 +1,577 @@
+{
+ "version": 1,
+ "kind": "polypoid",
+ "atlas": "polypoid-v1.webp",
+ "cell": 256,
+ "columns": 6,
+ "rows": 4,
+ "anchor": [
+  128,
+  208
+ ],
+ "angleConvention": "clockwise screen angle, zero=right; left is the mirrored right",
+ "scale": 0.64522,
+ "notes": "One scale and one ground anchor for the whole family (a clip with clipScale is additionally resized once as a whole, see its note). Matte and generated ground shadows removed offline; the game adds no shadow. Presentation only, not a collision shape.",
+ "clips": [
+  {
+   "clip": "run",
+   "direction": "right",
+   "row": 0,
+   "frames": 6,
+   "source": "assets/art/work/enemies/polyp/polypoid-run-right-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "split": "between largest silhouettes",
+   "shadowPixelsRemoved": 48495,
+   "background": [
+    185,
+    186,
+    187
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      13,
+      52,
+      224,
+      157
+     ],
+     "sourceRect": [
+      34,
+      236,
+      348,
+      243
+     ]
+    },
+    {
+     "x": 256,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      29,
+      32,
+      200,
+      177
+     ],
+     "sourceRect": [
+      383,
+      215,
+      310,
+      274
+     ]
+    },
+    {
+     "x": 512,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      14,
+      57,
+      235,
+      152
+     ],
+     "sourceRect": [
+      718,
+      248,
+      365,
+      236
+     ]
+    },
+    {
+     "x": 768,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      20,
+      28,
+      215,
+      181
+     ],
+     "sourceRect": [
+      1083,
+      207,
+      334,
+      280
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      5,
+      72,
+      243,
+      137
+     ],
+     "sourceRect": [
+      1437,
+      273,
+      378,
+      213
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 0,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      21,
+      59,
+      206,
+      150
+     ],
+     "sourceRect": [
+      1816,
+      244,
+      322,
+      232
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "run",
+   "direction": "down",
+   "row": 1,
+   "frames": 6,
+   "source": "assets/art/work/enemies/polyp/polypoid-run-down-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "split": "empty columns",
+   "shadowPixelsRemoved": 40353,
+   "background": [
+    172,
+    174,
+    179
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      26,
+      59,
+      209,
+      150
+     ],
+     "sourceRect": [
+      45,
+      280,
+      323,
+      232
+     ]
+    },
+    {
+     "x": 256,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      43,
+      56,
+      183,
+      153
+     ],
+     "sourceRect": [
+      413,
+      235,
+      284,
+      238
+     ]
+    },
+    {
+     "x": 512,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      12,
+      51,
+      209,
+      158
+     ],
+     "sourceRect": [
+      720,
+      278,
+      325,
+      245
+     ]
+    },
+    {
+     "x": 768,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      35,
+      54,
+      185,
+      155
+     ],
+     "sourceRect": [
+      1104,
+      233,
+      288,
+      239
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      16,
+      51,
+      216,
+      157
+     ],
+     "sourceRect": [
+      1424,
+      293,
+      334,
+      244
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 256,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      38,
+      53,
+      199,
+      156
+     ],
+     "sourceRect": [
+      1838,
+      241,
+      308,
+      242
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "run",
+   "direction": "left",
+   "row": 2,
+   "frames": 6,
+   "source": "assets/art/work/enemies/polyp/polypoid-run-right-v1.png (mirrored)",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "split": "between largest silhouettes",
+   "shadowPixelsRemoved": 48495,
+   "background": [
+    185,
+    186,
+    187
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      19,
+      52,
+      224,
+      157
+     ],
+     "sourceRect": [
+      34,
+      236,
+      348,
+      243
+     ]
+    },
+    {
+     "x": 256,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      27,
+      32,
+      200,
+      177
+     ],
+     "sourceRect": [
+      383,
+      215,
+      310,
+      274
+     ]
+    },
+    {
+     "x": 512,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      7,
+      57,
+      235,
+      152
+     ],
+     "sourceRect": [
+      718,
+      248,
+      365,
+      236
+     ]
+    },
+    {
+     "x": 768,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      21,
+      28,
+      215,
+      181
+     ],
+     "sourceRect": [
+      1083,
+      207,
+      334,
+      280
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      8,
+      72,
+      243,
+      137
+     ],
+     "sourceRect": [
+      1437,
+      273,
+      378,
+      213
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 512,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      29,
+      59,
+      206,
+      150
+     ],
+     "sourceRect": [
+      1816,
+      244,
+      322,
+      232
+     ]
+    }
+   ]
+  },
+  {
+   "clip": "run",
+   "direction": "up",
+   "row": 3,
+   "frames": 6,
+   "source": "assets/art/work/enemies/polyp/polypoid-run-up-v1.png",
+   "sourceFrames": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "loop": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "split": "empty columns",
+   "shadowPixelsRemoved": 44666,
+   "background": [
+    179,
+    179,
+    182
+   ],
+   "cells": [
+    {
+     "x": 0,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      26,
+      10,
+      206,
+      199
+     ],
+     "sourceRect": [
+      35,
+      214,
+      319,
+      308
+     ]
+    },
+    {
+     "x": 256,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      36,
+      16,
+      179,
+      193
+     ],
+     "sourceRect": [
+      396,
+      184,
+      278,
+      298
+     ]
+    },
+    {
+     "x": 512,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      22,
+      5,
+      207,
+      204
+     ],
+     "sourceRect": [
+      733,
+      214,
+      322,
+      316
+     ]
+    },
+    {
+     "x": 768,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      44,
+      29,
+      175,
+      180
+     ],
+     "sourceRect": [
+      1116,
+      184,
+      271,
+      279
+     ]
+    },
+    {
+     "x": 1024,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      11,
+      30,
+      237,
+      179
+     ],
+     "sourceRect": [
+      1433,
+      239,
+      367,
+      279
+     ]
+    },
+    {
+     "x": 1280,
+     "y": 768,
+     "w": 256,
+     "h": 256,
+     "opaque": [
+      27,
+      21,
+      195,
+      188
+     ],
+     "sourceRect": [
+      1828,
+      184,
+      304,
+      291
+     ]
+    }
+   ]
+  }
+ ]
+}

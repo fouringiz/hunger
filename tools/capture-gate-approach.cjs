@@ -14,7 +14,7 @@ async function main(){
   g.drawImage(canvas,0,0,960,540);cg.drawImage(canvas,620*2,300*2,340*2,206*2,0,0,1020,618);
   fs.writeFileSync(path.join(dir,String(frame).padStart(3,'0')+'.png'),close.toBuffer('image/png'));
   if([0,40,80,120,160,200,239].includes(frame))fs.writeFileSync(path.join(dir,'full-'+frame+'.png'),full.toBuffer('image/png'));
-  if(frame===80){fs.writeFileSync(path.join(root,'assets/art/previews/gate-approach-v8.webp'),close.encodeSync('webp',92));fs.writeFileSync(path.join(root,'assets/art/previews/gate-map-v8.webp'),full.encodeSync('webp',92));}
+  if(frame===80){fs.writeFileSync(path.join(root,'reports/gate-approach/gate-approach-v8.webp'),close.encodeSync('webp',92));fs.writeFileSync(path.join(root,'reports/gate-approach/gate-map-v8.webp'),full.encodeSync('webp',92));}
  }
  assert.equal(run('S.waveLeaked'),7,'six Foragers and one Carapacid reach the threshold through the actual movement code');
  assert.equal(run('S.gate'),9,'normal leak damage is preserved');

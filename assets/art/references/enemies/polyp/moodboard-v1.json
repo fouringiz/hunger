@@ -132,8 +132,8 @@
       "id": 17,
       "group": "06 / СВЯЗЬ С ИГРОЙ",
       "title": "Carapacid · существующая форма пластин",
-      "source": "assets/art/sources/carapacid-headings-4x4-v1.png",
-      "image": "assets/art/sources/carapacid-headings-4x4-v1.png",
+      "source": "assets/art/work/enemies/carapacid/carapacid-headings-4x4-v1.png",
+      "image": "assets/art/work/enemies/carapacid/carapacid-headings-4x4-v1.png",
       "take": "Контур отдельных обломков пластин из текущего источника игры.",
       "avoid": "Новый панцирь поверх Полипа; пластины только включения между лопастями."
     },

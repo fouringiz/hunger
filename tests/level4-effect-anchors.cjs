@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');const{loadWorld}=require('../tools/capture-organic-world.cjs');
-const html=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8'),entries=require('../assets/hunger-level4-towers-v2.frames.json').entries;
+const html=fs.readFileSync(path.join(__dirname,'../prototype/index.html'),'utf8'),entries=require('../assets/runtime/towers/level4-towers-v2.frames.json').entries;
 async function check(sourceHtml=html){
  const w=await loadWorld({sourceHtml});
  w.run(`let effectArcs=[],effectMoves=[],effectJets=[];const effectDraw=ctx.drawImage.bind(ctx);ctx.drawImage=(...a)=>{if(a[0]===flameJetArt){const m=ctx.getTransform();effectJets.push({x:m.e,y:m.f});}effectDraw(...a);};const effectArc=ctx.arc.bind(ctx),effectMove=ctx.moveTo.bind(ctx);ctx.arc=(...a)=>{effectArcs.push({a,color:ctx.fillStyle,stroke:ctx.strokeStyle});effectArc(...a);};ctx.moveTo=(...a)=>{effectMoves.push(a);effectMove(...a);};terrain=()=>{};drawGateApproach=()=>{};drawFiringLane=()=>{};`);

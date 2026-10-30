@@ -5,7 +5,7 @@ const ROWS=[3,4,5,11,12,13],CELL=192;
 async function loadCycles(root){
  const cycles=[];
  for(const view of ['front','rear']){
-  const im=await loadImage(path.join(root,'assets/art/sources/forager-vertical-'+view+'-cycle-v1.webp'));
+  const im=await loadImage(path.join(root,'assets/art/work/enemies/forager/forager-vertical-'+view+'-cycle-v1.webp'));
   assert.equal(im.width%3,0);assert.equal(im.height%3,0);
   const size=im.width/3,frames=[];
   for(let frame=0;frame<9;frame++){

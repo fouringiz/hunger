@@ -20,9 +20,9 @@ async function selected(sourceHtml=html){
  return w;
 }
 (async()=>{
- const m=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-tesla-toroid-v1.frames.json')));
+ const m=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/tesla-toroid-v1.frames.json')));
  assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT,m.source))).digest('hex'),m.sourceSha256,'exact approved attachment');
- const art=await loadImage(path.join(ROOT,'assets/hunger-tesla-toroid-v1.png'));assert.equal(art.width,256);assert.equal(art.height,256);
+ const art=await loadImage(path.join(ROOT,'assets/runtime/towers/tesla-toroid-v1.png'));assert.equal(art.width,256);assert.equal(art.height,256);
  const c=createCanvas(256,256),g=c.getContext('2d');g.drawImage(art,0,0);const data=g.getImageData(0,0,256,256).data;
  const alpha=(x,y)=>data[(Math.round(y)*256+Math.round(x))*4+3];
  for(const point of [m.tips[0],m.seats[0]]){

@@ -7,7 +7,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {loadImage,createCanvas}=require('@napi-rs/canvas');
 const {loadWorld}=require('../tools/capture-organic-world.cjs');
-const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/hunger-leech-surfacing-v1.webp');
+const ROOT=path.join(__dirname,'..'),ATLAS=path.join(ROOT,'assets/runtime/enemies/leech-surfacing-v1.webp');
 const scene=slot=>`reset();S.credits=5000;S.phase='wave';S.wave=5;S.spawnQueue=[];S.streams=[];build(SLOTS[${slot}],'generator');S.selected=null;var leech=makeEnemy('leech',5);S.enemies=[leech];`;
 // Installed once per world: tags every drawImage of the Leech's art and of the platform layer, in draw order.
 const LOG="if(!globalThis.drawLog){globalThis.drawLog=[];const plainDrawImage=ctx.drawImage;ctx.drawImage=function(img,...a){drawLog.push(img===leechSurfacingArt?'surf':img===leechBlendLayer?'blend':img===worldPlatformArt?'platform':img===leechMireArt||img===leechPlatformLayer?'crawl':'');return plainDrawImage.call(this,img,...a);};}";

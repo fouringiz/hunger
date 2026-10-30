@@ -14,8 +14,8 @@ function narrowPeg(canvas,label){
  assert.ok(width/(right-left+1)<=.22,`${label}: broad pedestal replaces narrow steel peg (${width}/${right-left+1})`);
 }
 (async()=>{
- const table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'))),head=table.entries.find(e=>e.key==='howitzer');
- assert.equal(head.frames.length,16);const im=await loadImage(path.join(ROOT,'assets/hunger-level4-towers-v2.png'));
+ const table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'))),head=table.entries.find(e=>e.key==='howitzer');
+ assert.equal(head.frames.length,16);const im=await loadImage(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png'));
  for(const[i,f]of head.frames.entries()){const c=createCanvas(256,256);c.getContext('2d').drawImage(im,...f.rect,0,0,256,256);narrowPeg(c,'howitzer pose '+i);}
  // Pinned raster of the rejected d022ae3 Howitzer, cell 0. Tests never read Git.
  const bad=await loadImage(path.join(__dirname,'fixtures/howitzer-design/rejected-copper-pedestal-v1.png')),c=createCanvas(256,256);c.getContext('2d').drawImage(bad,0,0);

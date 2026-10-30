@@ -20,11 +20,11 @@
 // (0.9 s) while the level-3 head sinks into the socket and the branch head rises; the picture follows the simulation's
 // warm-up. Balance presets keep the instant swap, so the reference replays play exactly as recorded.
 // v0.14 (presentation only, rules and source fingerprints unchanged): the Leech's hunt beneath the skin, its surfacing and
-// the wound it leaves are drawn from assets/hunger-leech-surfacing-v1.webp. Under the skin and in surfacing frames 1-2 it
+// the wound it leaves are drawn from assets/runtime/enemies/leech-surfacing-v1.webp. Under the skin and in surfacing frames 1-2 it
 // lies on a ground layer under the platforms, towers and units; frames 3-8 stand on the unit layer; frame 8 hands over to
 // the crawl atlas and leaves a wound decal that heals and fades over 8 s of simulation time.
 // v0.13 (presentation only, rules and source fingerprints unchanged): the Polyp, its zygotes and the Polypoid are drawn
-// from baked atlases (assets/hunger-polyp-v1.webp, hunger-polypoid-v1.webp, hunger-zygote-v1.webp). The Polyp crawls in four
+// from baked atlases (assets/runtime/enemies/polyp-v1.webp, polypoid-v1.webp, zygote-v1.webp). The Polyp crawls in four
 // directions and bursts in three frames where it dies; a zygote rests and pulses, then hatches over its last 0.15 s; the
 // Polypoid runs in four directions. The sheets' ground shadows were removed offline and no shadow is drawn in code.
 // v0.12: the Polyp bursts into six zygotes where it dies; zygote i hatches a Polypoid (40 HP, speed 56, bounty 3, gate 1)
@@ -1234,60 +1234,60 @@ function stepSimulation(dt) {
 // ---------------------------------------------------------------- drawing
 // Presentation only: the atlas, terrain and animation never change simulation state.
 const unitArt = typeof Image === 'undefined' ? null : new Image();
-if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-units-v1.png';
+if (unitArt) unitArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/units-v1.png';
 const voltaicArt = typeof Image === 'undefined' ? null : new Image();
-if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-voltaic-v1.png';
+if (voltaicArt) voltaicArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/voltaic-v1.png';
 const infantryArt = typeof Image !== 'undefined' ? new Image() : null;
-if (infantryArt) infantryArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-infantry-trial-v1.png';
+if (infantryArt) infantryArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/infantry-trial-v1.png';
 const crawlerArt = typeof Image === 'undefined' ? null : new Image();
-if (crawlerArt) crawlerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-crawlers-v2.png';
+if (crawlerArt) crawlerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/crawlers-v2.png';
 const structureArt = typeof Image === 'undefined' ? null : new Image();
-if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-structures-v2.png';
+if (structureArt) structureArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/structures-v2.png';
 const flamerArt = typeof Image === 'undefined' ? null : new Image();
-if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-v1.png';
+if (flamerArt) flamerArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/flamethrower-v1.png';
 const teslaToroidArt = typeof Image === 'undefined' ? null : new Image();
-if (teslaToroidArt) teslaToroidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-tesla-toroid-v1.png';
+if (teslaToroidArt) teslaToroidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/tesla-toroid-v1.png';
 const level4Art = typeof Image === 'undefined' ? null : new Image();
-if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-level4-towers-v2.png';
+if (level4Art) level4Art.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/level4-towers-v2.png';
 const flameJetArt = typeof Image === 'undefined' ? null : new Image();
-if (flameJetArt) flameJetArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-jet-v1.png';
+if (flameJetArt) flameJetArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/flamethrower-jet-v1.png';
 const flameSmokeArt = typeof Image === 'undefined' ? null : new Image();
-if (flameSmokeArt) flameSmokeArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-flamethrower-smoke-v1.png';
+if (flameSmokeArt) flameSmokeArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/towers/flamethrower-smoke-v1.png';
 const groundActorArt = typeof Image === 'undefined' ? null : new Image();
-if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-ground-actors-v3.png';
+if (groundActorArt) groundActorArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/ground-actors-v3.png';
 const carapacidShelterArt = typeof Image === 'undefined' ? null : new Image();
-if (carapacidShelterArt) carapacidShelterArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-carapacid-shelter-v1.webp';
+if (carapacidShelterArt) carapacidShelterArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/carapacid-shelter-v1.webp';
 const leechMireArt = typeof Image === 'undefined' ? null : new Image();
-if (leechMireArt) leechMireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-mire-v1.webp';
+if (leechMireArt) leechMireArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/leech-mire-v1.webp';
 const leechSurfacingArt = typeof Image === 'undefined' ? null : new Image();
-if (leechSurfacingArt) leechSurfacingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-leech-surfacing-v1.webp';
+if (leechSurfacingArt) leechSurfacingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/leech-surfacing-v1.webp';
 const polypArt = typeof Image === 'undefined' ? null : new Image();
-if (polypArt) polypArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-polyp-v1.webp';
+if (polypArt) polypArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/polyp-v1.webp';
 const polypoidArt = typeof Image === 'undefined' ? null : new Image();
-if (polypoidArt) polypoidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-polypoid-v1.webp';
+if (polypoidArt) polypoidArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/polypoid-v1.webp';
 const zygoteArt = typeof Image === 'undefined' ? null : new Image();
-if (zygoteArt) zygoteArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-zygote-v1.webp';
+if (zygoteArt) zygoteArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/enemies/zygote-v1.webp';
 const lowBuildingArt = typeof Image === 'undefined' ? null : new Image();
-if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/hunger-low-buildings-v3.png';
+if (lowBuildingArt) lowBuildingArt.src = (location.pathname.includes('/reports/generated/') ? '../../' : '../') + 'assets/runtime/low-buildings-v3.png';
 const foragerMireArt = typeof Image === 'undefined' ? null : new Image();
-if(foragerMireArt)foragerMireArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/hunger-forager-mire-v2.webp';
+if(foragerMireArt)foragerMireArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/runtime/enemies/forager-mire-v2.webp';
 const mireGroundArt = typeof Image === 'undefined' ? null : new Image();
-if(mireGroundArt){mireGroundArt.onload=()=>{terrainArt=null;};mireGroundArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/hunger-mire-ground-v1.webp';}
+if(mireGroundArt){mireGroundArt.onload=()=>{terrainArt=null;};mireGroundArt.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/runtime/world/mire-ground-v1.webp';}
 // Zone art is presentation configuration, deliberately outside combat state and replay rules.
 const WORLD_PALETTES={
-  mire:{file:'hunger-world-mire-v1.webp',soil:'#514e28',shade:'#202914',wet:'#adb559',vein:'#cadb83',slime:'#69722c'},
-  ember:{file:'hunger-world-ember-v1.webp',soil:'#633c24',shade:'#321a18',wet:'#d6a549',vein:'#ecc46e',slime:'#855324'}
+  mire:{file:'world-mire-v1.webp',soil:'#514e28',shade:'#202914',wet:'#adb559',vein:'#cadb83',slime:'#69722c'},
+  ember:{file:'world-ember-v1.webp',soil:'#633c24',shade:'#321a18',wet:'#d6a549',vein:'#ecc46e',slime:'#855324'}
 };
 const WORLD_ZONE=(()=>{const name=typeof location==='undefined'?null:new URLSearchParams(location.search).get('zone');return Object.prototype.hasOwnProperty.call(WORLD_PALETTES,name)?name:'mire';})();
 const WORLD= WORLD_PALETTES[WORLD_ZONE], PLATFORM_HEIGHT=22, WORLD_RASTER_SCALE=2;
 function worldMaterial(file){
   if(typeof Image==='undefined')return null;
   const image=new Image();image.onload=()=>{terrainArt=null;worldTileArt=null;worldPulseArt=null;worldLiveArt=null;worldPlatformArt=null;gateStoneCache=null;gateSurfaceCache=null;platformWallArt=null;};
-  image.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/'+file;return image;
+  image.src=(location.pathname.includes('/reports/generated/')?'../../':'../')+'assets/runtime/world/'+file;return image;
 }
-const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('hunger-ancient-stone-v1.webp');
+const worldGroundArt=worldMaterial(WORLD.file),ancientStoneArt=worldMaterial('ancient-stone-v1.webp');
 const LEGACY_GATE_ART=!!BALANCE_PRESET;
-const worldLaneArt=worldMaterial('hunger-organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'hunger-ancient-gate-v4.webp':'hunger-ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('hunger-ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('hunger-concrete-platform-v2.webp');
+const worldLaneArt=worldMaterial('organic-lane-v1.webp'),gateDetailArt=worldMaterial(LEGACY_GATE_ART?'ancient-gate-v4.webp':'ancient-gate-v6.webp'),gateRuinsArt=LEGACY_GATE_ART?worldMaterial('ancient-gate-ruins-v1.webp'):null,platformDetailArt=worldMaterial('concrete-platform-v2.webp');
 let worldTileArt=null,worldPulseArt=null,worldLiveArt=null,worldPlatformArt=null,gateStoneCache=null,platformWallArt=null;
 let gateSurfaceCache=null,portalLightMask=null;
 // Source-pixel animation is baked offline. Runtime work is one atlas draw per Forager.
@@ -1336,7 +1336,7 @@ function groundActorMetrics(type) {
   return {index,r,width,height:r[3]/r[2]*width};
 }
 // v0.14 (presentation only): the Leech's hunt beneath the skin, its surfacing and the wound it leaves, drawn from
-// assets/hunger-leech-surfacing-v1.webp (tools/bake-leech-surfacing.cjs; frame table beside it). Row 0: emergence frames
+// assets/runtime/enemies/leech-surfacing-v1.webp (tools/bake-leech-surfacing.cjs; frame table beside it). Row 0: emergence frames
 // 1-8, column 8 = frame 8's wound alone; row 1: wound frames 1-4. Every cell is anchored at its wound centre.
 // px: game px per emergence cell px — frame 8's lying worm (214.5 cell px) as long as the crawl atlas body (160 of 256
 // cell px drawn at 80). handoff: where the crawl body is drawn from the wound when frame 8 hands over (frame 8's worm centre

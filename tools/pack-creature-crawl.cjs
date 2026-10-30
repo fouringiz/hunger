@@ -51,8 +51,8 @@ async function pack(kind,input){
  const {rects}=await extractFrames(kind,input);
  const scale=Math.min(224/Math.max(...rects.map(o=>o.r[2])),200/Math.max(...rects.map(o=>o.r[3]))),out=createCanvas(CELL*4,CELL*4),c=out.getContext('2d');
  rects.forEach(({r,tile},i)=>c.drawImage(tile,i%4*CELL+(CELL-r[2]*scale)/2,Math.floor(i/4)*CELL+BASE-r[3]*scale,r[2]*scale,r[3]*scale));
- const filename=kind==='carapacid'?'hunger-carapacid-shelter-v1.webp':'hunger-leech-mire-v1.webp';
- fs.writeFileSync(path.join(ROOT,'assets',filename),out.encodeSync('webp',96));
+ const filename=kind==='carapacid'?'carapacid-shelter-v1.webp':'leech-mire-v1.webp';
+ fs.writeFileSync(path.join(ROOT,'assets/runtime/enemies',filename),out.encodeSync('webp',96));
  const dir=path.join(ROOT,'reports/generated/creature-cycles');fs.mkdirSync(dir,{recursive:true});
  fs.writeFileSync(path.join(dir,kind+'-packing.json'),JSON.stringify({input,scale,rects:rects.map(o=>o.r)},null,2));
  for(let row=0;row<4;row++){const strip=createCanvas(1024,256);strip.getContext('2d').drawImage(out,0,row*256,1024,256,0,0,1024,256);fs.writeFileSync(path.join(dir,kind+'-'+row+'.png'),strip.toBuffer('image/png'));}

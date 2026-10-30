@@ -33,8 +33,8 @@ async function main(){
   const scale=112/radius,out=createCanvas(CELL*6,CELL),ctx=out.getContext('2d');
   specs.forEach((s,n)=>{const [x,y,w,h]=s.rect;ctx.save();ctx.beginPath();ctx.rect(n*CELL,0,CELL,CELL);ctx.clip();ctx.globalAlpha=s.opacity;
     ctx.drawImage(src,x,y,w,h,n*CELL+128-w*scale/2,128-h*scale/2,w*scale,h*scale);ctx.restore();});
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-smoke-v1.png'),out.toBuffer('image/png'));
-  fs.writeFileSync(path.join(ROOT,'assets/hunger-flamethrower-smoke-v1.frames.json'),JSON.stringify({columns:6,frames:6,cell:[CELL,CELL],anchor:[128,128],lifecycle:'birth-growth-dissipation; not a looping clip',scale,source:path.relative(ROOT,file),sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),cuts,sources:specs,status:'source sheet; runtime integration and motion review pending'},null,2)+'\n');
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-smoke-v1.png'),out.toBuffer('image/png'));
+  fs.writeFileSync(path.join(ROOT,'assets/runtime/towers/flamethrower-smoke-v1.frames.json'),JSON.stringify({columns:6,frames:6,cell:[CELL,CELL],anchor:[128,128],lifecycle:'birth-growth-dissipation; not a looping clip',scale,source:path.relative(ROOT,file),sourceSha256:crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),cuts,sources:specs,status:'source sheet; runtime integration and motion review pending'},null,2)+'\n');
   const preview=createCanvas(out.width,out.height),v=preview.getContext('2d');v.fillStyle='#8a929a';v.fillRect(0,0,out.width,out.height);v.drawImage(out,0,0);
   fs.writeFileSync(path.join(ROOT,'reports/generated/flamethrower/smoke-six-preview-v1.png'),preview.toBuffer('image/png'));
   console.log('Packed six 256x256 smoke stages at a common scale '+scale.toFixed(5)+', shared centre (128,128). Export alpha multipliers: '+specs.map(s=>s.opacity.toFixed(3)).join(', '));

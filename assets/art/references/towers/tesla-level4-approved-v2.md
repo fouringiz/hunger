@@ -6,4 +6,4 @@ Selected by the user on 2026-10-30, explicitly identifying the attached image.
 
 Scope: Tesla level 4 only. Prism is unchanged. Existing Voltaic art with copper coil and top sphere is selected for levels 1–3.
 
-Status: art approved. Runtime integration is prepared via `assets/hunger-tesla-toroid-v1.png`; only Tesla level 4 selects it. Foundation seating, game-scale readability, firing/upgrade/sale cycles and browser checks remain pending user verification.
+Status: art approved. Runtime integration is prepared via `assets/runtime/towers/tesla-toroid-v1.png`; only Tesla level 4 selects it. Foundation seating, game-scale readability, firing/upgrade/sale cycles and browser checks remain pending user verification.

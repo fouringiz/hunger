@@ -21,15 +21,15 @@ were accepted before proceeding. This report concerns iteration 3 only. No merge
 
 ## Assets and renderer
 
-- `assets/hunger-level4-towers-v2.png`: new 4096×2048 atlas, 256px cells, 98 poses
+- `assets/runtime/towers/level4-towers-v2.png`: new 4096×2048 atlas, 256px cells, 98 poses
   (six ×16 plus two fixed). Filename changed because dimensions/layout changed.
-- `assets/hunger-level4-towers-v2.frames.json`: own bearing/muzzle and source
+- `assets/runtime/towers/level4-towers-v2.frames.json`: own bearing/muzzle and source
   measurements for every pose, source hashes, rectangles and one family scale.
 - Built-in `image_gen` used the approved
   `assets/art/references/towers/level4-selected-approved-v1.png`. Whole sheets were
   generated first, then narrowly corrected rear-view cells were normalized back
   into their sheets. Raw drafts remain ignored. Exact prompts, trial records and
-  final output identities are in `assets/art/level4-towers-v1.prompt.txt`.
+  final output identities are in `assets/art/work/towers/level4-towers-v1.prompt.txt`.
 - `tools/bake-level4-poses.cjs` packs final art and emits the embedded table. No
   runtime JSON fetch, canvas pixel reads, image-plane projection or overhead
   extrusion remains for these heads.

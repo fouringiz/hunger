@@ -13,10 +13,10 @@ const a=boot(),b=boot('?zone=ember'),invalid=boot('?zone=__proto__');
 const legacy=boot('?balance=v04');
 assert.equal(a.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[780,100]','approved slot relocation leaves room for the Gate');
 assert.equal(legacy.run('JSON.stringify([SLOTS[15].x,SLOTS[15].y])'),'[890,300]','historical replay geometry stays intact');
-assert.ok(a.images.some(i=>i.src.endsWith('hunger-ancient-gate-v6.webp')));
-assert.ok(legacy.images.some(i=>i.src.endsWith('hunger-ancient-gate-v4.webp')),'historical layout uses the non-obstructing former Gate');
+assert.ok(a.images.some(i=>i.src.endsWith('ancient-gate-v6.webp')));
+assert.ok(legacy.images.some(i=>i.src.endsWith('ancient-gate-v4.webp')),'historical layout uses the non-obstructing former Gate');
 assert.equal(a.run('WORLD_ZONE'),'mire');assert.equal(b.run('WORLD_ZONE'),'ember');assert.equal(invalid.run('WORLD_ZONE'),'mire');
-assert.ok(a.images.some(i=>i.src.endsWith('hunger-world-mire-v1.webp')));assert.ok(b.images.some(i=>i.src.endsWith('hunger-world-ember-v1.webp')));
+assert.ok(a.images.some(i=>i.src.endsWith('world-mire-v1.webp')));assert.ok(b.images.some(i=>i.src.endsWith('world-ember-v1.webp')));
 assert.equal(a.run('replayRulesFingerprint()'),b.run('replayRulesFingerprint()'));assert.equal(a.run('replaySourceFingerprint()'),b.run('replaySourceFingerprint()'));
 for(const r of [a,b]){
   r.run("reset();S.phase='build';S.credits=10000;build(SLOTS[0],'turret');build(SLOTS[5],'cannon');build(SLOTS[15],'generator');startWave();update(1);draw();");
@@ -43,7 +43,7 @@ for(const type of ['turret','cannon','voltaic']){
 console.log('PASS reversible weapon/Tesla pause poses with unchanged combat state');
 const failed=boot();for(const image of failed.images){image.complete=false;image.naturalWidth=0;}
 assert.doesNotThrow(()=>failed.run("reset();S.phase='build';S.credits=1000;build(SLOTS[0],'voltaic');draw();"),'terrain, buildings and Gate work with missing art');
-const loaded=boot();loaded.run('draw()');const ground=loaded.images.find(i=>i.src.includes('hunger-world-mire'));
+const loaded=boot();loaded.run('draw()');const ground=loaded.images.find(i=>i.src.includes('runtime/world/world-mire'));
 ground.onload();assert.equal(loaded.run('terrainArt'),null,'late material load invalidates the fallback');assert.doesNotThrow(()=>loaded.run('draw()'));
 console.log('PASS missing-image fallback and asynchronous cache refresh');
 

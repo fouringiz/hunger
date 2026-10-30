@@ -23,9 +23,9 @@ function defaultConfig(kind){
    12:[[.13,.38],[.20,.53],[.32,.67],[.53,.74],[.70,.61],[.80,.45]],
    14:[[.28,.72],[.45,.70],[.62,.62],[.78,.47],[.85,.30]]
   }:null,
-  atlas:`assets/hunger-${kind==='leech'?'leech-mire':'carapacid-shelter'}-v1.webp`,
-  sources:[{file:`assets/art/sources/${kind}-headings-4x4-v1.png`,rows:[0,4,8,12],blackMatte:true},
-   {file:`assets/art/sources/${kind}-headings-diagonal-4x4-v1.png`,rows:[2,6,10,14],rowCuts:[0,.25,.5,.75,1]}]};
+  atlas:`assets/runtime/enemies/${kind==='leech'?'leech-mire':'carapacid-shelter'}-v1.webp`,
+  sources:[{file:`assets/art/work/enemies/${kind}/${kind}-headings-4x4-v1.png`,rows:[0,4,8,12],blackMatte:true},
+   {file:`assets/art/work/enemies/${kind}/${kind}-headings-diagonal-4x4-v1.png`,rows:[2,6,10,14],rowCuts:[0,.25,.5,.75,1]}]};
 }
 function bounds(canvas){
  const {width:w,height:h}=canvas,p=canvas.getContext('2d').getImageData(0,0,w,h).data;

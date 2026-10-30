@@ -15,7 +15,7 @@ async function main(){
  }
  const w=await loadWorld();setup(w,spec);shot(w);
  const ref=await loadImage(path.join(ROOT,'assets/art/references/towers/tesla-level4-approved-v2.png'));
- const m=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-tesla-toroid-v1.frames.json'))),[x,y,sw,sh]=m.sourceBox;
+ const m=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/tesla-toroid-v1.frames.json'))),[x,y,sw,sh]=m.sourceBox;
  // Reference and in-game head use the same native source-pixel scale, displayed at 2x.
  const scale=224/Math.max(sw,sh)*m.size*1.15/256*2;
  const c=createCanvas(448,224),g=c.getContext('2d');g.fillStyle='#27312b';g.fillRect(0,0,448,224);

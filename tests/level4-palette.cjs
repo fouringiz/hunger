@@ -5,11 +5,11 @@ const {paletteMetrics}=require('../tools/palette-metrics.cjs');
 const ROOT=path.join(__dirname,'..');
 // Graded rows of the level-4 atlas must sit in the palette of the shared foundation; ungraded rows are reported, not failed.
 (async()=>{
-  const record=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/art/level4-palette-grade.json'),'utf8'));
-  const meta=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+  const record=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/art/work/towers/level4-palette-grade.json'),'utf8'));
+  const meta=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8'));
   const load=async f=>{const i=await loadImage(path.join(ROOT,'assets',f)),c=createCanvas(i.width,i.height),g=c.getContext('2d');g.drawImage(i,0,0);return {data:g.getImageData(0,0,c.width,c.height).data,width:c.width};};
-  const f=await load('hunger-low-buildings-v3.png'),target=paletteMetrics(f.data,f.width,record.foundation.rect);
-  const a=await load('hunger-level4-towers-v2.png'),pending=[];
+  const f=await load('runtime/low-buildings-v3.png'),target=paletteMetrics(f.data,f.width,record.foundation.rect);
+  const a=await load('runtime/towers/level4-towers-v2.png'),pending=[];
   for(const e of meta.entries){
     const m=paletteMetrics(a.data,a.width,[0,e.row*256,4096,256]);
     if(!record.rows[e.key]){pending.push(e.key);continue;}

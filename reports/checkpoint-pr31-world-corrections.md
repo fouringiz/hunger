@@ -2,7 +2,7 @@
 
 ## Resume here
 
-This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platform corrections are now implemented in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). See `assets/art/organic-world-runtime-v1.md` for the current implementation, actual renderer previews and verification. The diagnosis and verdicts below preserve the original handoff; they are not new pending work. Visual acceptance by the user remains open.
+This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platform corrections are now implemented in the existing PR: https://github.com/fouringiz/hunger/pull/31 (`codex/organic-world-runtime`). See `assets/art/work/world/terrain/organic-world-runtime-v1.md` for the current implementation, actual renderer previews and verification. The diagnosis and verdicts below preserve the original handoff; they are not new pending work. Visual acceptance by the user remains open.
 
 ## Latest correction, 2026-10-23
 
@@ -11,7 +11,7 @@ This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platfor
 - All actual slots and the leak point remain unchanged. The alternative designer blockout with an x=890 presentation entrance, fading enemies and a relocated slot 15 remains an unadopted separate experiment. Its old-replay success would not prove the new slot layout gameplay-neutral.
 - Native captures cover both palettes and the 964px-wide empty scene. All 16 full-height tower footprints remain clear of opaque architecture, and the visible cyan threshold is sampled at (930,420). Core regression: 29 pass; replay sweep: 6 groups, all 8 human fixtures exact. Focused world, buildup, sale/range and Forager tests pass.
 - Work continues in the attached `ancient-gate-review` worktree because the primary checkout is being used for v0.8 mechanics. Earlier in-progress edits were preserved in `wip/ancient-gate-v4`; they were not lost.
-- User visual acceptance remains pending. See `assets/art/previews/organic-world-mire-gameplay-v2.webp` for the actual game-sized result.
+- User visual acceptance remains pending. See `reports/organic-world/organic-world-mire-gameplay-v2.webp` for the actual game-sized result.
 
 ## Earlier checkpoint and diagnosis
 
@@ -25,13 +25,13 @@ This checkpoint was resumed on 2026-10-23. Gate, muddy-path and concrete-platfor
 
 ## Durable references
 
-- Approved scene/material: `assets/art/studies/organic-world-direction-v3.png` (also the image attached to the latest path complaint).
+- Approved scene/material: `assets/art/work/style/organic-world-direction-v3.png` (also the image attached to the latest path complaint).
 - Ancient monumental portal reference: `assets/art/references/world/gate/ancient-gate-user-v1.png`.
 - Rejected in-game Gate: `assets/art/references/world/gate/gate-runtime-rejected-v1.png`.
-- Source for the integrated wet-path material: `assets/art/studies/organic-lane-material-v1.png`.
-- Exact candidate prompt: `assets/art/organic-lane-material-v1.prompt.txt`.
+- Source for the integrated wet-path material: `assets/art/work/world/lane/organic-lane-material-v1.png`.
+- Exact candidate prompt: `assets/art/work/world/lane/organic-lane-material-v1.prompt.txt`.
 
-The lane source was produced with built-in imagegen before stopping and has now been integrated and inspected at gameplay scale. New Gate sources are `assets/art/studies/ancient-gate-runtime-v2.png` (first pass) and `ancient-gate-runtime-v3.png` (subsequently rejected silhouette); platform source is `concrete-platform-runtime-v2.png`. Exact prompts and packaging instructions are linked in the runtime document. User approval of the new in-game appearance remains pending.
+The lane source was produced with built-in imagegen before stopping and has now been integrated and inspected at gameplay scale. New Gate sources are `assets/art/work/world/gate/ancient-gate-runtime-v2.png` (first pass) and `ancient-gate-runtime-v3.png` (subsequently rejected silhouette); platform source is `concrete-platform-runtime-v2.png`. Exact prompts and packaging instructions are linked in the runtime document. User approval of the new in-game appearance remains pending.
 
 ## Diagnosis and next work
 
@@ -50,7 +50,7 @@ The lane source was produced with built-in imagegen before stopping and has now 
 
 ## Existing implementation and checks
 
-`assets/art/organic-world-runtime-v1.md` describes what PR #31 already implements and its limits. Before this checkpoint, all 18 test scripts passed, including the 29 core regression cases and eight strict human replay fixtures. Native capture covered 90 renderer frames per palette and all sixteen tower footprints. These are prior results for `ef6fba9`, not validation of the unintegrated lane candidate.
+`assets/art/work/world/terrain/organic-world-runtime-v1.md` describes what PR #31 already implements and its limits. Before this checkpoint, all 18 test scripts passed, including the 29 core regression cases and eight strict human replay fixtures. Native capture covered 90 renderer frames per palette and all sixteen tower footprints. These are prior results for `ef6fba9`, not validation of the unintegrated lane candidate.
 
 After actual renderer changes: run focused world tests, mandatory `node tests/prototype-regression.cjs`, and strict replay checks. Update `tools/capture-organic-world.cjs` when adding material images; it replaces declarations with native decoded assets. Capture both palettes and inspect the actual Gate/path. Optional native Canvas dependency is supplied via `WORLD_CANVAS_MODULE`; see the tool header. Browser/mobile performance has not been measured.
 

@@ -12,7 +12,7 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {execFileSync,spawnSync}=require('node:child_process');
 const {createCanvas,loadImage}=require('@napi-rs/canvas');
-const ROOT=path.join(__dirname,'..'),CELL=256,BASE=208,SRC='assets/art/sources/';
+const ROOT=path.join(__dirname,'..'),CELL=256,BASE=208,SRC='assets/art/work/enemies/polyp/';
 const DIRECTIONS=['right','down','left','up'];                  // clockwise screen angle, zero=right (as the crawl atlases)
 const MATTE={tolerance:24,shadowChroma:6,shadowDepth:150,edge:60,speck:60,pocket:600};
 
@@ -123,15 +123,15 @@ function finishRow({pixels,bg,shadow},w,h,frames,file){
 //   burst   — mass centre where the first frame of the same clip put its mass centre (the body stays where it died);
 //   part    — like ground, but x follows the mass centre of the listed source pieces (the hatched Polypoid, not its husk).
 function familyConfig(kind){
- if(kind==='polyp')return {kind,atlas:'assets/hunger-polyp-v1.webp',columns:6,clips:[
+ if(kind==='polyp')return {kind,atlas:'assets/runtime/enemies/polyp-v1.webp',columns:6,clips:[
   {name:'crawl',directional:true,files:{right:'polyp-crawl-right-v1.png',down:'polyp-crawl-down-v1.png',up:'polyp-crawl-up-v1.png'},frames:6,use:[0,1,2,3,4,5],anchor:'ground',
    loop:[0,1,2,3,4],note:'frame 6 duplicates frame 1 and is skipped in the loop'},
   {name:'death',files:{burst:'polyp-death-v1.png'},frames:5,use:[0,1,2],anchor:'burst',pockets:{1:{min:60,shadow:true},2:{min:60,shadow:true}},shadowChroma:10,
    match:{clip:'crawl',sheet:'right',frame:0},
    note:'seams flare, lobes part, full burst; source frames 4-5 are reference only. The death sheet draws the Polyp 1.29x wider than the crawl sheets, so the whole clip is resized once to match its frame 1 to crawl frame 1 (no size jump at death); frames 2-3 keep their size relative to frame 1'}]};
- if(kind==='polypoid')return {kind,atlas:'assets/hunger-polypoid-v1.webp',columns:6,clips:[
+ if(kind==='polypoid')return {kind,atlas:'assets/runtime/enemies/polypoid-v1.webp',columns:6,clips:[
   {name:'run',directional:true,files:{right:'polypoid-run-right-v1.png',down:'polypoid-run-down-v1.png',up:'polypoid-run-up-v1.png'},frames:6,use:[0,1,2,3,4,5],anchor:'ground',loop:[0,1,2,3,4,5]}]};
- if(kind==='zygote')return {kind,atlas:'assets/hunger-zygote-v1.webp',columns:5,clips:[
+ if(kind==='zygote')return {kind,atlas:'assets/runtime/enemies/zygote-v1.webp',columns:5,clips:[
   {name:'hatch',files:{hatch:'zygote-hatch-v1.png'},frames:5,use:[0,1,2,3,4],anchor:'ground',part:{4:'largest-right'},
    note:'frame 1 rests (pulsed in code); frames 2-5 hatch in the last 0.15 s'}]};
  throw new Error('Expected polyp, polypoid or zygote');

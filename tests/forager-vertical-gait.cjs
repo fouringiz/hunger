@@ -24,7 +24,7 @@ async function inspect(file){
  return Array.from({length:16},(_,d)=>{const rgba=g.getImageData(0,d*192,192*9,192).data;return {row:d,mad:difference(rgba),supportSilhouette:supportSilhouette(rgba),sha256:crypto.createHash('sha256').update(rgba).digest('hex')};});
 }
 async function main(){
- const rows=await inspect(path.join(root,'assets/hunger-forager-mire-v2.webp'));
+ const rows=await inspect(path.join(root,'assets/runtime/enemies/forager-mire-v2.webp'));
  const horizontal=Math.max(rows[0].mad,rows[8].mad);
  for(const row of rows){
   if(baseline.rows.includes(row.row))assert.ok(row.mad>=horizontal,'row '+row.row+': visible RGB MAD '+row.mad.toFixed(3)+' must match side-row '+horizontal.toFixed(3));

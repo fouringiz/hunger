@@ -3,11 +3,11 @@
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const ROOT=path.join(__dirname,'..'),source=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
 const HEAD_SCALE=Number(source.match(/const HEAD_SCALE=([0-9.]+)/)[1]),HEAD_SEAT_DROP=Number(source.match(/const HEAD_SEAT_DROP=([0-9.]+)/)[1]);
-const table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/hunger-level4-towers-v2.frames.json'),'utf8'));
+const table=JSON.parse(fs.readFileSync(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.frames.json'),'utf8'));
 function boot(code=source,loaded=true){
  const draws=[],blendDraws=[],stack=[];let matrix=[1,0,0,1,0,0];
  const multiply=(a,b,c,d,e,f)=>{const[u,v,w,x,y,z]=matrix;matrix=[u*a+w*b,v*a+x*b,u*c+w*d,v*c+x*d,u*e+w*f+y,v*e+x*f+z];};
- class Image{constructor(){this.complete=loaded;this.naturalWidth=loaded?2048:0;this.naturalHeight=loaded?2048:0;}set src(v){this._src=v;if(loaded)this.naturalWidth=v.endsWith('hunger-level4-towers-v2.png')?4096:2048;}get src(){return this._src;}}
+ class Image{constructor(){this.complete=loaded;this.naturalWidth=loaded?2048:0;this.naturalHeight=loaded?2048:0;}set src(v){this._src=v;if(loaded)this.naturalWidth=v.endsWith('level4-towers-v2.png')?4096:2048;}get src(){return this._src;}}
  const ctx=new Proxy({}, {get(o,k){
   if(k==='drawImage')return(...args)=>draws.push({args,matrix:matrix.slice()});
   if(k==='save')return()=>stack.push(matrix.slice());if(k==='restore')return()=>{matrix=stack.pop();};
@@ -23,7 +23,7 @@ function boot(code=source,loaded=true){
 }
 function setup(r,e){r.run(`reset();S.credits=10000;build(SLOTS[2],${JSON.stringify(e.type)});upgrade(S.towers[0]);upgrade(S.towers[0]);upgrade(S.towers[0],${JSON.stringify(e.branch)});S.towers[0].warm=0;observeConstruction();presentationTime=3;observeConstruction();`);}
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`),angle=yaw=>Math.atan2(Math.sin(yaw)*.56,Math.cos(yaw));
-function upperDraw(r){return r.draws.filter(d=>['level4-blend'].includes(d.args[0].src)||d.args[0].src?.endsWith('hunger-level4-towers-v2.png')).at(-1);}
+function upperDraw(r){return r.draws.filter(d=>['level4-blend'].includes(d.args[0].src)||d.args[0].src?.endsWith('level4-towers-v2.png')).at(-1);}
 function check(r){
  for(const e of table.entries){
   setup(r,e);const count=e.frames.length,selected=new Set();assert.equal(count,['tesla','cluster'].includes(e.key)?1:16);
@@ -49,7 +49,7 @@ function check(r){
     const p=JSON.parse(r.run('JSON.stringify(level4Pose(S.towers[0]))'));for(let axis=0;axis<2;axis++)near(axis?p.muzzle.y+5.5-HEAD_SEAT_DROP:p.muzzle.x,((e.frames[from].muzzle[axis]+e.frames[to].muzzle[axis])/2-e.frames[from].bearing[axis])*e.renderSize*HEAD_SCALE/256);
     r.run(`presentationTime=${t0+.08};`);r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.deepEqual(upperDraw(r).args.slice(1,5),e.frames[to].rect,'held head settles to one opaque authored pose');
    }
-   r.run('S.towers[0].angle=.123;level4Pose(S.towers[0]);presentationTime+=1;');r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.ok(upperDraw(r).args[0].src.endsWith('hunger-level4-towers-v2.png'),'held off-centre yaw must not remain a permanent ghost blend');
+   r.run('S.towers[0].angle=.123;level4Pose(S.towers[0]);presentationTime+=1;');r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.ok(upperDraw(r).args[0].src.endsWith('level4-towers-v2.png'),'held off-centre yaw must not remain a permanent ghost blend');
   }
   r.run('S.towers[0].angle=.3;weaponFeedback.set(S.towers[0],{kind:S.towers[0].type,angle:.3,at:presentationTime});');r.clear();r.run('drawLevel4Tower(S.towers[0]);');const first=upperDraw(r);r.run('presentationTime+=.06;');r.clear();r.run('drawLevel4Tower(S.towers[0]);');assert.deepEqual(r.draws[0].matrix,[1,0,0,1,0,0]);if(['turret','cannon'].includes(e.type))assert.notDeepEqual(first.args.slice(-4),upperDraw(r).args.slice(-4),'shot animates seated recoil');
   r.run('S.towers[0].paused=true;');assert.equal(r.run('level4Pose(S.towers[0]).kick'),0);r.run('S.towers[0].paused=false;S.towers[0].selling=true;');assert.equal(r.run('level4Pose(S.towers[0]).kick'),0);
@@ -71,7 +71,7 @@ function check(r){
  const permanent=source.replace('const views=foreign?[{frame,weight:1}]:level4Transition(t,frame);','const views=spec.tips.length===1?[{frame:0,weight:1}]:[{frame,weight:.5},{frame:(frame+1)%spec.tips.length,weight:.5}];');assert.notEqual(permanent,source);assert.throws(()=>check(boot(permanent)),/rectangle|!=|held/,'permanent angular crossfade rejected');
 
  const launch=boot();setup(launch,table.entries.find(e=>e.key==='howitzer'));launch.run('const testShell={tower:S.towers[0],sx:S.towers[0].x,sy:S.towers[0].y,tx:700,ty:200};');const firstLaunch=launch.run('JSON.stringify(shellLaunchPoint(testShell))');launch.run('S.towers[0].angle=3;presentationTime+=.2;weaponFeedback.set(S.towers[0],{at:presentationTime-.04});');assert.equal(launch.run('JSON.stringify(shellLaunchPoint(testShell))'),firstLaunch,'in-flight launch point stays pinned');
- const{createCanvas,loadImage}=require('@napi-rs/canvas'),art=await loadImage(path.join(ROOT,'assets/hunger-level4-towers-v2.png')),c=createCanvas(256,256),g=c.getContext('2d');assert.equal(art.width,4096);assert.equal(art.height,2048);
+ const{createCanvas,loadImage}=require('@napi-rs/canvas'),art=await loadImage(path.join(ROOT,'assets/runtime/towers/level4-towers-v2.png')),c=createCanvas(256,256),g=c.getContext('2d');assert.equal(art.width,4096);assert.equal(art.height,2048);
  const attached=(e,f)=>{let peak=0;const x=Math.round(f.muzzle[0]),y=Math.round(f.muzzle[1]),pixels=g.getImageData(0,0,256,256).data;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)peak=Math.max(peak,pixels[((y+dy)*256+x+dx)*4+3]||0);assert.ok(peak>=64,e.key+': muzzle detached from sprite');};
  for(const e of table.entries){const hashes=new Set();for(const[index,f]of e.frames.entries()){g.clearRect(0,0,256,256);g.drawImage(art,...f.rect,0,0,256,256);const pixels=g.getImageData(0,0,256,256).data;assert.ok(pixels.filter((v,i)=>i%4===3&&v>64).length>1000,e.key+': nonempty full sprite');hashes.add(crypto.createHash('sha256').update(pixels).digest('hex'));if(e.frames.length>1&&index<=8)attached(e,f);}assert.equal(hashes.size,e.frames.length,e.key+': no duplicated atlas cells');}
  // The initial side-facing Plasma tip was in clear air ahead of the copper collar.
