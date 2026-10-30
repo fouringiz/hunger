@@ -45,3 +45,7 @@ Reference: user-approved-and-16-poses.png.
 Full-cycle review boards: review-current-{mire,ember}-{turn-cycle,cycle}.png; upgrade: after-mire-upgrade.png and review-current-ember-upgrade-cycle.png.
 
 STOP at this iteration: await user's verdict on restored Howitzer appearance before beginning #91. PR stays draft; no merge, no overall visual completion claim.
+
+## User art verdict — 2026-10-30
+
+User accepted the restored Howitzer appearance after the fresh capture review ("сойдет"). This accepts the current visual design for #89; it does not accept/fix the uneven rotation and doubled transition outlines tracked by #91. User-run tests remain passed as reported. No merge authorization was given. Next implementation iteration: #91, preserving this accepted construction, palette and seating. Disk-browser console confirmation remains unreported for this candidate.
