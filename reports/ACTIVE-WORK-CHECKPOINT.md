@@ -1,21 +1,20 @@
-# Howitzer rotation #91 — source-design verdict pending
+# Howitzer rotation #91 — redraw rejected for changing sprite identity
 
-2026-10-30. Working branch codex/howitzer-yaw-poses, based on accepted PR #90 head 7fe0f25. PR #90 is unchanged by this branch.
+2026-10-30. Branch codex/howitzer-yaw-poses. Runtime remains the accepted #89 restoration from PR #90; no new runtime art or code is connected.
 
-- Previous #89 appearance accepted by user ("сойдет"); previous user tests passed and captures reviewed as recorded in reports/level4-review/howitzer-design-restoration.md. Accepted source/runtime art is unchanged.
-- Criteria for #91: distinct equally spaced directions around a full turn; no doubled silhouettes; same accepted construction/palette and direct seating; continuous muzzle/flash/stream attachment; unchanged simulation. None is declared fixed.
-- Diagnosed independent causes: authored poses repeat/skip depicted angles; 60ms silhouette crossfade creates a transient double contour. A simple hard sprite switch was considered and REJECTED before implementation because it violates the continuous muzzle requirement. Existing tests are untouched, including continuity tests.
-- Three generated sheets rejected: repeated yaw, missing long twin hydraulics, simplified rear mechanism. New local Blender guide fixes all16 yaw angles physically; ImageGen style transfer produces an unconnected candidate retaining long twin rods and rear hatch. It changes housing and hose routing, so user must judge the concrete design comparison before replacing accepted art.
-- Candidate: reports/generated/howitzer-yaw-review/source/howitzer-candidate.png. Comparison: reports/generated/howitzer-yaw-review/source/design-comparison.png. These are SOURCE ART, not actual-game captures. Prompts/provenance recorded in assets/art/level4-towers-v1.prompt.txt. Heavy models/drafts remain ignored.
-- Runtime source, atlas, anchors, tests and capture tools have NOT changed. No tests, game captures or browser checks run in this iteration. No request to rerun unchanged tests yet. #91 remains open.
-- Next: user source-design verdict. If accepted, measure all16 bearing/muzzle anchors, normalize one shared scale, replace only Howitzer row with grading preserved, prepare independent yaw/known-bad checks, and solve transition ghosting without dropping muzzle continuity. Then hand user exact tests/capture commands and stop for actual-game verdict.
+## Authoritative user direction
 
-## User correction and new source — 2026-10-30
+The ONLY selected identity for further yaw work is the user's attachment codex-clipboard-0a8d7ba6-9c4b-4a3b-a971-df6cedcc1c96.png, archived unchanged at assets/art/references/towers/howitzer-design-approved-v2.png. User accepts its design and rejects repeated depicted angles. Change viewpoints only: preserve its compact body, exact equipment boxes, paired ivory/copper sleeves and exposed rods, hose routes, short thick raised tube, muzzle collar and narrow mounting peg.
 
-User selected the attached design (archived exactly as assets/art/references/towers/howitzer-design-approved-v2.png) but rejected its repeated depicted headings. This does NOT approve the previous model-style candidate. Preserve the selected short-tube / long paired piston construction.
+User explicitly rejected the replacement shown in the previous turn: "это не тот спарйт". Both reports/generated/howitzer-yaw-review/source/howitzer.png (exec-9518bb91-f67f-48c9-8877-8e643dc50247.png) and the earlier howitzer-candidate.png / design-comparison.png are REJECTED, not pending approval. Their altered boxes, hoses and piston arrangement are not acceptable substitutes. Do not bake, grade or connect any of them. The current hand-built model and its style transfers do not preserve the selected identity and are not approved production sources.
 
-Created a more compact model guide with exact 16 root rotations, reduced perimeter hose loop and olive receiver instead of bare black cushion. Built-in ImageGen style transfer output exec-9518bb91-f67f-48c9-8877-8e643dc50247.png is saved at reports/generated/howitzer-yaw-review/source/howitzer.png. Its headings visually progress more clearly than the selected repeating sheet, but exact spacing and rigid component consistency are NOT established. It remains unconnected source art.
+## Verified state / boundaries
 
-An exploratory pack and palette grade were performed as offline authoring, then all runtime atlas/metadata/renderer/grader-record changes and baker/capture edits were restored to HEAD: no new game candidate shipped, no test expectations changed. The normalized draft was retained only in ignored source/unconnected-* files. No tests, actual-game captures or browser checks run. Do not reuse an earlier test result for this draft.
+- User previously reported all tests passed for the #89 candidate, then accepted its appearance ("сойдет"). Actual before/after captures were reviewed; details and remaining limitations are in reports/level4-review/howitzer-design-restoration.md.
+- #91 is unresolved: authored directions repeat/skip; 60ms crossfade creates doubled outlines. Hard switching was rejected before implementation because muzzle continuity would fail.
+- All exploratory runtime changes were restored before the prior checkpoint. Existing tests, renderer, atlas, anchors and capture tools remain unchanged. No agent-run tests, game captures or browser checks in this iteration.
+- Heavy rejected drafts remain ignored. Prompts/provenance remain recorded; archive/provenance does not mean approval.
 
-Next: resolve the actual pose geometry, not merely distinct raster hashes; verify physical bearing/muzzle/body-axis annotations against the geometric camera and the real repeating negative reference. #91 remains incomplete, including ghost transition contours. Do not ask the user to repeat source-design approval; it is supplied by their attached image.
+## Next
+
+Rework the source-production approach around the exact selected sprite. Do not generate another alternate mechanism from the rejected approximation. Confirm same components, silhouette family, proportions and hose layout before claiming a new pose candidate. Then independently establish the 16 depicted angles and bearing/muzzle anchors; raster uniqueness alone is insufficient. Preserve source-design approval without asking for it again. After an acceptable candidate is integrated, user runs tests and actual-game captures; stop for verdict before another visual issue. No merge authorization.
