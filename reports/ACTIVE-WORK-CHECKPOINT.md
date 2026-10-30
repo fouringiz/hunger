@@ -24,3 +24,24 @@
 - Preserved the unfinished single-row baker experiment as an ignored patch and removed it from the PR working diff. #91 remains a separate iteration, pending acceptance of #89.
 - Read the current capture implementation: it already advances real simulation ticks through branch warm-up and writes complete upgrade-cycle directories. The older unpushed capture helper is superseded; do not reintroduce it from codex/howitzer-pre-rebase-20261030.
 - No tests, game captures or browser checks run. Next step remains the user-run commands above, followed by review of freshly generated frames for this exact candidate. Earlier accepted seating is not reclassified as approval of the rebased art.
+
+## User verification received — 2026-10-30
+
+User reports `all tests passed` and successful Howitzer design capture for candidate bfad8fa (later 3a7d03a adds documentation only). This is user-run validation. Results.json confirms both zones retain rules 388d2ac9 / source 48035e01 and 151 equal live ticks against pinned main 0c78db1.
+
+Opened actual before/after Mire whole and turn-zoom sheets, user-approved-and-16-poses.png, all 97 turn frames and 151 attack frames in both zones as contact sheets built from the existing user captures, Mire upgrade strip and all 85 Ember upgrade frames, Mire sale strip and Ember attack whole grayscale. No new tests/captures/browser checks were executed by the agent.
+
+Observable review:
+- Compact housing, paired ivory/copper hydraulic units, hoses and rear vent restored relative to the simplified before art; no broad copper pedestal or green coupling disc observed. The approved source remains brighter than the runtime graded art. Artistic acceptance remains with the user.
+- Direct seating retained in the inspected poses/attack and upgrade sequence; no new floating gap observed at these review scales. The mounting peg is largely hidden by intentional insertion into the socket.
+- The complete upgrade sequence reaches the deployed new head, unlike the old presentation-only recording.
+- Rotation criterion FAILS: apparent repeated directions and uneven jumps remain; translucent doubled outlines visible at transitions (for example after-mire-turn-cycle/023.png and /029.png). Already tracked by #91; not corrected in #90.
+- In Ember grayscale, head and nearby enemies remain distinguishable, but the highly detailed background competes for contrast. No blanket claim that the global strongest-contrast rule is satisfied. Runtime camera appears consistent with the foundation in the reviewed views.
+- No new discharge detachment observed in the inspected attack contact sheets. The full sale cycle and browser console have not been verified for this candidate. A second independent visual review is still pending.
+
+Evidence root: reports/generated/howitzer-design-review/howitzer/.
+Before/after: before-mire-whole.png, after-mire-whole.png, before-mire-turn-zoom.png, after-mire-turn-zoom.png.
+Reference: user-approved-and-16-poses.png.
+Full-cycle review boards: review-current-{mire,ember}-{turn-cycle,cycle}.png; upgrade: after-mire-upgrade.png and review-current-ember-upgrade-cycle.png.
+
+STOP at this iteration: await user's verdict on restored Howitzer appearance before beginning #91. PR stays draft; no merge, no overall visual completion claim.
