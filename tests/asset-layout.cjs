@@ -2,7 +2,9 @@
 // Guards the asset layout described in assets/README.md. Reads the working tree only.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const ROOT=path.join(__dirname,'..'),ASSETS=path.join(ROOT,'assets');
-const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);
+// Hidden files (.DS_Store, editor swap files) are ignored by Git and by this check.
+const list=d=>fs.readdirSync(d).filter(n=>!n.startsWith('.'));
+const walk=d=>fs.readdirSync(d,{withFileTypes:true}).filter(e=>!e.name.startsWith('.')).flatMap(e=>e.isDirectory()?walk(path.join(d,e.name)):[path.join(d,e.name)]);
 const rel=f=>path.relative(ROOT,f).split(path.sep).join('/');
 const html=fs.readFileSync(path.join(ROOT,'prototype/index.html'),'utf8');
 const IMAGE=/\.(png|webp|jpe?g|gif|svg)$/i;
@@ -21,7 +23,7 @@ for(const f of walk(path.join(ASSETS,'runtime')).map(rel)){
 }
 
 // Nothing piles up at the roots again, and evidence captures stay out of assets/.
-assert.deepEqual(fs.readdirSync(ASSETS).sort(),['README.md','art','runtime'],'assets/ root holds only README.md, art/ and runtime/');
-assert.deepEqual(fs.readdirSync(path.join(ASSETS,'art')).sort(),['references','work'],'assets/art/ holds only references/ and work/');
+assert.deepEqual(list(ASSETS).sort(),['README.md','art','runtime'],'assets/ root holds only README.md, art/ and runtime/');
+assert.deepEqual(list(path.join(ASSETS,'art')).sort(),['references','work'],'assets/art/ holds only references/ and work/');
 for(const f of walk(ASSETS).map(rel))assert.ok(!/\.(gif|mp4|webm|mov)$/i.test(f),f+': motion captures are evidence, put them in reports/<topic>/');
 console.log('PASS asset layout: '+requested.size+' runtime requests resolve, runtime/ holds only loaded files and their sidecars');
