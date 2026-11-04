@@ -1,0 +1,46 @@
+{
+  "source": "platform-colorref-v1.webp (Meshy platform render, 2026-11-04)",
+  "tolerance": {
+    "hue_deg": 8,
+    "saturation": 0.1,
+    "value": 0.1
+  },
+  "roles": {
+    "olive": {
+      "hex": "#7c754a",
+      "use": "armour plates, main body colour"
+    },
+    "olive_dark": {
+      "hex": "#635a36",
+      "use": "recessed olive, shadowed plates"
+    },
+    "steel": {
+      "hex": "#5a5751",
+      "use": "graphite frame, rails, pylon body"
+    },
+    "steel_dark": {
+      "hex": "#433f36",
+      "use": "deep frame, socket interior, springs"
+    },
+    "edge_light": {
+      "hex": "#d5bc9b",
+      "use": "worn light edges and chamfer highlights"
+    },
+    "grime": {
+      "hex": "#98876d",
+      "use": "dust and wear on olive and steel"
+    },
+    "black": {
+      "hex": "#2e291e",
+      "use": "panel seams, outlines, deep recesses"
+    },
+    "orange": {
+      "hex": "#b47333",
+      "use": "clamp blocks, warning accents"
+    },
+    "teal": {
+      "hex": "#77d5c8",
+      "use": "emissive indicator strips"
+    }
+  }
+}
