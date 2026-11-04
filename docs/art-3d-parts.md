@@ -34,14 +34,14 @@
 
 - `registry.json` — все детали: имя, форма, размер Ш×Г×В, стыковочная грань, источник (`meshy` или `primitive`), где используется.
 - `schemes/<объект>.json` — экземпляры деталей с позицией, поворотом, высотой посадки и фазой развёртывания; фазы с временем. Схема — источник правды и для блупринта, и для будущего манифеста сборки в Godot.
-- `blueprints/<объект>.svg` рендерится из схемы скриптом `tools/blueprint-render.py`; руками не правится. Канвас в Claude Design — копия для просмотра и комментариев, ссылка на него — в `README.md` объекта.
+- `blueprints/<объект>.svg` (план, реестр, фазы) и `blueprints/<объект>-parts.svg` (карточки деталей) рендерятся из схемы и реестра скриптом `tools/blueprint-render.py`; руками не правятся. Канвас в Claude Design — копия для просмотра и комментариев, ссылка на него — в `README.md` объекта.
 
 ## Где что лежит
 
 ```
 assets/art/work/parts/registry.json
 assets/art/work/parts/schemes/<объект>.json
-assets/art/work/parts/blueprints/<объект>.svg
+assets/art/work/parts/blueprints/<объект>.svg, <объект>-parts.svg
 assets/art/work/parts/<id>/README.md             статус, вердикты, ссылка на канвас
 assets/art/work/parts/<id>/prompt-chatgpt.md     промпт листа видов
 assets/art/work/parts/<id>/prompt-meshy.md       настройки Meshy и чеклист приёмки
