@@ -1,0 +1,65 @@
+{
+  "unit": "platform footprint across the pylons = 1.00",
+  "size_order": "width x depth x height",
+  "parts": {
+    "common.pylon": {
+      "name": "угловой пилон",
+      "shape": "octagon",
+      "size": [0.22, 0.22, 0.12],
+      "mate": "bottom flat",
+      "source": "meshy",
+      "used_by": ["platform"]
+    },
+    "common.platform_slab": {
+      "name": "плита-основание",
+      "shape": "rect",
+      "size": [0.92, 0.92, 0.12],
+      "mate": "top flat",
+      "source": "primitive",
+      "used_by": ["platform"]
+    },
+    "common.rail": {
+      "name": "рельс",
+      "shape": "rect",
+      "size": [0.52, 0.06, 0.03],
+      "mate": "bottom flat",
+      "source": "primitive",
+      "used_by": ["platform"]
+    },
+    "platform.spring_module": {
+      "name": "боковой модуль с пружиной",
+      "shape": "rect",
+      "size": [0.30, 0.15, 0.08],
+      "mate": "bottom flat, inner face flat to the collar",
+      "source": "meshy",
+      "used_by": ["platform"]
+    },
+    "platform.corner_plate": {
+      "name": "диагональная пластина с зажимом",
+      "shape": "diamond",
+      "size": [0.16, 0.16, 0.03],
+      "mate": "bottom flat",
+      "source": "primitive",
+      "used_by": ["platform"]
+    },
+    "platform.collar": {
+      "name": "воротник восьмигранный",
+      "shape": "octagon",
+      "size": [0.54, 0.54, 0.08],
+      "hole": 0.34,
+      "mate": "bottom flat, hole wall cylindrical",
+      "source": "meshy",
+      "used_by": ["platform"]
+    },
+    "common.socket_ring": {
+      "name": "кольцо с гнездом",
+      "shape": "circle",
+      "size": [0.34, 0.34, 0.04],
+      "socket": 0.15,
+      "tube_depth": 0.24,
+      "mate": "seats in the collar hole; weapon interface on top",
+      "source": "meshy",
+      "used_by": ["platform", "turret", "mg"]
+    }
+  }
+}

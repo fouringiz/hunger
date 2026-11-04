@@ -1,0 +1,40 @@
+{
+  "id": "platform",
+  "title": "Платформа",
+  "unit": 1.0,
+  "deploy_s": 0.40,
+  "instances": [
+    {"id": "pylon_ne", "part": "common.pylon", "pos": [0.39, 0.39], "rot": 0, "z": 0.0, "phase": 1},
+    {"id": "pylon_nw", "part": "common.pylon", "pos": [-0.39, 0.39], "rot": 0, "z": 0.0, "phase": 1},
+    {"id": "pylon_sw", "part": "common.pylon", "pos": [-0.39, -0.39], "rot": 0, "z": 0.0, "phase": 1},
+    {"id": "pylon_se", "part": "common.pylon", "pos": [0.39, -0.39], "rot": 0, "z": 0.0, "phase": 1},
+    {"id": "slab", "part": "common.platform_slab", "pos": [0, 0], "rot": 0, "z": 0.0, "phase": 2},
+    {"id": "rail_n", "part": "common.rail", "pos": [0, 0.43], "rot": 0, "z": 0.12, "phase": 2},
+    {"id": "rail_s", "part": "common.rail", "pos": [0, -0.43], "rot": 0, "z": 0.12, "phase": 2},
+    {"id": "rail_e", "part": "common.rail", "pos": [0.43, 0], "rot": 90, "z": 0.12, "phase": 2},
+    {"id": "rail_w", "part": "common.rail", "pos": [-0.43, 0], "rot": 90, "z": 0.12, "phase": 2},
+    {"id": "plate_ne", "part": "platform.corner_plate", "pos": [0.21, 0.21], "rot": 45, "z": 0.12, "phase": 3},
+    {"id": "plate_nw", "part": "platform.corner_plate", "pos": [-0.21, 0.21], "rot": 45, "z": 0.12, "phase": 3},
+    {"id": "plate_sw", "part": "platform.corner_plate", "pos": [-0.21, -0.21], "rot": 45, "z": 0.12, "phase": 3},
+    {"id": "plate_se", "part": "platform.corner_plate", "pos": [0.21, -0.21], "rot": 45, "z": 0.12, "phase": 3},
+    {"id": "module_n", "part": "platform.spring_module", "pos": [0, 0.36], "rot": 0, "z": 0.12, "phase": 3},
+    {"id": "module_s", "part": "platform.spring_module", "pos": [0, -0.36], "rot": 180, "z": 0.12, "phase": 3},
+    {"id": "module_e", "part": "platform.spring_module", "pos": [0.36, 0], "rot": 90, "z": 0.12, "phase": 3},
+    {"id": "module_w", "part": "platform.spring_module", "pos": [-0.36, 0], "rot": 270, "z": 0.12, "phase": 3},
+    {"id": "collar", "part": "platform.collar", "pos": [0, 0], "rot": 0, "z": 0.12, "phase": 4},
+    {"id": "ring", "part": "common.socket_ring", "pos": [0, 0], "rot": 0, "z": 0.20, "phase": 5}
+  ],
+  "phases": [
+    {"n": 1, "name": "пилоны", "t": [0.00, 0.10]},
+    {"n": 2, "name": "плита + рельсы", "t": [0.10, 0.22]},
+    {"n": 3, "name": "модули + пластины", "t": [0.22, 0.30]},
+    {"n": 4, "name": "воротник", "t": [0.30, 0.36]},
+    {"n": 5, "name": "кольцо", "t": [0.36, 0.40]}
+  ],
+  "notes": [
+    "Пластины уходят под край воротника: воротник выше, срез пластины не виден.",
+    "Оранжевые зажимы — часть пластины, не отдельная деталь.",
+    "Труба гнезда кольца идёт до земли сквозь воротник и плиту.",
+    "Дверцы диафрагмы гнезда — параметр схемы орудия, не деталь платформы (открыто)."
+  ]
+}
