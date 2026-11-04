@@ -2,9 +2,11 @@
 """Render a parts scheme (assets/art/work/parts/schemes/<object>.json) to a blueprint SVG.
 
 Usage: python3 tools/blueprint-render.py platform
-Reads the registry for part shapes and sizes, draws the plan view with numbered
-instances, the parts legend and the deploy phase strip. The SVG is a derived
-file: edit the scheme, not the SVG.
+Reads the registry for part shapes and sizes and writes two derived files into
+blueprints/: <object>.svg — the plan view with numbered instances, the parts
+legend and the deploy phase strip; <object>-parts.svg — one card per part type
+with a plan icon, name, count, size, mating face and source. Edit the scheme or
+the registry, not the SVGs.
 """
 import json, math, sys, pathlib
 
@@ -51,6 +53,19 @@ def shape_svg(part, cx, cy, rot, stroke=LINE, width=1.6):
             out += f'<circle cx="{cx:.1f}" cy="{cy:.1f}" r="{part["socket"] / 2 * S:.1f}" fill="none" stroke="{TEAL}" stroke-width="1.8"/>'
         return out
     raise SystemExit(f"unknown shape {s}")
+
+
+def wrap(text, width):
+    lines, cur = [], ""
+    for word in text.split():
+        if cur and len(cur) + 1 + len(word) > width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = f"{cur} {word}".strip()
+    if cur:
+        lines.append(cur)
+    return lines
 
 
 def tag(n, x, y):
@@ -128,6 +143,58 @@ def main(obj):
         o.append(f'<text x="{lx}" y="{ly}" fill="{DIM}" font-size="12">· {n}</text>')
     o.append('</svg>')
     out = PARTS / "blueprints" / f"{obj}.svg"
+    out.write_text("\n".join(o))
+    print(out.relative_to(ROOT))
+    parts_sheet(obj, scheme, registry, order, number)
+
+
+def parts_sheet(obj, scheme, registry, order, number):
+    counts = {}
+    for inst in scheme["instances"]:
+        counts[inst["part"]] = counts.get(inst["part"], 0) + 1
+    cw, ch, gap, pad = 182, 350, 14, 60
+    W = pad * 2 + len(order) * cw + (len(order) - 1) * gap
+    H = 150 + ch + 70
+    o = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="{MONO}">',
+         f'<rect width="{W}" height="{H}" fill="{BG}"/>',
+         f'<text x="{pad}" y="64" fill="{WHITE}" font-size="26" font-weight="600" letter-spacing="1">ДЕТАЛИ — {scheme["title"].upper()} — РЕЕСТР</text>',
+         f'<text x="{pad}" y="90" fill="{DIM}" font-size="12">registry.json · {len(order)} типов · {sum(counts.values())} экземпляров · оранжевая линия на иконке = стыковочная грань · бирюзовое = интерфейс орудия</text>']
+    for i, pid in enumerate(order):
+        part = registry[pid]
+        x = pad + i * (cw + gap)
+        y = 120
+        o.append(f'<rect x="{x}" y="{y}" width="{cw}" height="{ch}" fill="{WHITE}" fill-opacity="0.03" stroke="{LINE}" stroke-opacity="0.35"/>')
+        o.append(tag(number[pid], x + 25, y + 26))
+        o.append(f'<text x="{x + cw - 14}" y="{y + 31}" text-anchor="end" fill="{WHITE}" font-size="13">×{counts[pid]}</text>')
+        w, d, h = part["size"]
+        scale = 110 / max(w, d)
+        if part["shape"] == "diamond":
+            scale /= math.sqrt(2)
+        cx, cy = x + cw / 2, y + 120
+        icon_part = dict(part, size=[w * scale / S, d * scale / S, h])
+        for key in ("hole", "socket"):
+            if key in part:
+                icon_part[key] = part[key] * scale / S
+        rot = 45 if part["shape"] == "diamond" else 0
+        o.append(shape_svg(icon_part, cx, cy, rot))
+        bw = min(110, w * scale)
+        if "top" in part["mate"]:
+            o.append(f'<line x1="{cx - bw / 2:.1f}" y1="{cy - 70}" x2="{cx + bw / 2:.1f}" y2="{cy - 70}" stroke="{OR}" stroke-width="2.5"/>')
+        else:
+            o.append(f'<line x1="{cx - bw / 2:.1f}" y1="{cy + 70}" x2="{cx + bw / 2:.1f}" y2="{cy + 70}" stroke="{OR}" stroke-width="2.5"/>')
+        ty = y + 212
+        o.append(f'<text x="{x + 14}" y="{ty}" fill="{WHITE}" font-size="12">{pid}</text>')
+        for j, line in enumerate(wrap(part["name"], 22)[:2]):
+            o.append(f'<text x="{x + 14}" y="{ty + 20 + j * 16}" fill="{LINE}" font-size="13">{line}</text>')
+        o.append(f'<text x="{x + 14}" y="{ty + 60}" fill="{DIM}" font-size="11">{w:.2f} × {d:.2f} × {h:.2f}</text>')
+        for j, line in enumerate(wrap("стык: " + part["mate"], 26)[:2]):
+            o.append(f'<text x="{x + 14}" y="{ty + 78 + j * 14}" fill="{LINE}" font-size="11">{line}</text>')
+        src_col = TEAL if part["source"] == "meshy" else DIM
+        o.append(f'<text x="{x + 14}" y="{ty + 112}" fill="{src_col}" font-size="12" font-weight="600">{part["source"]}</text>')
+    meshy = [p for p in order if registry[p]["source"] == "meshy"]
+    o.append(f'<text x="{pad}" y="{H - 30}" fill="{DIM}" font-size="12">Meshy — {len(meshy)} деталей ({", ".join(p.split(".")[1] for p in meshy)}), по одному листу видов на каждую. Примитивы — {len(order) - len(meshy)}, тот же материал. common.* используется и орудиями, platform.* — только платформой.</text>')
+    o.append('</svg>')
+    out = PARTS / "blueprints" / f"{obj}-parts.svg"
     out.write_text("\n".join(o))
     print(out.relative_to(ROOT))
 
