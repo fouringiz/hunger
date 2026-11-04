@@ -10,6 +10,7 @@ art/
   references/            user-supplied, approved and rejected looks (see references/README.md)
   work/                  generated sources, studies, prompts and notes behind the art, same layout as references/:
     style/  world/<object>/  enemies/<caste>/  towers/<type>/  ui/
+    parts/               parts pipeline (docs/art-3d-parts.md): registry.json, schemes/, blueprints/, one folder per part <id>/
 ```
 
 Captures that show how art moves or reads in the game (GIF, MP4, gameplay screenshots) are evidence, not assets: they go to `reports/<topic>/` next to the write-up that cites them. Scratch output goes to the ignored `reports/generated/`. Design documents (the campaign map) live in `docs/`.
