@@ -37,7 +37,8 @@
 ```
 assets/art/work/towers/<башня>/3d/build_<башня>.py   сборка головы из примитивов
 assets/art/work/towers/<башня>/3d/<башня>_static.glb принятый экспорт (+ _vc.glb)
-tools/blender/                                     общие скрипты: экспорт, палитра, развёртка, проверки
+tools/blender/                                     общие скрипты: экспорт, палитра, развёртка, проверки (Blender 5.2, README)
+.githooks/pre-commit                               запрет на REF_*, .blend и файлы Meshy
 assets/art/work/style/palette.json                 цветовой канон
 reports/<тема>/                                    рендеры сравнения, капсулы, GIF клипа
 ```

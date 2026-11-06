@@ -1,0 +1,39 @@
+#!/bin/sh
+# Origin rule (docs/art-3d-parts.md, item 13): reference scenes, Meshy outputs and .blend files never enter the repo.
+# Enable once per clone:  git config core.hooksPath .githooks
+exec python3 - <<'PY'
+import json, struct, subprocess, sys
+
+MODEL_EXT = ('.glb', '.gltf')
+MESHY_EXT = MODEL_EXT + ('.fbx', '.obj', '.usdz', '.stl', '.blend', '.png', '.jpg', '.jpeg', '.webp', '.exr', '.zip')
+
+files = subprocess.run(['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'],
+                       capture_output=True, check=True).stdout.decode().split('\0')
+bad = []
+for f in filter(None, files):
+    low = f.lower(); parts = f.split('/')
+    if any(p.startswith('REF_') for p in parts):
+        bad.append((f, 'reference data (REF_*)'))
+    elif low.endswith(('.blend', '.blend1')):
+        bad.append((f, '.blend files may carry REF_ scenes; commit the build script and the exported .glb'))
+    elif 'meshy' in low and low.endswith(MESHY_EXT):
+        bad.append((f, 'Meshy output'))
+    elif low.endswith(MODEL_EXT):
+        blob = subprocess.run(['git', 'show', ':' + f], capture_output=True, check=True).stdout
+        try:
+            if low.endswith('.glb'):
+                n = struct.unpack('<I', blob[12:16])[0]; J = json.loads(blob[20:20 + n])
+            else:
+                J = json.loads(blob)
+        except Exception as e:
+            bad.append((f, 'unreadable glTF: %s' % e)); continue
+        names = [x.get('name', '') for k in ('nodes', 'meshes', 'materials') for x in J.get(k, [])]
+        hit = [x for x in names if x.startswith(('REF_', 'Mesh_'))]
+        gen = J.get('asset', {}).get('generator', '')
+        if hit: bad.append((f, 'reference or Meshy names inside: %s' % hit[:5]))
+        elif 'meshy' in gen.lower(): bad.append((f, 'generator is %s' % gen))
+if bad:
+    sys.stderr.write('pre-commit: blocked by the origin rule (docs/art-3d-parts.md, item 13):\n')
+    for f, why in bad: sys.stderr.write('  %s - %s\n' % (f, why))
+    sys.exit(1)
+PY
