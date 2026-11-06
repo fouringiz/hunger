@@ -1,5 +1,6 @@
 {
   "source": "platform-colorref-v1.webp (Meshy platform render, 2026-11-04)",
+  "canon": "Single colour canon for every tower and its Blender material set. A Meshy reference defines form, zone layout, details and wear, not colour; a colour difference from a reference is not a defect.",
   "tolerance": {
     "hue_deg": 8,
     "saturation": 0.1,
@@ -41,6 +42,22 @@
     "teal": {
       "hex": "#77d5c8",
       "use": "emissive indicator strips"
+    },
+    "brass": {
+      "hex": "#b6ab80",
+      "use": "brass bands, axle bushings, muzzle rims and barrel clamps; taken from the Gatling brass_band material (2026-11-07)"
     }
+  },
+  "zones": {
+    "olive_plate": "olive",
+    "graphite_frame": "steel",
+    "steel_dark": "steel_dark",
+    "brass_band": "brass",
+    "orange_accent": "orange",
+    "teal_indicator": "teal"
+  },
+  "zones_note": "Blender material (zone) name -> role. Base Color = role hex converted to linear; teal_indicator also uses the teal hex as Emission Color, with the strength from 'emission_strength' (calibrated so the lens renders as the teal hex, +-0.02, game camera, standard view transform).",
+  "emission_strength": {
+    "teal_indicator": 0.8
   }
 }
