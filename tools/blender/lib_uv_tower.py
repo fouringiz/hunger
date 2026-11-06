@@ -1,5 +1,5 @@
 # Head UV for tower models (docs/art-3d-parts.md, item 11).
-# The platform keeps its unwrap (the Gatling one); head objects are unwrapped, normalised to one texel density
+# The platform keeps its unwrap (the Turret one); head objects are unwrapped, normalised to one texel density
 # and packed by our own rectangle packer into the free space around the platform islands.
 # Grabli: bpy.ops.uv.pack_islands(pin=True, pin_method='LOCKED') does NOT keep pinned islands clear - it packed head
 # islands over the platform. Hence occupancy_from() + try_pack() + apply_pack().
@@ -13,7 +13,7 @@ from mathutils import Vector, Matrix, geometry
 from mathutils.bvhtree import BVHTree
 
 HEAD = []                      # head object names of the tower being unwrapped
-SKIP = ('REF_', 'GAT_', 'CMP_')  # objects that never take part (reference, comparison copies)
+SKIP = ('REF_', 'TUR_', 'CMP_')  # objects that never take part (reference, comparison copies)
 DOWN_SCALE = {'head': 0.25}    # static head: faces looking down (n.z < -0.65) are never seen from the 49.4 deg game camera
 
 def area_uv(f, uv):

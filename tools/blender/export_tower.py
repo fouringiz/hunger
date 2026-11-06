@@ -22,7 +22,7 @@ import os, re, json, struct, math
 OUT = os.environ.get('UTD_3D_OUT', os.path.expanduser('~/Downloads/utd3d/rebuild/'))
 FORBIDDEN = ('REF_', 'Mesh_')
 
-CFG_GATLING = dict(scene='gatling_build', name='gatling_static', combat_frame=None,
+CFG_TURRET = dict(scene='turret_build', name='turret_static', combat_frame=None,
     clip=dict(name='deploy', last_time=45 / 30,
               rot={'head_root': (1, -90.0), 'pivot_L': (0, 90.0), 'pivot_R': (0, 90.0)},
               slide={'pivot_L': (-0.485, -0.54), 'pivot_R': (0.485, 0.54)}))
@@ -35,7 +35,9 @@ def _glb(path):
     bo = 20 + L; bl = struct.unpack('<I', d[bo:bo + 4])[0]; return J, d[bo + 8:bo + 8 + bl]
 
 def export(cfg, vc=False, out=None):
-    sc = bpy.data.scenes[cfg['scene']]; bpy.context.window.scene = sc
+    sc = bpy.data.scenes[cfg['scene']]
+    if bpy.context.window: bpy.context.window.scene = sc
+    elif bpy.context.scene != sc: raise RuntimeError('background mode: make %s the active scene' % sc.name)
     root = bpy.data.objects['tower_root']; tree = [root] + list(root.children_recursive)
     hidden = [o.name for o in tree if o.hide_get() or o.hide_viewport]
     if hidden: raise RuntimeError('unhide before export (grabli 3): %s' % hidden)

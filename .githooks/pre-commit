@@ -2,9 +2,26 @@
 # Origin rule (docs/art-3d-parts.md, item 13): reference scenes, Meshy outputs and .blend files never enter the repo.
 # Enable once per clone:  git config core.hooksPath .githooks
 exec python3 - <<'PY'
-import json, struct, subprocess, sys
+import json, os, re, shutil, struct, subprocess, sys
 
 MODEL_EXT = ('.glb', '.gltf')
+
+def blend_ref_names(blob):
+    """REF_ names inside a .blend (Blender 5 saves zstd-compressed); None if the file cannot be read"""
+    if blob[:4] == b'\x28\xb5\x2f\xfd':
+        try:
+            from compression import zstd
+            blob = zstd.decompress(blob)
+        except Exception:
+            z = shutil.which('zstd') or next((p for p in ('/opt/homebrew/bin/zstd', '/usr/local/bin/zstd') if os.path.exists(p)), None)
+            if not z: return None
+            r = subprocess.run([z, '-dcq'], input=blob, capture_output=True)
+            if r.returncode: return None
+            blob = r.stdout
+    elif blob[:7] != b'BLENDER':
+        return None
+    ids = sorted({m.decode(errors='replace') for m in re.findall(rb'(?:OB|ME|SC|MA|IM|CO|AC|TE)REF_[A-Za-z0-9_.]{1,60}', blob)})
+    return ids or (['REF_ (raw bytes)'] if b'REF_' in blob else [])
 MESHY_EXT = MODEL_EXT + ('.fbx', '.obj', '.usdz', '.stl', '.blend', '.png', '.jpg', '.jpeg', '.webp', '.exr', '.zip')
 
 files = subprocess.run(['git', 'diff', '--cached', '--name-only', '--diff-filter=ACMR', '-z'],
@@ -15,7 +32,12 @@ for f in filter(None, files):
     if any(p.startswith('REF_') for p in parts):
         bad.append((f, 'reference data (REF_*)'))
     elif low.endswith(('.blend', '.blend1')):
-        bad.append((f, '.blend files may carry REF_ scenes; commit the build script and the exported .glb'))
+        blob = subprocess.run(['git', 'show', ':' + f], capture_output=True, check=True).stdout
+        refs = blend_ref_names(blob)
+        if refs is None: why = 'compressed .blend that could not be unpacked (install zstd or Python 3.14); .blend is not allowed anyway'
+        elif refs: why = 'reference data inside: %s' % ', '.join(refs[:5])
+        else: why = 'no REF_ inside, but .blend is not allowed: commit the build script and the exported .glb'
+        bad.append((f, why))
     elif 'meshy' in low and low.endswith(MESHY_EXT):
         bad.append((f, 'Meshy output'))
     elif low.endswith(MODEL_EXT):
@@ -31,7 +53,10 @@ for f in filter(None, files):
         hit = [x for x in names if x.startswith(('REF_', 'Mesh_'))]
         gen = J.get('asset', {}).get('generator', '')
         if hit: bad.append((f, 'reference or Meshy names inside: %s' % hit[:5]))
-        elif 'meshy' in gen.lower(): bad.append((f, 'generator is %s' % gen))
+        elif not gen.startswith('Khronos glTF Blender I/O'):
+            bad.append((f, 'not exported by tools/blender/export_tower.py (generator: %s)' % (gen or 'none')))
+        elif any(not x.get('name') for k in ('nodes', 'meshes') for x in J.get(k, [])):
+            bad.append((f, 'unnamed nodes or meshes (Meshy-style export)'))
 if bad:
     sys.stderr.write('pre-commit: blocked by the origin rule (docs/art-3d-parts.md, item 13):\n')
     for f, why in bad: sys.stderr.write('  %s - %s\n' % (f, why))

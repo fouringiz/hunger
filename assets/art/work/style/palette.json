@@ -45,7 +45,7 @@
     },
     "brass": {
       "hex": "#b6ab80",
-      "use": "brass bands, axle bushings, muzzle rims and barrel clamps; taken from the Gatling brass_band material (2026-11-07)"
+      "use": "brass bands, axle bushings, muzzle rims and barrel clamps; taken from the Turret brass_band material (2026-11-07)"
     }
   },
   "zones": {

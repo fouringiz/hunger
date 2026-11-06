@@ -9,7 +9,7 @@ if bpy.app.version[:2] != (5, 2):
 import math
 from mathutils.bvhtree import BVHTree
 
-SKIP = ('REF_', 'GAT_', 'CMP_')
+SKIP = ('REF_', 'TUR_', 'CMP_')
 MOVING = ('gun_', 'barrel_spin_', 'bushing_', 'side_')   # parts that move relative to the head body
 
 # designed joints: these pairs overlap by 2-3 mm on purpose and are not reported as intersections
@@ -22,7 +22,7 @@ def designed(sides=('L', 'R'), extra=()):
     return s | {frozenset(p) for p in extra}
 
 DESIGNED_MG = designed()
-DESIGNED_GATLING = designed(extra=[('axle_L', 'side_L'), ('axle_R', 'side_R'), ('bushing_L', 'side_L'), ('bushing_R', 'side_R')])
+DESIGNED_TURRET = designed(extra=[('axle_L', 'side_L'), ('axle_R', 'side_R'), ('bushing_L', 'side_L'), ('bushing_R', 'side_R')])
 
 def meshes(sc):
     dg = bpy.context.evaluated_depsgraph_get(); W = {}
@@ -49,7 +49,8 @@ def check_pose(sc, designed_pairs):
     return inter, sorted(gaps)[:3]
 
 def check_clip(sc, designed_pairs):
-    bpy.context.window.scene = sc; rows = []
+    if bpy.context.window: bpy.context.window.scene = sc
+    rows = []
     for f in range(sc.frame_start, sc.frame_end + 1):
         sc.frame_set(f); inter, g = check_pose(sc, designed_pairs)
         rows.append(dict(frame=f, intersections=inter, min_gap_mm=round(g[0][0] * 1000, 1) if g else None, pair=(g[0][1], g[0][2]) if g else None))
