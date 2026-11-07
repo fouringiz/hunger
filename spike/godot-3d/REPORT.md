@@ -435,3 +435,9 @@ godot --path . --fixed-fps 60 -- --auto=swap --swap-style=sink    --swap-cam=gam
 godot --path . --fixed-fps 60 -- --auto=swap --swap-style=sink --swap-cam=game                   # без вспышки (стандарт)
 godot --path . --fixed-fps 60 -- --auto=swap --swap-style=sink --swap-cam=game --head-flash=1 [--vc] [--head-flash-add=0.4]
 ```
+
+## Обновление 2026-11-07 (5): вспышка головы удалена
+
+- Решение пользователя — удалить совсем. Удалены `shaders/head_flash.gdshader`, `Tower._tick_head_flash()`, константы `HEAD_FLASH_*` и флаги `--head-flash`, `--head-flash-add`.
+- Видео и лист из обновления 4 оставлены как запись эксперимента. Команды с `--head-flash` из обновления 4 больше не работают.
+- Контроль после удаления: прогон `--swap-style=sink --swap-cam=game` совпадает попиксельно с прежним прогоном без вспышки — 0 px различий в тиках 18, 27, 28, 30, 33, 36 и 99. Боеготовность — 1,650 с (99 тиков), рыскание — 146,3°.

@@ -487,7 +487,7 @@ func auto_swap() -> void:
 	else:
 		_place_camera(cam, towers[0].position, Cfg.CLOSE_CAMERA_WIDTH)
 	var t: Tower = towers[0]
-	var tag := Cfg.swap_style + ("_headflash" if Cfg.head_flash and Cfg.swap_style == "sink" else "") + ("_vc" if Cfg.use_vc else "")
+	var tag := Cfg.swap_style + ("_vc" if Cfg.use_vc else "")
 	var crop := Rect2i(320, 100, 640, 600)
 	var frame := 0
 	if game_cam:

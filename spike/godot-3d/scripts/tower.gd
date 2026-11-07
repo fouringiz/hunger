@@ -149,8 +149,6 @@ func _tick_swap() -> void:
 			rig.set_alpha(rig.head_root, 0.0)
 	if style == "sink":
 		_tick_sink(t0, ts, t1, Cfg.SWAP_SINK_SCALE, Cfg.SWAP_SINK_DROP)
-		if Cfg.head_flash:
-			_tick_head_flash()
 	elif style == "sink_v1":
 		if ticks == ts - 1:
 			collar_dust.restart()
@@ -194,32 +192,6 @@ func _tick_sink(t0: int, ts: int, t1: int, s0: float, d0: float) -> void:
 		var e := 1.0 - (1.0 - k) * (1.0 - k)
 		rig.set_yaw(yaw, lerpf(s0, 1.0, e), -d0 * (1.0 - e))
 		_log("t=%.3f new head scale %.3f dy %.3f (old hidden)" % [ticks * Cfg.SIM_STEP, lerpf(s0, 1.0, e), -d0 * (1.0 - e)])
-
-## Soft flash of the new head while it rises: an additive overlay on every head mesh, its strength
-## an instance shader parameter (no material copies, same for zonal and _vc). Smoothstep up from
-## HEAD_FLASH_FROM to the peak, smoothstep down to 0 at HEAD_FLASH_TO, then the overlay is removed.
-static var _head_flash_mat: ShaderMaterial
-func _tick_head_flash() -> void:
-	var a := Cfg.ticks(Cfg.HEAD_FLASH_FROM)              # 27
-	var p := Cfg.ticks(Cfg.HEAD_FLASH_PEAK_AT)           # 30
-	var b := Cfg.ticks(Cfg.HEAD_FLASH_TO)                # 36
-	if ticks <= a or ticks > b + 1:
-		return
-	var heads := rig.geometry(rig.head_root).filter(func(g): return not rig.flashes.has(g))
-	if ticks == b + 1:
-		for g in heads:
-			g.material_overlay = null
-		return
-	if _head_flash_mat == null:
-		_head_flash_mat = ShaderMaterial.new()
-		_head_flash_mat.shader = load("res://shaders/head_flash.gdshader")
-		_head_flash_mat.set_shader_parameter("peak", Cfg.head_flash_add)
-	var w := smoothstep(float(a), float(p), float(ticks)) if ticks <= p else 1.0 - smoothstep(float(p), float(b), float(ticks))
-	for g in heads:
-		if g.material_overlay != _head_flash_mat:
-			g.material_overlay = _head_flash_mat
-		g.set_instance_shader_parameter("flash", w)
-	_log("t=%.3f head flash %.3f" % [ticks * Cfg.SIM_STEP, w])
 
 func _tick_combat(dt: float) -> void:
 	var has_target := aim_point != null
