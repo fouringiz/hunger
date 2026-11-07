@@ -11,9 +11,9 @@ const SWAP_SUBST_END := 0.55           # 3->4: substitution in folded pose 0.45-
 const SWAP_FADE_FRAMES := 2            # old head out in 2 frames, new head in 2 frames
 # 0.55-1.65: Machine Gun deploy forwards (ends at BUILD_WARMUP_SECONDS)
 
-# Swap style (anti-"teleport", no model changes): --swap-style=none|cloud|sink (default sink).
+# Swap style (anti-"teleport", no model changes): --swap-style=none|cloud|sink_v1|sink (default sink).
 # --swap-cover=0/1 is kept as an alias for none/cloud (earlier captures).
-var swap_style := "sink"
+var swap_style := "sink"     # none | cloud | sink_v1 | sink
 const SWAP_COVER_LEAD := 0.05          # cloud starts 0.05 s before the substitution (0.40 s)
 const SWAP_CLOUD_CENTER := Vector3(0, 1.35, 0)        # middle of the folded head (0.42 .. 2.19)
 const SWAP_CLOUD_EXTENTS := Vector3(0.75, 0.90, 0.75)
@@ -23,11 +23,30 @@ const SWAP_CLOUD_LIFETIME := 0.30      # opaque from 12 % to 60 % of life: 0.436
 const SWAP_CLOUD_COLOR := Color8(0xa8, 0x98, 0x7c)
 const SWAP_SCALE_FROM := 0.85          # new head grows 0.85 -> 1.0 over the first 0.2 s of its deploy
 const SWAP_SCALE_SECONDS := 0.20
-# "sink": old head 1.0 -> 0.6 and down 0.10 over 0.45-0.50 (ease-in), hidden; new head appears at 0.6 / -0.10
-# and returns to 1.0 / 0 over 0.50-0.55 (ease-out); a small depth-tested dust ring at the collar.
-const SWAP_SINK_END := 0.50
+# "sink_v1" (2026-11-07, rejected: invisible on the game camera): retract 0.00-0.45, old head 1.0 -> 0.6
+# and down 0.10 over 0.45-0.50, new head back over 0.50-0.55, small collar dust; deploy 0.55-1.65.
+const SWAP_SINK1_END := 0.50
+const SWAP_SINK1_SCALE := 0.6
+const SWAP_SINK1_DROP := 0.10
+# "sink" (v2): retract 0.00-0.30 (x5.0), old head down 0.35 and 1.0 -> 0.6 over 0.30-0.45 (ease-in),
+# substitution at 0.45, new head up from -0.35 / 0.6 over 0.45-0.60 (ease-out), teal flash of the
+# platform indicator 0.50-0.55 (no dust), Machine Gun deploy 0.60-1.65 (x1.43). Depth test stays on:
+# the platform hides the part of the head below the collar.
+const SWAP_SINK_RETRACT_END := 0.30
+const SWAP_SINK_SUBST := 0.45
+const SWAP_SINK_RISE_END := 0.60
 const SWAP_SINK_SCALE := 0.6
-const SWAP_SINK_DROP := 0.10
+const SWAP_SINK_DROP := 0.35
+const SWAP_FLASH_FROM := 0.50
+const SWAP_FLASH_TO := 0.55
+var swap_flash_peak := 8.0             # emission energy multiplier at the peak of the flash (--flash-peak=)
+
+## [retract end, sink end (= substitution), deploy start] in ticks for the current swap style.
+func swap_ticks() -> Array:
+	match swap_style:
+		"sink": return [ticks(SWAP_SINK_RETRACT_END), ticks(SWAP_SINK_SUBST), ticks(SWAP_SINK_RISE_END)]
+		"sink_v1": return [ticks(SWAP_RETRACT_END), ticks(SWAP_SINK1_END), ticks(SWAP_SUBST_END)]
+		_: return [ticks(SWAP_RETRACT_END), ticks(SWAP_RETRACT_END), ticks(SWAP_SUBST_END)]
 
 # Grid and scale (one parameter each; models are not touched).
 const CELL_STEPS := [1.80, 2.36]
@@ -71,6 +90,8 @@ func _ready() -> void:
 			swap_style = "none" if a.substr(13) == "0" else "cloud"
 		if a.begins_with("--swap-style="):
 			swap_style = a.substr(13)
+		if a.begins_with("--flash-peak="):
+			swap_flash_peak = float(a.substr(13))
 	var p := ProjectSettings.globalize_path("res://") + "../../assets/art/work/style/palette.json"
 	if FileAccess.file_exists(p):
 		var data = JSON.parse_string(FileAccess.get_file_as_string(p))

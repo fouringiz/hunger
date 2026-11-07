@@ -478,6 +478,7 @@ func auto_swap() -> void:
 	# run with --fixed-fps 60 so every rendered frame is exactly one physics tick
 	# --swap-cam=game: game camera (20 units across 1280 px), every frame cropped around the tower
 	var game_cam := "--swap-cam=game" in OS.get_cmdline_user_args()
+	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, true)   # macOS skips drawing occluded windows
 	close_cam = not game_cam
 	selected = 0
 	target_frozen = Vector3(-2.5, 0.25, 0.6)
@@ -486,7 +487,7 @@ func auto_swap() -> void:
 	else:
 		_place_camera(cam, towers[0].position, Cfg.CLOSE_CAMERA_WIDTH)
 	var t: Tower = towers[0]
-	var tag := Cfg.swap_style
+	var tag := Cfg.swap_style + ("" if Cfg.swap_flash_peak == 8.0 else "_peak" + str(Cfg.swap_flash_peak))
 	var crop := Rect2i(320, 100, 640, 600)
 	var frame := 0
 	if game_cam:

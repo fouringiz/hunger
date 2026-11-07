@@ -112,21 +112,26 @@ func _tick_clip() -> void:
 		state = "combat" if clip_forward else "folded"
 
 func _tick_swap() -> void:
-	var t0 := Cfg.ticks(Cfg.SWAP_RETRACT_END)            # 27
-	var t1 := Cfg.ticks(Cfg.SWAP_SUBST_END)              # 33
+	var st := Cfg.swap_ticks()
+	var t0: int = st[0]                                  # retract ends (27; sink: 18)
+	var ts: int = st[1]                                  # sink styles: old head at the bottom (30; sink: 27)
+	var t1: int = st[2]                                  # deploy starts on the next tick (33; sink: 36)
 	var t_end := Cfg.ticks(Cfg.BUILD_WARMUP_SECONDS)     # 99
 	var f := Cfg.SWAP_FADE_FRAMES
 	var style := Cfg.swap_style
+	var sinking := style == "sink" or style == "sink_v1"
 	if ticks == 1:
 		# head_root keeps the current aim: only fold/pivot_* move (contract p.6)
-		old_rig.play_backward(Cfg.swap_retract_speed(old_rig.clip_len))   # ends at tick 27
+		var sp := old_rig.clip_len / (t0 * Cfg.SIM_STEP)
+		_log("retract speed x%.2f" % sp)
+		old_rig.play_backward(sp)                         # ends at tick t0
 	if style == "cloud" and ticks == t0 - Cfg.ticks(Cfg.SWAP_COVER_LEAD):
 		cloud.restart()
 	if ticks == t0 + 1:
 		_log("t=%.3f retract finished on the previous tick: old clip playing=%s pos=%.4f" % [(ticks - 1) * Cfg.SIM_STEP, old_rig.ap.is_playing(), old_rig.clip_pos()])
 	if ticks == t0:
 		_log("t=%.3f before this tick's step: old clip playing=%s pos=%.4f, old head_root yaw %.1f deg" % [ticks * Cfg.SIM_STEP, old_rig.ap.is_playing(), old_rig.clip_pos(), rad_to_deg(old_rig.head_root.rotation.y)])
-		if style != "sink":
+		if not sinking:
 			dust.restart()
 		# new head appears folded, in the same aim direction, without its own platform
 		rig = Rig.create("machine_gun", Cfg.use_vc)
@@ -136,13 +141,19 @@ func _tick_swap() -> void:
 		match style:
 			"cloud": rig.set_yaw(yaw, Cfg.SWAP_SCALE_FROM)
 			"sink": rig.set_yaw(yaw, Cfg.SWAP_SINK_SCALE, -Cfg.SWAP_SINK_DROP)
+			"sink_v1": rig.set_yaw(yaw, Cfg.SWAP_SINK1_SCALE, -Cfg.SWAP_SINK1_DROP)
 			_: rig.set_yaw(yaw)
-		if style == "sink":
+		if sinking:
 			rig.head_root.visible = false
 		else:
 			rig.set_alpha(rig.head_root, 0.0)
 	if style == "sink":
-		_tick_sink(t0, t1)
+		_tick_sink(t0, ts, t1, Cfg.SWAP_SINK_SCALE, Cfg.SWAP_SINK_DROP)
+		_tick_flash()
+	elif style == "sink_v1":
+		if ticks == ts - 1:
+			collar_dust.restart()
+		_tick_sink(t0, ts, t1, Cfg.SWAP_SINK1_SCALE, Cfg.SWAP_SINK1_DROP)
 	else:
 		if ticks > t0 and ticks <= t0 + f:
 			old_rig.set_alpha(old_rig.head_root, 1.0 - float(ticks - t0) / f)
@@ -153,7 +164,9 @@ func _tick_swap() -> void:
 		if ticks == t0 + 2 * f:
 			_log("t=%.3f new head fully visible" % (ticks * Cfg.SIM_STEP))
 	if ticks == t1 + 1:
-		rig.play_forward(Cfg.swap_deploy_speed(rig.clip_len))             # ends at tick 99
+		var sp := rig.clip_len / ((t_end - t1) * Cfg.SIM_STEP)
+		_log("t=%.3f deploy forward x%.2f" % [ticks * Cfg.SIM_STEP, sp])
+		rig.play_forward(sp)                               # ends at tick 99
 	if style == "cloud" and ticks > t1:
 		var k := clampf(float(ticks - t1) / Cfg.ticks(Cfg.SWAP_SCALE_SECONDS), 0.0, 1.0)
 		var e := 1.0 - (1.0 - k) * (1.0 - k)                               # ease out
@@ -164,27 +177,54 @@ func _tick_swap() -> void:
 		_log("t=%.3f new head_root yaw %.1f deg (same as before swap)" % [ticks * Cfg.SIM_STEP, rad_to_deg(rig.head_root.rotation.y)])
 		ready_pending = true            # reported after this tick's clip step
 
-## "Sink and raise": ticks t0+1..tm sink the old head (ease-in), tick tm+1 swaps heads at the
-## bottom pose, ticks tm+1..t1 raise the new one (ease-out). 3 frames each at 60 Hz.
-func _tick_sink(t0: int, t1: int) -> void:
-	var tm := Cfg.ticks(Cfg.SWAP_SINK_END)                # 30
-	var s0 := Cfg.SWAP_SINK_SCALE
-	var d0 := Cfg.SWAP_SINK_DROP
-	if ticks == tm - 1:
-		collar_dust.restart()
-	if ticks > t0 and ticks <= tm:
-		var k := float(ticks - t0) / (tm - t0)
+## Sink and raise: ticks t0+1..ts sink the old head (ease-in), tick ts+1 swaps heads at the bottom
+## pose (old hidden, new shown), ticks ts+1..t1 raise the new one (ease-out).
+func _tick_sink(t0: int, ts: int, t1: int, s0: float, d0: float) -> void:
+	if ticks > t0 and ticks <= ts:
+		var k := float(ticks - t0) / (ts - t0)
 		var e := k * k
 		old_rig.set_yaw(yaw, lerpf(1.0, s0, e), -d0 * e)
 		_log("t=%.3f old head scale %.3f dy %.3f" % [ticks * Cfg.SIM_STEP, lerpf(1.0, s0, e), -d0 * e])
-	if ticks == tm + 1:
+	if ticks == ts + 1:
 		old_rig.head_root.visible = false
-		rig.head_root.visible = true
-	if ticks > tm and ticks <= t1:
-		var k := float(ticks - tm - 1) / (t1 - tm - 1)
+		rig.head_root.visible = not ("--debug-hide-new-head" in OS.get_cmdline_user_args())
+	if ticks > ts and ticks <= t1:
+		var k := float(ticks - ts - 1) / (t1 - ts - 1)
 		var e := 1.0 - (1.0 - k) * (1.0 - k)
 		rig.set_yaw(yaw, lerpf(s0, 1.0, e), -d0 * (1.0 - e))
 		_log("t=%.3f new head scale %.3f dy %.3f (old hidden)" % [ticks * Cfg.SIM_STEP, lerpf(s0, 1.0, e), -d0 * (1.0 - e)])
+
+## Teal flash of this tower's platform indicator (a per-instance copy of the material) over
+## SWAP_FLASH_FROM..TO: energy rises to SWAP_FLASH_PEAK x base and back (sine), then the copy is dropped.
+var _flash_surface := -1
+var _flash_base := 0.0
+func _tick_flash() -> void:
+	var a := Cfg.ticks(Cfg.SWAP_FLASH_FROM)              # 30
+	var b := Cfg.ticks(Cfg.SWAP_FLASH_TO)                # 33
+	var pl := old_rig.platform
+	if ticks == a:
+		_flash_surface = -1
+		for i in pl.mesh.get_surface_count():
+			var m := pl.mesh.surface_get_material(i)
+			if m is BaseMaterial3D and m.resource_name == "teal_indicator":
+				var d: BaseMaterial3D = m.duplicate()
+				d.emission_enabled = true
+				_flash_base = maxf(d.emission_energy_multiplier, 0.01)
+				pl.set_surface_override_material(i, d)
+				_flash_surface = i
+		if _flash_surface < 0:
+			_log("t=%.3f flash: no teal_indicator surface on the platform (_vc?)" % (ticks * Cfg.SIM_STEP))
+	if _flash_surface < 0:
+		return
+	if ticks >= a and ticks <= b + 1:
+		var k := float(ticks - a + 1) / (b - a + 2)      # 0.2 .. 1.0 over ticks a..b+1
+		var w := sin(PI * k)                             # 0.59, 0.95, 0.95, 0.59, 0
+		var d: BaseMaterial3D = pl.get_surface_override_material(_flash_surface)
+		d.emission_energy_multiplier = _flash_base * (1.0 + (Cfg.swap_flash_peak - 1.0) * w)
+		_log("t=%.3f teal flash x%.2f" % [ticks * Cfg.SIM_STEP, 1.0 + (Cfg.swap_flash_peak - 1.0) * w])
+	if ticks == b + 1:
+		pl.set_surface_override_material(_flash_surface, null)
+		_flash_surface = -1
 
 func _tick_combat(dt: float) -> void:
 	var has_target := aim_point != null
