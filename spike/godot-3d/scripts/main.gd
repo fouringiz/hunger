@@ -475,19 +475,66 @@ func auto_appear() -> void:
 	await wait_ticks(10)
 
 func auto_swap() -> void:
+	# run with --fixed-fps 60 so every rendered frame is exactly one physics tick
 	close_cam = true
 	selected = 0
 	target_frozen = Vector3(-2.5, 0.25, 0.6)
 	_place_camera(cam, towers[0].position, Cfg.CLOSE_CAMERA_WIDTH)
 	await wait_ticks(90)
-	towers[0].swap_to_machine_gun()
-	var keep := [0, 9, 18, 27, 28, 29, 30, 33, 45, 60, 75, 90, 99]
-	for tick in 100:
-		if tick in keep:
-			await screenshot("raw/swap_t%03d.jpg" % tick, Rect2i(320, 100, 640, 600))
-		await wait_ticks(1)
+	var t: Tower = towers[0]
+	var tag := "cover%d" % int(Cfg.swap_cover)
+	print("[swap %s] yaw before swap %.1f deg" % [tag, rad_to_deg(t.yaw)])
+	t.swap_to_machine_gun()
+	var keep := [0, 9, 18, 24, 27, 28, 29, 30, 31, 33, 36, 45, 60, 75, 90, 99]
+	var done := {}
+	var lines := []
+	var t0 := Cfg.ticks(Cfg.SWAP_RETRACT_END)
+	var t1 := Cfg.ticks(Cfg.SWAP_SUBST_END)
+	var worst := 1.0
+	while true:
+		await RenderingServer.frame_post_draw
+		var k := t.ticks if t.state == "swapping" or t.ticks <= 99 else 99
+		if not done.has(k):
+			done[k] = true
+			if k in keep:
+				var img := get_viewport().get_texture().get_image().get_region(Rect2i(320, 100, 640, 600))
+				img.save_jpg(shots_dir + "raw/swap_%s_t%03d.jpg" % [tag, k], 0.9)
+			if k >= t0 - 3 and k <= t1 + 3:
+				var c := head_cover(t)
+				lines.append("tick %d (%.3f s): head vertices on cloud colour %.1f %% of %d" % [k, k * Cfg.SIM_STEP, c[0] * 100.0, c[1]])
+				if k >= t0 and k <= t1: worst = minf(worst, c[0])
+		if t.state != "swapping" and k >= 99:
+			break
+	var verdict := "[swap %s] 0.45-0.55 s worst head cover %.1f %% -> %s (criterion >= 95 %%)" % [tag, worst * 100.0, "COVERED" if worst >= 0.95 else "NOT covered"]
+	lines.append(verdict)
+	print("\n".join(lines))
+	print("[swap %s] yaw after swap %.1f deg (head_root of new head %.1f)" % [tag, rad_to_deg(t.yaw), rad_to_deg(t.rig.head_root.rotation.y)])
+	FileAccess.open("res://out/swap_%s.txt" % tag, FileAccess.WRITE).store_string("\n".join(lines) + "\n")
 	await wait_ticks(30)
-	await screenshot("raw/swap_after.jpg", Rect2i(320, 100, 640, 600))
+
+## Share of head vertices (old and new head, any visibility) whose screen pixel shows the swap cloud colour.
+func head_cover(t: Tower) -> Array:
+	var img := get_viewport().get_texture().get_image()
+	var c: Color = Cfg.SWAP_CLOUD_COLOR
+	var hit := 0
+	var n := 0
+	for r in [t.old_rig, t.rig]:
+		if r == null: continue
+		for g in r.geometry(r.head_root):
+			if not (g is MeshInstance3D) or r.flashes.has(g): continue
+			var xf: Transform3D = g.global_transform
+			for si in g.mesh.get_surface_count():
+				var v: PackedVector3Array = g.mesh.surface_get_arrays(si)[Mesh.ARRAY_VERTEX]
+				for i in range(0, v.size(), 3):
+					var p := cam.unproject_position(xf * v[i])
+					var x := int(p.x)
+					var y := int(p.y)
+					if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height(): continue
+					n += 1
+					var px := img.get_pixel(x, y)
+					if absf(px.r - c.r) < 0.08 and absf(px.g - c.g) < 0.08 and absf(px.b - c.b) < 0.08:
+						hit += 1
+	return [float(hit) / maxi(n, 1), n]
 
 func auto_style() -> void:
 	target_frozen = Vector3(-3.0, 0.25, 0.3)

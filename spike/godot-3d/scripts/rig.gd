@@ -1,12 +1,17 @@
 class_name Rig
 extends RefCounted
-## One imported tower model: contract nodes, the deploy clip sampled by hand, fades, recoil, flashes.
+## One imported tower model: contract nodes, the deploy clip, fades, recoil, flashes.
+## Ownership (contract p.2, PR #107): the clip owns fold and pivot_*; code owns head_root
+## (aim yaw), barrel_spin_* and the recoil meshes. The clip plays in the model's own
+## AnimationPlayer; code never samples it, it only advances the player's clock by SIM_STEP per tick.
 
 var kind := ""
 var model: Node3D
 var tower_root: Node3D
 var head_root: Node3D
+var fold: Node3D
 var platform: MeshInstance3D
+var ap: AnimationPlayer
 var pivots: Array = []
 var muzzles: Array = []
 var recoil_axes: Array = []
@@ -17,9 +22,8 @@ var flashes: Array = []        # per muzzle
 var flash_ticks: Array = []
 var anim: Animation
 var clip_len := 0.0
-var tracks: Array = []         # [node, type, track index]
-var rest := {}                 # node -> Transform3D as imported (before any sampling)
-var clip_t := 0.0
+var tracks: Array = []         # [node, type, track index] - for the contract report only
+var rest := {}                 # node -> Transform3D as imported
 var problems: Array = []
 
 static var _flash_mesh: QuadMesh
@@ -30,26 +34,15 @@ static func create(kind_: String, vc: bool) -> Rig:
 	var scene: PackedScene = load(Cfg.model_path(kind_, vc))
 	r.model = scene.instantiate()
 	r._bind()
-	if vc:
-		r._fix_vc()
 	return r
-
-## Godot's glTF importer leaves vertex_color_use_as_albedo off for a material without baseColor,
-## so the _vc file renders white. Workaround: switch it on (COLOR_0 is linear in glTF).
-func _fix_vc() -> void:
-	for g in geometry(model):
-		if g is MeshInstance3D:
-			for s in g.mesh.get_surface_count():
-				var m = g.mesh.surface_get_material(s)
-				if m is BaseMaterial3D and not m.vertex_color_use_as_albedo:
-					m.vertex_color_use_as_albedo = true
-					m.vertex_color_is_srgb = false
 
 func _bind() -> void:
 	tower_root = model.find_child("tower_root", true, false)
 	head_root = model.find_child("head_root", true, false)
+	fold = model.find_child("fold", true, false)
 	platform = model.find_child("platform", true, false) as MeshInstance3D
 	if tower_root == null: problems.append("tower_root not found")
+	if fold == null: problems.append("fold not found")
 	if head_root == null:
 		problems.append("head_root not found")
 		return
@@ -77,7 +70,6 @@ func _bind() -> void:
 		m.add_child(f)
 		flashes.append(f)
 		flash_ticks.append(0)
-	var ap: AnimationPlayer = null
 	for c in model.find_children("*", "AnimationPlayer", true, false):
 		ap = c
 		break
@@ -86,6 +78,11 @@ func _bind() -> void:
 		return
 	anim = ap.get_animation("deploy")
 	clip_len = anim.length
+	# The player's clock is the simulation step: Tower calls advance(SIM_STEP) once per tick.
+	# (In PHYSICS mode the first advance after play() came 2 ticks late, so a clip started on
+	# tick k ended 2 ticks after BUILD_WARMUP_SECONDS.)
+	ap.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	ap.assigned_animation = "deploy"
 	var root := ap.get_node(ap.root_node)
 	for i in anim.get_track_count():
 		var path := anim.track_get_path(i)
@@ -94,9 +91,6 @@ func _bind() -> void:
 			problems.append("track target missing: %s" % path)
 			continue
 		tracks.append([node, anim.track_get_type(i), i])
-	# The clip is sampled by hand on the fixed step; the player itself is removed.
-	ap.get_parent().remove_child(ap)
-	ap.free()
 
 static func _flash() -> QuadMesh:
 	if _flash_mesh == null:
@@ -129,24 +123,33 @@ static func _walk(n: Node) -> Array:
 		out.append_array(_walk(c))
 	return out
 
-func sample(t: float, yaw: float) -> void:
-	clip_t = clampf(t, 0.0, clip_len)
-	for tr in tracks:
-		var node: Node3D = tr[0]
-		match tr[1]:
-			Animation.TYPE_POSITION_3D: node.position = anim.position_track_interpolate(tr[2], clip_t)
-			Animation.TYPE_ROTATION_3D: node.quaternion = anim.rotation_track_interpolate(tr[2], clip_t)
-			Animation.TYPE_SCALE_3D: node.scale = anim.scale_track_interpolate(tr[2], clip_t)
-	apply_yaw(yaw)
+# ---------- clip control (AnimationPlayer, physics step) ----------
 
-## The clip keys head_root rotation and the code aims head_root too: the aim yaw is composed
-## on top of the sampled clip rotation (about the vertical axis through head_root).
-func apply_yaw(yaw: float) -> void:
-	var clip_q: Quaternion = rest[head_root].basis.get_rotation_quaternion()
-	for tr in tracks:
-		if tr[0] == head_root and tr[1] == Animation.TYPE_ROTATION_3D:
-			clip_q = anim.rotation_track_interpolate(tr[2], clip_t)
-	head_root.quaternion = Quaternion(Vector3.UP, yaw) * clip_q
+## Static pose: folded (t = 0) or battle (t = clip_len). Used at spawn and by the report, not per tick.
+func pose(t: float) -> void:
+	ap.stop()
+	ap.assigned_animation = "deploy"
+	ap.seek(clampf(t, 0.0, clip_len), true)
+
+func play_forward(speed: float) -> void:
+	ap.speed_scale = speed
+	ap.play("deploy")
+
+func play_backward(speed: float) -> void:
+	ap.speed_scale = speed
+	ap.play_backwards("deploy")
+
+func step(dt: float) -> void:
+	if ap != null and ap.is_playing():
+		ap.advance(dt)
+
+func clip_pos() -> float:
+	return ap.current_animation_position if ap.current_animation != "" else -1.0
+
+func set_yaw(yaw: float, s := 1.0) -> void:
+	head_root.basis = Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s)
+
+# ---------- fades, fire, fx ----------
 
 func geometry(under: Node) -> Array:
 	return _walk(under).filter(func(n): return n is GeometryInstance3D)
@@ -173,7 +176,7 @@ func tick_fx(dt: float, spin_speed: float) -> void:
 			r = maxf(0.0, r - dt)
 			recoil_t[i] = r
 			k = r / Cfg.RECOIL_TIME   # instant kick back, linear return
-		# recoil direction: +Z of recoil_axis_* (barrel looks along -Z)
+		# contract p.2: back along recoil_axis_* (+Y Blender is the barrel; back = +Z Godot)
 		var dir := Vector3(0, 0, 1)
 		if i < recoil_axes.size():
 			dir = (recoil_axes[i] as Node3D).transform.basis.z.normalized()
@@ -184,7 +187,7 @@ func tick_fx(dt: float, spin_speed: float) -> void:
 		(flashes[i] as Node3D).visible = ft > 0
 		if ft > 0: flash_ticks[i] = ft - 1
 	for s in spins:
-		# contract: barrel_spin_* turns about its local Y in Blender = local Z in Godot (barrel axis)
+		# contract p.4: barrel_spin_* turns about its local Y in Blender = local Z in Godot (barrel axis)
 		(s as Node3D).rotate_object_local(Vector3(0, 0, 1), spin_speed * dt)
 
 # ---------- contract report ----------
@@ -210,15 +213,19 @@ func _verts_in(space: Node) -> PackedVector3Array:
 	return out
 
 func turn_radius() -> float:
-	sample(clip_len, 0.0)
+	pose(clip_len)
 	var r := 0.0
 	for p in _verts_in(head_root):
 		r = maxf(r, Vector2(p.x, p.z).length())
 	return r
 
+## Head bounds in tower_root space with head_root yaw 0 (needs the model in the tree).
 func head_aabb(t: float) -> AABB:
-	sample(t, 0.0)
+	var keep := head_root.transform
+	head_root.transform = rest[head_root]
+	pose(t)
 	var v := _verts_in(tower_root)
+	head_root.transform = keep
 	var box := AABB(v[0], Vector3.ZERO)
 	for p in v:
 		box = box.expand(p)
@@ -240,12 +247,27 @@ func surfaces(under: Node) -> int:
 			n += g.mesh.get_surface_count()
 	return n
 
+func vc_flag() -> String:
+	var on := 0
+	var total := 0
+	for g in geometry(model):
+		if g is MeshInstance3D and not flashes.has(g):
+			for s in g.mesh.get_surface_count():
+				var m = g.mesh.surface_get_material(s)
+				if m is BaseMaterial3D:
+					total += 1
+					if m.vertex_color_use_as_albedo: on += 1
+	return "%d/%d surfaces" % [on, total]
+
 func report() -> Array:
 	var L := []
 	L.append("== %s ==" % kind)
 	for p in problems: L.append("  PROBLEM: " + p)
-	if head_root == null: return L
+	if head_root == null or fold == null: return L
 	L.append("  head_root: %s (contract (0, 0.424, 0) Godot = (0,0,0.424) Blender)" % [rest[head_root].origin])
+	var hk := []
+	for c in head_root.get_children(): hk.append(String(c.name))
+	L.append("  head_root children: %s -> single child fold: %s; fold at %s" % [hk, "yes" if hk == ["fold"] else "NO", rest[fold].origin])
 	for pair in [["pivot_*", pivots], ["muzzle_*", muzzles], ["recoil_axis_*", recoil_axes], ["barrel_spin_*", spins]]:
 		var names := []
 		for n in pair[1]: names.append("%s<-%s" % [n.name, n.get_parent().name])
@@ -253,34 +275,37 @@ func report() -> Array:
 	var bad_parent := []
 	for n in muzzles + recoil_axes + spins:
 		if not String(n.get_parent().name).begins_with("pivot_"): bad_parent.append(String(n.name))
-	L.append("  muzzle/recoil/spin under pivot_*: %s" % ("yes" if bad_parent.is_empty() else "NO " + str(bad_parent)))
+	for p in pivots:
+		if p.get_parent() != fold: bad_parent.append(String(p.name))
+	L.append("  pivot_* under fold, muzzle/recoil/spin under pivot_*: %s" % ("yes" if bad_parent.is_empty() else "NO " + str(bad_parent)))
 	var rot_nonzero := []
 	for n in rest.keys():
 		var b: Basis = rest[n].basis
 		if not b.is_equal_approx(Basis.IDENTITY): rot_nonzero.append(String(n.name))
 	L.append("  rest rotation/scale = identity for all head nodes: %s" % ("yes" if rot_nonzero.is_empty() else "NO " + str(rot_nonzero)))
+	L.append("  vertex_color_use_as_albedo (set by import script on _vc only): %s" % vc_flag())
 	if anim == null: return L
 	var tnames := []
 	var foreign := []
 	for tr in tracks:
 		var nm := String(tr[0].name)
 		tnames.append("%s:%s" % [nm, ["value", "pos", "rot", "scale"][min(tr[1], 3)] if tr[1] <= 3 else str(tr[1])])
-		if nm != "head_root" and not nm.begins_with("pivot_"): foreign.append(nm)
+		if nm != "fold" and not nm.begins_with("pivot_"): foreign.append(nm)
 	L.append("  clip deploy: %.3f s (contract 1.50), tracks %s" % [clip_len, tnames])
-	L.append("  channels only on head_root/pivot_*: %s" % ("yes" if foreign.is_empty() else "NO " + str(foreign)))
+	L.append("  channels only on fold/pivot_*, none on head_root: %s" % ("yes" if foreign.is_empty() else "NO " + str(foreign)))
 	var end_err := 0.0
-	sample(clip_len, 0.0)
+	pose(clip_len)
 	for tr in tracks:
 		var n: Node3D = tr[0]
 		end_err = maxf(end_err, n.transform.origin.distance_to(rest[n].origin))
 		end_err = maxf(end_err, n.quaternion.angle_to(rest[n].basis.get_rotation_quaternion()))
 	L.append("  clip end == rest (battle pose = zeros): max err %.5f -> %s" % [end_err, "yes" if end_err < 1e-3 else "NO"])
-	sample(0.0, 0.0)
-	var hy := rad_to_deg(head_root.quaternion.get_euler().y)
+	pose(0.0)
+	var fy := rad_to_deg(fold.quaternion.get_euler().y)
 	var piv := []
 	for p in pivots: piv.append("%s %s" % [p.name, (p.quaternion.get_euler() * 180.0 / PI).snapped(Vector3.ONE * 0.1)])
-	L.append("  frame 1 (folded): head_root yaw %.1f deg (contract -90), pivots %s" % [hy, piv])
-	sample(clip_len, 0.0)
+	L.append("  frame 1 (folded): fold yaw %.1f deg (contract -90), head_root untouched %s, pivots %s" % [fy, head_root.transform.basis.is_equal_approx(Basis.IDENTITY), piv])
+	pose(clip_len)
 	var mz := []
 	for m in muzzles:
 		var hp := rel_xform(m, head_root)
@@ -288,11 +313,11 @@ func report() -> Array:
 	L.append("  muzzles (battle pose, head space; barrels must point -Z): %s" % [mz])
 	var rr := turn_radius()
 	L.append("  turn radius 360 deg from head_root axis: %.3f (declared %.2f)" % [rr, Cfg.DECLARED_TURN_RADIUS.get(kind, 0.0)])
-	for pose in [["battle", clip_len], ["folded", 0.0]]:
-		var b := head_aabb(pose[1])
+	for p2 in [["battle", clip_len], ["folded", 0.0]]:
+		var b := head_aabb(p2[1])
 		var hx := maxf(absf(b.position.x), absf(b.end.x))
 		var hz := maxf(absf(b.position.z), absf(b.end.z))
-		L.append("  head extent %s: |x|<=%.3f |z|<=%.3f h %.3f..%.3f -> inside pad (0.90 x 0.94): %s" % [pose[0], hx, hz, b.position.y, b.end.y, "yes" if hx <= Cfg.PAD_HALF.x and hz <= Cfg.PAD_HALF.y else "NO"])
+		L.append("  head extent %s: |x|<=%.3f |z|<=%.3f h %.3f..%.3f -> inside pad (0.90 x 0.94): %s" % [p2[0], hx, hz, b.position.y, b.end.y, "yes" if hx <= Cfg.PAD_HALF.x and hz <= Cfg.PAD_HALF.y else "NO (barrels allowed by p.8)"])
 	L.append("  tris: tower %d, head %d, platform %d; surfaces (draw calls per tower, no shadows): %d" % [tris(model), tris(head_root), tris(platform) if platform else 0, surfaces(model)])
-	sample(clip_len, 0.0)
+	pose(clip_len)
 	return L
