@@ -1,0 +1,4 @@
+.godot/
+models/*.glb
+out/
+shots/raw/
