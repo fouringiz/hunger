@@ -28,7 +28,7 @@ GRAPH, OLIVE, STEEL, BRASS, ORANGE, TEAL = range(6)
 MAT_PARAMS = {'graphite_frame': (0.55, 0.35), 'olive_plate': (0.7, 0.0), 'steel_dark': (0.45, 0.7),
               'brass_band': (0.4, 0.8), 'orange_accent': (0.5, 0.0), 'teal_indicator': (0.3, 0.0)}
 # deploy clip: 30 fps, 46 frames; keys (frame, degrees); the key that starts a move eases in-out
-CLIP = {'head_root': (2, [(1, -90), (24, -90), (39, 0), (46, 0)], 24),
+CLIP = {'fold':      (2, [(1, -90), (24, -90), (39, 0), (46, 0)], 24),
         'pivot_L':   (0, [(1, 90), (6, 90), (23, 0), (46, 0)], 6),
         'pivot_R':   (0, [(1, 90), (7, 90), (24, 0), (46, 0)], 7)}
 
@@ -169,12 +169,13 @@ def build_scene():
     materials()
     root = empty('tower_root', col, (0, 0, 0), None)
     platform(col, root)
-    hr = empty('head_root', col, (0, 0, Z0), root)
-    h = union('head', col, list(head_parts())); set_origin(h, (0, 0, Z0)); place(h, (0, 0, Z0), hr)
+    hr = empty('head_root', col, (0, 0, Z0), root)          # aim yaw, owned by code; never keyed
+    fd = empty('fold', col, (0, 0, Z0), hr)                  # deploy fold, owned by the clip; the whole head hangs under it
+    h = union('head', col, list(head_parts())); set_origin(h, (0, 0, Z0)); place(h, (0, 0, Z0), fd)
     for side, s in (('L', -1), ('R', 1)):                    # L = -X looking along the barrels (+Y)
         o = P(s * 0.44, PY, PZ)
-        ax = to_obj(cyl((0, PY, PZ), (1, 0, 0), 0.07, s * 0.39 * SX, s * 0.443 * SX, 24, STEEL), 'axle_' + side, col); set_origin(ax, o); place(ax, o, hr)
-        piv = empty('pivot_' + side, col, o, hr)
+        ax = to_obj(cyl((0, PY, PZ), (1, 0, 0), 0.07, s * 0.39 * SX, s * 0.443 * SX, 24, STEEL), 'axle_' + side, col); set_origin(ax, o); place(ax, o, fd)
+        piv = empty('pivot_' + side, col, o, fd)
         bu = to_obj(cyl((0, PY, PZ), (1, 0, 0), 0.105, s * 0.4245 * SX, s * 0.443 * SX, 24, BRASS), 'bushing_' + side, col); set_origin(bu, o); place(bu, o, piv)
         g = union('gun_' + side, col, list(gun_parts(s))); set_origin(g, o); place(g, o, piv)
         c = P(s * CX, 0.237, PZ)
