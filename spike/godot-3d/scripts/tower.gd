@@ -149,7 +149,8 @@ func _tick_swap() -> void:
 			rig.set_alpha(rig.head_root, 0.0)
 	if style == "sink":
 		_tick_sink(t0, ts, t1, Cfg.SWAP_SINK_SCALE, Cfg.SWAP_SINK_DROP)
-		_tick_flash()
+		if Cfg.head_flash:
+			_tick_head_flash()
 	elif style == "sink_v1":
 		if ticks == ts - 1:
 			collar_dust.restart()
@@ -187,44 +188,38 @@ func _tick_sink(t0: int, ts: int, t1: int, s0: float, d0: float) -> void:
 		_log("t=%.3f old head scale %.3f dy %.3f" % [ticks * Cfg.SIM_STEP, lerpf(1.0, s0, e), -d0 * e])
 	if ticks == ts + 1:
 		old_rig.head_root.visible = false
-		rig.head_root.visible = not ("--debug-hide-new-head" in OS.get_cmdline_user_args())
+		rig.head_root.visible = true
 	if ticks > ts and ticks <= t1:
 		var k := float(ticks - ts - 1) / (t1 - ts - 1)
 		var e := 1.0 - (1.0 - k) * (1.0 - k)
 		rig.set_yaw(yaw, lerpf(s0, 1.0, e), -d0 * (1.0 - e))
 		_log("t=%.3f new head scale %.3f dy %.3f (old hidden)" % [ticks * Cfg.SIM_STEP, lerpf(s0, 1.0, e), -d0 * (1.0 - e)])
 
-## Teal flash of this tower's platform indicator (a per-instance copy of the material) over
-## SWAP_FLASH_FROM..TO: energy rises to SWAP_FLASH_PEAK x base and back (sine), then the copy is dropped.
-var _flash_surface := -1
-var _flash_base := 0.0
-func _tick_flash() -> void:
-	var a := Cfg.ticks(Cfg.SWAP_FLASH_FROM)              # 30
-	var b := Cfg.ticks(Cfg.SWAP_FLASH_TO)                # 33
-	var pl := old_rig.platform
-	if ticks == a:
-		_flash_surface = -1
-		for i in pl.mesh.get_surface_count():
-			var m := pl.mesh.surface_get_material(i)
-			if m is BaseMaterial3D and m.resource_name == "teal_indicator":
-				var d: BaseMaterial3D = m.duplicate()
-				d.emission_enabled = true
-				_flash_base = maxf(d.emission_energy_multiplier, 0.01)
-				pl.set_surface_override_material(i, d)
-				_flash_surface = i
-		if _flash_surface < 0:
-			_log("t=%.3f flash: no teal_indicator surface on the platform (_vc?)" % (ticks * Cfg.SIM_STEP))
-	if _flash_surface < 0:
+## Soft flash of the new head while it rises: an additive overlay on every head mesh, its strength
+## an instance shader parameter (no material copies, same for zonal and _vc). Smoothstep up from
+## HEAD_FLASH_FROM to the peak, smoothstep down to 0 at HEAD_FLASH_TO, then the overlay is removed.
+static var _head_flash_mat: ShaderMaterial
+func _tick_head_flash() -> void:
+	var a := Cfg.ticks(Cfg.HEAD_FLASH_FROM)              # 27
+	var p := Cfg.ticks(Cfg.HEAD_FLASH_PEAK_AT)           # 30
+	var b := Cfg.ticks(Cfg.HEAD_FLASH_TO)                # 36
+	if ticks <= a or ticks > b + 1:
 		return
-	if ticks >= a and ticks <= b + 1:
-		var k := float(ticks - a + 1) / (b - a + 2)      # 0.2 .. 1.0 over ticks a..b+1
-		var w := sin(PI * k)                             # 0.59, 0.95, 0.95, 0.59, 0
-		var d: BaseMaterial3D = pl.get_surface_override_material(_flash_surface)
-		d.emission_energy_multiplier = _flash_base * (1.0 + (Cfg.swap_flash_peak - 1.0) * w)
-		_log("t=%.3f teal flash x%.2f" % [ticks * Cfg.SIM_STEP, 1.0 + (Cfg.swap_flash_peak - 1.0) * w])
+	var heads := rig.geometry(rig.head_root).filter(func(g): return not rig.flashes.has(g))
 	if ticks == b + 1:
-		pl.set_surface_override_material(_flash_surface, null)
-		_flash_surface = -1
+		for g in heads:
+			g.material_overlay = null
+		return
+	if _head_flash_mat == null:
+		_head_flash_mat = ShaderMaterial.new()
+		_head_flash_mat.shader = load("res://shaders/head_flash.gdshader")
+		_head_flash_mat.set_shader_parameter("peak", Cfg.head_flash_add)
+	var w := smoothstep(float(a), float(p), float(ticks)) if ticks <= p else 1.0 - smoothstep(float(p), float(b), float(ticks))
+	for g in heads:
+		if g.material_overlay != _head_flash_mat:
+			g.material_overlay = _head_flash_mat
+		g.set_instance_shader_parameter("flash", w)
+	_log("t=%.3f head flash %.3f" % [ticks * Cfg.SIM_STEP, w])
 
 func _tick_combat(dt: float) -> void:
 	var has_target := aim_point != null

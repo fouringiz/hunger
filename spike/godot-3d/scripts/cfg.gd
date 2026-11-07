@@ -29,17 +29,19 @@ const SWAP_SINK1_END := 0.50
 const SWAP_SINK1_SCALE := 0.6
 const SWAP_SINK1_DROP := 0.10
 # "sink" (v2): retract 0.00-0.30 (x5.0), old head down 0.35 and 1.0 -> 0.6 over 0.30-0.45 (ease-in),
-# substitution at 0.45, new head up from -0.35 / 0.6 over 0.45-0.60 (ease-out), teal flash of the
-# platform indicator 0.50-0.55 (no dust), Machine Gun deploy 0.60-1.65 (x1.43). Depth test stays on:
+# substitution at 0.45, new head up from -0.35 / 0.6 over 0.45-0.60 (ease-out), no flash (a head flash
+# was tried and rejected, --head-flash=1; no dust), Machine Gun deploy 0.60-1.65 (x1.43). Depth test stays on:
 # the platform hides the part of the head below the collar.
 const SWAP_SINK_RETRACT_END := 0.30
 const SWAP_SINK_SUBST := 0.45
 const SWAP_SINK_RISE_END := 0.60
 const SWAP_SINK_SCALE := 0.6
 const SWAP_SINK_DROP := 0.35
-const SWAP_FLASH_FROM := 0.50
-const SWAP_FLASH_TO := 0.55
-var swap_flash_peak := 8.0             # emission energy multiplier at the peak of the flash (--flash-peak=)
+const HEAD_FLASH_FROM := 0.45         # flash = 0 here, rises (smoothstep) to 1 at the peak
+const HEAD_FLASH_PEAK_AT := 0.50
+const HEAD_FLASH_TO := 0.60           # back to 0 (smoothstep)
+var head_flash_add := 0.08            # white (linear) added to the head colour at the peak; 0.4 washed it out (--head-flash-add=)
+var head_flash := false                # rejected: washes the head out (REPORT, update 4); --head-flash=1 to compare
 
 ## [retract end, sink end (= substitution), deploy start] in ticks for the current swap style.
 func swap_ticks() -> Array:
@@ -90,8 +92,12 @@ func _ready() -> void:
 			swap_style = "none" if a.substr(13) == "0" else "cloud"
 		if a.begins_with("--swap-style="):
 			swap_style = a.substr(13)
-		if a.begins_with("--flash-peak="):
-			swap_flash_peak = float(a.substr(13))
+		if a == "--vc":
+			use_vc = true
+		if a.begins_with("--head-flash-add="):
+			head_flash_add = float(a.substr(17))
+		elif a.begins_with("--head-flash="):
+			head_flash = a.substr(13) != "0"
 	var p := ProjectSettings.globalize_path("res://") + "../../assets/art/work/style/palette.json"
 	if FileAccess.file_exists(p):
 		var data = JSON.parse_string(FileAccess.get_file_as_string(p))
