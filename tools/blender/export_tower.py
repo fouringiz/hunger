@@ -14,6 +14,8 @@
 #  6. glTF IMPORT sets rotation_mode = QUATERNION: rotation_euler on an imported object is silently ignored.
 #  7. Mesh names must not end in .001 (a replaced mesh keeps the suffix if the old one still exists).
 # Head contract: Godot looks up nodes by prefix: pivot_*, muzzle_*, recoil_axis_*, barrel_spin_*; mesh names are free.
+# Node ownership: the clip owns fold and pivot_*; code owns head_root (aim yaw), barrel_spin_*, recoil_axis_*.
+# A node is never driven by both. Hierarchy: tower_root -> head_root -> fold -> head body, axle_*, pivot_*.
 import bpy
 if bpy.app.version[:2] != (5, 2):
     raise RuntimeError('Blender 5.2 required (tools/blender/README.md), running %s' % bpy.app.version_string)
@@ -24,11 +26,11 @@ FORBIDDEN = ('REF_', 'Mesh_')
 
 CFG_TURRET = dict(scene='turret_build', name='turret_static', combat_frame=None,
     clip=dict(name='deploy', last_time=45 / 30,
-              rot={'head_root': (1, -90.0), 'pivot_L': (0, 90.0), 'pivot_R': (0, 90.0)},
+              rot={'fold': (1, -90.0), 'pivot_L': (0, 90.0), 'pivot_R': (0, 90.0)},
               slide={'pivot_L': (-0.485, -0.54), 'pivot_R': (0.485, 0.54)}))
 CFG_MACHINE_GUN = dict(scene='mg_build', name='machine_gun_static', combat_frame=None,
     clip=dict(name='deploy', last_time=45 / 30,
-              rot={'head_root': (1, -90.0), 'pivot_L': (0, 90.0), 'pivot_R': (0, 90.0)}))
+              rot={'fold': (1, -90.0), 'pivot_L': (0, 90.0), 'pivot_R': (0, 90.0)}))
 
 def _glb(path):
     d = open(path, 'rb').read(); L = struct.unpack('<I', d[12:16])[0]; J = json.loads(d[20:20 + L])
@@ -86,9 +88,16 @@ def check(cfg, path):
     for need in ('head_root', 'platform'):
         i = [k for k in range(len(nodes)) if nm(k) == need]
         if not i or nm(parent.get(i[0], -1)) != 'tower_root': errors.append(need + ' must be a child of tower_root')
+    fold = [k for k in range(len(nodes)) if nm(k) == 'fold']
+    if not fold or nm(parent.get(fold[0], -1)) != 'head_root': errors.append('fold must be a child of head_root')
     for i in range(len(nodes)):
         if nm(i).startswith(('muzzle_', 'recoil_axis_', 'barrel_spin_')) and not nm(parent.get(i, -1)).startswith('pivot_'):
             errors.append(nm(i) + ' must be a child of a pivot_*')
+        if nm(i).startswith('pivot_') and nm(parent.get(i, -1)) != 'fold':
+            errors.append(nm(i) + ' must be a child of fold')
+    hr = [k for k in range(len(nodes)) if nm(k) == 'head_root']
+    if hr and [nm(c) for c in nodes[hr[0]].get('children', [])] != ['fold']:
+        errors.append('head_root must have exactly one child, fold: %s' % [nm(c) for c in nodes[hr[0]].get('children', [])])
     errors += _clip(cfg, J, BIN)
     if errors:
         os.remove(path); raise RuntimeError('export rejected, file deleted: ' + '; '.join(errors))
