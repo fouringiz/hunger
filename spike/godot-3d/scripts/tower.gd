@@ -19,7 +19,8 @@ var fire_cd := 0.0
 var fire_side := 0
 var spin_speed := 0.0
 var dust: GPUParticles3D
-var cloud: GPUParticles3D   # dense swap cover (Cfg.swap_cover)
+var cloud: GPUParticles3D   # dense swap cover (swap_style "cloud")
+var collar_dust: GPUParticles3D   # small ring at the collar (swap_style "sink")
 var swap_log := []
 var ready_pending := false
 
@@ -27,6 +28,8 @@ static var _dust_pm: ParticleProcessMaterial
 static var _dust_mesh: QuadMesh
 static var _cloud_pm: ParticleProcessMaterial
 static var _cloud_mesh: QuadMesh
+static var _collar_pm: ParticleProcessMaterial
+static var _collar_mesh: QuadMesh
 
 func setup(kind_: String) -> void:
 	kind = kind_
@@ -38,6 +41,8 @@ func setup(kind_: String) -> void:
 	add_child(dust)
 	cloud = _make_cloud()
 	add_child(cloud)
+	collar_dust = _make_collar_dust()
+	add_child(collar_dust)
 
 func appear() -> void:
 	state = "appearing"
@@ -111,34 +116,45 @@ func _tick_swap() -> void:
 	var t1 := Cfg.ticks(Cfg.SWAP_SUBST_END)              # 33
 	var t_end := Cfg.ticks(Cfg.BUILD_WARMUP_SECONDS)     # 99
 	var f := Cfg.SWAP_FADE_FRAMES
+	var style := Cfg.swap_style
 	if ticks == 1:
 		# head_root keeps the current aim: only fold/pivot_* move (contract p.6)
 		old_rig.play_backward(Cfg.swap_retract_speed(old_rig.clip_len))   # ends at tick 27
-	if Cfg.swap_cover and ticks == t0 - Cfg.ticks(Cfg.SWAP_COVER_LEAD):
+	if style == "cloud" and ticks == t0 - Cfg.ticks(Cfg.SWAP_COVER_LEAD):
 		cloud.restart()
 	if ticks == t0 + 1:
 		_log("t=%.3f retract finished on the previous tick: old clip playing=%s pos=%.4f" % [(ticks - 1) * Cfg.SIM_STEP, old_rig.ap.is_playing(), old_rig.clip_pos()])
 	if ticks == t0:
 		_log("t=%.3f before this tick's step: old clip playing=%s pos=%.4f, old head_root yaw %.1f deg" % [ticks * Cfg.SIM_STEP, old_rig.ap.is_playing(), old_rig.clip_pos(), rad_to_deg(old_rig.head_root.rotation.y)])
-		dust.restart()
-		# new head appears folded, invisible, in the same aim direction, without its own platform
+		if style != "sink":
+			dust.restart()
+		# new head appears folded, in the same aim direction, without its own platform
 		rig = Rig.create("machine_gun", Cfg.use_vc)
 		add_child(rig.model)
 		rig.platform.visible = false
 		rig.pose(0.0)
-		rig.set_yaw(yaw, Cfg.SWAP_SCALE_FROM if Cfg.swap_cover else 1.0)
-		rig.set_alpha(rig.head_root, 0.0)
-	if ticks > t0 and ticks <= t0 + f:
-		old_rig.set_alpha(old_rig.head_root, 1.0 - float(ticks - t0) / f)
-	if ticks > t0 + f and ticks <= t0 + 2 * f:
-		rig.set_alpha(rig.head_root, float(ticks - t0 - f) / f)
-	if ticks == t0 + f:
-		_log("t=%.3f old head gone" % (ticks * Cfg.SIM_STEP))
-	if ticks == t0 + 2 * f:
-		_log("t=%.3f new head fully visible" % (ticks * Cfg.SIM_STEP))
+		match style:
+			"cloud": rig.set_yaw(yaw, Cfg.SWAP_SCALE_FROM)
+			"sink": rig.set_yaw(yaw, Cfg.SWAP_SINK_SCALE, -Cfg.SWAP_SINK_DROP)
+			_: rig.set_yaw(yaw)
+		if style == "sink":
+			rig.head_root.visible = false
+		else:
+			rig.set_alpha(rig.head_root, 0.0)
+	if style == "sink":
+		_tick_sink(t0, t1)
+	else:
+		if ticks > t0 and ticks <= t0 + f:
+			old_rig.set_alpha(old_rig.head_root, 1.0 - float(ticks - t0) / f)
+		if ticks > t0 + f and ticks <= t0 + 2 * f:
+			rig.set_alpha(rig.head_root, float(ticks - t0 - f) / f)
+		if ticks == t0 + f:
+			_log("t=%.3f old head gone" % (ticks * Cfg.SIM_STEP))
+		if ticks == t0 + 2 * f:
+			_log("t=%.3f new head fully visible" % (ticks * Cfg.SIM_STEP))
 	if ticks == t1 + 1:
 		rig.play_forward(Cfg.swap_deploy_speed(rig.clip_len))             # ends at tick 99
-	if Cfg.swap_cover and ticks > t1:
+	if style == "cloud" and ticks > t1:
 		var k := clampf(float(ticks - t1) / Cfg.ticks(Cfg.SWAP_SCALE_SECONDS), 0.0, 1.0)
 		var e := 1.0 - (1.0 - k) * (1.0 - k)                               # ease out
 		rig.set_yaw(yaw, lerpf(Cfg.SWAP_SCALE_FROM, 1.0, e))
@@ -147,6 +163,28 @@ func _tick_swap() -> void:
 		kind = "machine_gun"
 		_log("t=%.3f new head_root yaw %.1f deg (same as before swap)" % [ticks * Cfg.SIM_STEP, rad_to_deg(rig.head_root.rotation.y)])
 		ready_pending = true            # reported after this tick's clip step
+
+## "Sink and raise": ticks t0+1..tm sink the old head (ease-in), tick tm+1 swaps heads at the
+## bottom pose, ticks tm+1..t1 raise the new one (ease-out). 3 frames each at 60 Hz.
+func _tick_sink(t0: int, t1: int) -> void:
+	var tm := Cfg.ticks(Cfg.SWAP_SINK_END)                # 30
+	var s0 := Cfg.SWAP_SINK_SCALE
+	var d0 := Cfg.SWAP_SINK_DROP
+	if ticks == tm - 1:
+		collar_dust.restart()
+	if ticks > t0 and ticks <= tm:
+		var k := float(ticks - t0) / (tm - t0)
+		var e := k * k
+		old_rig.set_yaw(yaw, lerpf(1.0, s0, e), -d0 * e)
+		_log("t=%.3f old head scale %.3f dy %.3f" % [ticks * Cfg.SIM_STEP, lerpf(1.0, s0, e), -d0 * e])
+	if ticks == tm + 1:
+		old_rig.head_root.visible = false
+		rig.head_root.visible = true
+	if ticks > tm and ticks <= t1:
+		var k := float(ticks - tm - 1) / (t1 - tm - 1)
+		var e := 1.0 - (1.0 - k) * (1.0 - k)
+		rig.set_yaw(yaw, lerpf(s0, 1.0, e), -d0 * (1.0 - e))
+		_log("t=%.3f new head scale %.3f dy %.3f (old hidden)" % [ticks * Cfg.SIM_STEP, lerpf(s0, 1.0, e), -d0 * (1.0 - e)])
 
 func _tick_combat(dt: float) -> void:
 	var has_target := aim_point != null
@@ -319,4 +357,76 @@ func _make_cloud() -> GPUParticles3D:
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.position = Cfg.SWAP_CLOUD_CENTER
 	p.visibility_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
+	return p
+
+# ---------- sink swap: small depth-tested dust ring at the collar ----------
+# Bounds (analytic, linear damping): radial reach <= 0.40 + 0.9^2 / (2 * 2.5) = 0.56, plus half a puff
+# (0.16 * 1.3 / 2 = 0.10) -> 0.66 < pad half-width 0.90. Rise <= 0.2^2 / (2 * 2.5) = 0.01 + 0.10 above
+# the collar (y 0.424) -> top ~0.55, below the folded head body; gravity 0.4 drops it <= 0.04.
+
+func _make_collar_dust() -> GPUParticles3D:
+	if _collar_pm == null:
+		var pm := ParticleProcessMaterial.new()
+		pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
+		pm.emission_ring_axis = Vector3.UP
+		pm.emission_ring_radius = 0.40
+		pm.emission_ring_inner_radius = 0.30
+		pm.emission_ring_height = 0.01
+		pm.direction = Vector3.UP
+		pm.spread = 10.0
+		pm.initial_velocity_min = 0.05
+		pm.initial_velocity_max = 0.20
+		pm.radial_velocity_min = 0.5
+		pm.radial_velocity_max = 0.9
+		pm.gravity = Vector3(0, -0.4, 0)
+		pm.damping_min = 2.5
+		pm.damping_max = 3.0
+		pm.scale_min = 0.8
+		pm.scale_max = 1.0
+		var sc := Curve.new()
+		sc.add_point(Vector2(0, 0.6))
+		sc.add_point(Vector2(1, 1.3))
+		var sct := CurveTexture.new()
+		sct.curve = sc
+		pm.scale_curve = sct
+		var g := Gradient.new()
+		g.set_color(0, Color8(0x98, 0x87, 0x6d, 220))
+		g.set_color(1, Color8(0x98, 0x87, 0x6d, 0))
+		var gt := GradientTexture1D.new()
+		gt.gradient = g
+		pm.color_ramp = gt
+		_collar_pm = pm
+		var rg := Gradient.new()
+		rg.set_color(0, Color(1, 1, 1, 1))
+		rg.set_color(1, Color(1, 1, 1, 0))
+		var tex := GradientTexture2D.new()
+		tex.gradient = rg
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(1.0, 0.5)
+		tex.width = 32
+		tex.height = 32
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		m.vertex_color_use_as_albedo = true
+		m.vertex_color_is_srgb = true
+		m.albedo_texture = tex           # depth test stays on: the head and hull occlude it
+		_collar_mesh = QuadMesh.new()
+		_collar_mesh.size = Vector2(0.16, 0.16)
+		_collar_mesh.material = m
+	var p := GPUParticles3D.new()
+	p.process_material = _collar_pm
+	p.draw_pass_1 = _collar_mesh
+	p.amount = 32
+	p.lifetime = 0.45
+	p.one_shot = true
+	p.explosiveness = 0.9
+	p.emitting = false
+	p.local_coords = false
+	p.fixed_fps = 60
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	p.position = Vector3(0, Cfg.RING_TOP, 0)
+	p.visibility_aabb = AABB(Vector3(-1, -0.5, -1), Vector3(2, 1, 2))
 	return p

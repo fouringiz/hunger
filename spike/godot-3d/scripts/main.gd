@@ -476,13 +476,31 @@ func auto_appear() -> void:
 
 func auto_swap() -> void:
 	# run with --fixed-fps 60 so every rendered frame is exactly one physics tick
-	close_cam = true
+	# --swap-cam=game: game camera (20 units across 1280 px), every frame cropped around the tower
+	var game_cam := "--swap-cam=game" in OS.get_cmdline_user_args()
+	close_cam = not game_cam
 	selected = 0
 	target_frozen = Vector3(-2.5, 0.25, 0.6)
-	_place_camera(cam, towers[0].position, Cfg.CLOSE_CAMERA_WIDTH)
-	await wait_ticks(90)
+	if game_cam:
+		_place_camera(cam, Vector3.ZERO, Cfg.GAME_CAMERA_WIDTH)
+	else:
+		_place_camera(cam, towers[0].position, Cfg.CLOSE_CAMERA_WIDTH)
 	var t: Tower = towers[0]
-	var tag := "cover%d" % int(Cfg.swap_cover)
+	var tag := Cfg.swap_style
+	var crop := Rect2i(320, 100, 640, 600)
+	var frame := 0
+	if game_cam:
+		await wait_ticks(1)
+		var c := cam.unproject_position(t.global_position + Vector3(0, 0.6, 0))
+		crop = Rect2i(int(c.x) - 192, int(c.y) - 150, 384, 288)
+		print("[swap %s] game camera crop %s" % [tag, crop])
+		await wait_ticks(74)
+		for i in 15:   # pre-roll: combat before the swap
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().get_region(crop).save_jpg(shots_dir + "raw/swap_game_%s_f%03d.jpg" % [tag, frame], 0.92)
+			frame += 1
+	else:
+		await wait_ticks(90)
 	print("[swap %s] yaw before swap %.1f deg" % [tag, rad_to_deg(t.yaw)])
 	t.swap_to_machine_gun()
 	var keep := [0, 9, 18, 24, 27, 28, 29, 30, 31, 33, 36, 45, 60, 75, 90, 99]
@@ -494,22 +512,25 @@ func auto_swap() -> void:
 	while true:
 		await RenderingServer.frame_post_draw
 		var k := t.ticks if t.state == "swapping" or t.ticks <= 99 else 99
+		if game_cam and frame < 15 + 125:
+			get_viewport().get_texture().get_image().get_region(crop).save_jpg(shots_dir + "raw/swap_game_%s_f%03d.jpg" % [tag, frame], 0.92)
+			frame += 1
 		if not done.has(k):
 			done[k] = true
-			if k in keep:
+			if k in keep and not game_cam:
 				var img := get_viewport().get_texture().get_image().get_region(Rect2i(320, 100, 640, 600))
 				img.save_jpg(shots_dir + "raw/swap_%s_t%03d.jpg" % [tag, k], 0.9)
 			if k >= t0 - 3 and k <= t1 + 3:
 				var c := head_cover(t)
 				lines.append("tick %d (%.3f s): head vertices on cloud colour %.1f %% of %d" % [k, k * Cfg.SIM_STEP, c[0] * 100.0, c[1]])
 				if k >= t0 and k <= t1: worst = minf(worst, c[0])
-		if t.state != "swapping" and k >= 99:
+		if t.state != "swapping" and k >= 99 and (not game_cam or frame >= 15 + 125):
 			break
 	var verdict := "[swap %s] 0.45-0.55 s worst head cover %.1f %% -> %s (criterion >= 95 %%)" % [tag, worst * 100.0, "COVERED" if worst >= 0.95 else "NOT covered"]
 	lines.append(verdict)
 	print("\n".join(lines))
 	print("[swap %s] yaw after swap %.1f deg (head_root of new head %.1f)" % [tag, rad_to_deg(t.yaw), rad_to_deg(t.rig.head_root.rotation.y)])
-	FileAccess.open("res://out/swap_%s.txt" % tag, FileAccess.WRITE).store_string("\n".join(lines) + "\n")
+	FileAccess.open("res://out/swap_%s%s.txt" % [tag, "_game" if game_cam else ""], FileAccess.WRITE).store_string("\n".join(lines) + "\n")
 	await wait_ticks(30)
 
 ## Share of head vertices (old and new head, any visibility) whose screen pixel shows the swap cloud colour.

@@ -146,8 +146,14 @@ func step(dt: float) -> void:
 func clip_pos() -> float:
 	return ap.current_animation_position if ap.current_animation != "" else -1.0
 
-func set_yaw(yaw: float, s := 1.0) -> void:
+var head_base := Vector3.INF
+
+## Aim (yaw), plus scale and vertical offset used only by the swap; head_root is code-owned.
+func set_yaw(yaw: float, s := 1.0, dy := 0.0) -> void:
+	if head_base == Vector3.INF:
+		head_base = head_root.position
 	head_root.basis = Basis(Vector3.UP, yaw).scaled(Vector3.ONE * s)
+	head_root.position = head_base + Vector3(0, dy, 0)
 
 # ---------- fades, fire, fx ----------
 

@@ -11,8 +11,9 @@ const SWAP_SUBST_END := 0.55           # 3->4: substitution in folded pose 0.45-
 const SWAP_FADE_FRAMES := 2            # old head out in 2 frames, new head in 2 frames
 # 0.55-1.65: Machine Gun deploy forwards (ends at BUILD_WARMUP_SECONDS)
 
-# Swap cover (anti-"teleport", no model changes). --swap-cover=0 switches it off for "before" captures.
-var swap_cover := true
+# Swap style (anti-"teleport", no model changes): --swap-style=none|cloud|sink (default sink).
+# --swap-cover=0/1 is kept as an alias for none/cloud (earlier captures).
+var swap_style := "sink"
 const SWAP_COVER_LEAD := 0.05          # cloud starts 0.05 s before the substitution (0.40 s)
 const SWAP_CLOUD_CENTER := Vector3(0, 1.35, 0)        # middle of the folded head (0.42 .. 2.19)
 const SWAP_CLOUD_EXTENTS := Vector3(0.75, 0.90, 0.75)
@@ -22,6 +23,11 @@ const SWAP_CLOUD_LIFETIME := 0.30      # opaque from 12 % to 60 % of life: 0.436
 const SWAP_CLOUD_COLOR := Color8(0xa8, 0x98, 0x7c)
 const SWAP_SCALE_FROM := 0.85          # new head grows 0.85 -> 1.0 over the first 0.2 s of its deploy
 const SWAP_SCALE_SECONDS := 0.20
+# "sink": old head 1.0 -> 0.6 and down 0.10 over 0.45-0.50 (ease-in), hidden; new head appears at 0.6 / -0.10
+# and returns to 1.0 / 0 over 0.50-0.55 (ease-out); a small depth-tested dust ring at the collar.
+const SWAP_SINK_END := 0.50
+const SWAP_SINK_SCALE := 0.6
+const SWAP_SINK_DROP := 0.10
 
 # Grid and scale (one parameter each; models are not touched).
 const CELL_STEPS := [1.80, 2.36]
@@ -62,7 +68,9 @@ var use_vc := false
 func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--swap-cover="):
-			swap_cover = a.substr(13) != "0"
+			swap_style = "none" if a.substr(13) == "0" else "cloud"
+		if a.begins_with("--swap-style="):
+			swap_style = a.substr(13)
 	var p := ProjectSettings.globalize_path("res://") + "../../assets/art/work/style/palette.json"
 	if FileAccess.file_exists(p):
 		var data = JSON.parse_string(FileAccess.get_file_as_string(p))
